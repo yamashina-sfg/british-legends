@@ -47,9 +47,16 @@ export function BattleScene() {
   return (
     <div className="battle-scene fade-in">
       <div className="battle-arena" aria-label="battlefield">
+        <div className="battle-arena__sky" />
+        <div className="battle-arena__ink-cloud battle-arena__ink-cloud--one" />
+        <div className="battle-arena__ink-cloud battle-arena__ink-cloud--two" />
         <div className="battle-arena__mountains" />
         <div className="battle-arena__forest" />
         <div className="battle-arena__road" />
+        <div className="battle-arena__ruin battle-arena__ruin--one" />
+        <div className="battle-arena__ruin battle-arena__ruin--two" />
+        <div className="battle-arena__back-plateau" />
+        <div className="battle-arena__front-plateau" />
         <div className="battle-allies">
           {allies.map((a) => (
             <div key={a.uid} className={`battle-unit battle-unit--ally ${!a.alive ? 'is-fainted' : ''}`}>
