@@ -23,6 +23,7 @@ export function createNewSave(slotId: number): SaveData {
     },
     party: [],
     inventory: {},
+    gold: 36,
     codex: { discoveredIds: [] },
   };
 }
@@ -31,7 +32,8 @@ export function loadSlot(slotId: number): SaveData | null {
   try {
     const raw = localStorage.getItem(slotKey(slotId));
     if (!raw) return null;
-    return JSON.parse(raw) as SaveData;
+    const parsed = JSON.parse(raw) as SaveData;
+    return { ...parsed, gold: parsed.gold ?? 36 };
   } catch {
     return null;
   }

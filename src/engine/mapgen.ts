@@ -234,6 +234,15 @@ export function generateDungeonMap(worldId: string, floorIndex: number): Dungeon
     });
   }
 
+  // 枝道の報酬：休息碑と、作品を匂わせる一文。
+  const restTile = take(4);
+  if (restTile) entities.push({ id: `e${counter++}`, kind: 'rest', x: restTile.x, y: restTile.y, label: '休息碑' });
+  const memory = floor.nodes.find((node) => node.type === 'event');
+  const memoryTile = memory ? take(4) : null;
+  if (memoryTile && memory?.eventText) {
+    entities.push({ id: `e${counter++}`, kind: 'memory', x: memoryTile.x, y: memoryTile.y, label: '記憶の断片', eventText: memory.eventText });
+  }
+
   // --- 水たまり（装飾。連結性を壊さない範囲で） ---
   addWaterPools(tiles, player, entities);
 

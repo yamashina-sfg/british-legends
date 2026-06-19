@@ -62,13 +62,14 @@ export function DungeonScene() {
           <span><i className="legend-enemy" /> 敵</span>
           <span><i className="legend-stairs" /> 階段</span>
           <span><i className="legend-boss" /> ボス</span>
+          <span><i className="legend-rest" /> 休息碑</span>
         </div>
 
         {/* トースト / 報酬 */}
         {mapToast && <div className="center accent small fade-in">{mapToast}</div>}
         {lastReward && (
           <div className="center tiny dim">
-            前回：EXP {lastReward.exp}
+            前回：EXP {lastReward.exp}・{lastReward.gold}G
             {Object.entries(lastReward.drops).length > 0 &&
               '・' + Object.entries(lastReward.drops).map(([id, q]) => `${getMaterial(id).name}×${q}`).join('・')}
           </div>

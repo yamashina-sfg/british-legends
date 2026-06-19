@@ -5,8 +5,9 @@ import { CHARACTERS } from './characters';
 import { DUNGEONS } from './dungeons';
 import { WORLDS } from './worlds';
 import { CODEX } from './codex';
+import { EQUIPMENT } from './equipment';
 
-export { SKILLS, MATERIALS, ENEMIES, CHARACTERS, DUNGEONS, WORLDS, CODEX };
+export { SKILLS, MATERIALS, ENEMIES, CHARACTERS, DUNGEONS, WORLDS, CODEX, EQUIPMENT };
 export { WORLD_ORDER } from './worlds';
 
 // --- ルックアップヘルパ（存在しないIDは例外で早期検知） ---
@@ -39,4 +40,9 @@ export const getWorld = (id: string) => {
   const w = WORLDS[id];
   if (!w) throw new Error(`Unknown world: ${id}`);
   return w;
+};
+export const getEquipment = (id: string) => {
+  const equipment = EQUIPMENT[id];
+  if (!equipment) throw new Error(`Unknown equipment: ${id}`);
+  return equipment;
 };

@@ -1,6 +1,6 @@
 import { useGameStore } from '@/store/useGameStore';
 import { getCharacter } from '@/data';
-import { statsAtLevel } from '@/engine/leveling';
+import { statsWithEquipment } from '@/engine/equipment';
 import { Gauge } from '@/components/ui/Gauge';
 import { Sprite } from '@/components/ui/Sprite';
 
@@ -12,7 +12,7 @@ export function PartyStatusBar() {
     <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
       {save.party.map((p, i) => {
         const char = getCharacter(p.characterId);
-        const stats = statsAtLevel(char, p.level);
+        const stats = statsWithEquipment(char, p);
         const fainted = p.currentHp <= 0;
         return (
           <div key={i} className="row" style={{ gap: 6, flex: '1 1 140px', minWidth: 140 }}>

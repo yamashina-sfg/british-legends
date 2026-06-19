@@ -12,6 +12,10 @@ function entityGlyph(e: MapEntity): { glyph: string; cls: string } {
       return { glyph: e.opened ? '·' : '', cls: e.opened ? 'ent-chest-open' : 'ent-chest' };
     case 'stairs':
       return { glyph: '', cls: 'ent-stairs' };
+    case 'rest':
+      return { glyph: '', cls: 'ent-rest' };
+    case 'memory':
+      return { glyph: '', cls: 'ent-memory' };
   }
 }
 

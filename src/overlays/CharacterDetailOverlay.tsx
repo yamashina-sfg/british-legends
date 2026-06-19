@@ -1,6 +1,7 @@
 import { useGameStore } from '@/store/useGameStore';
-import { getCharacter, getSkill } from '@/data';
-import { statsAtLevel, expForLevel } from '@/engine/leveling';
+import { getCharacter, getEquipment, getSkill } from '@/data';
+import { expForLevel } from '@/engine/leveling';
+import { statsWithEquipment } from '@/engine/equipment';
 import { checkEvolution } from '@/engine/evolution';
 import { Window } from '@/components/ui/Window';
 import { Button } from '@/components/ui/Button';
@@ -14,7 +15,7 @@ export function CharacterDetailOverlay() {
   if (!owned) return null;
 
   const char = getCharacter(owned.characterId);
-  const stats = statsAtLevel(char, owned.level);
+  const stats = statsWithEquipment(char, owned);
   const evo = checkEvolution(owned, char, save.inventory);
   const nextLvExp = expForLevel(owned.level + 1);
 
@@ -39,6 +40,9 @@ export function CharacterDetailOverlay() {
         <span>こうげき {stats.atk}</span>
         <span>ぼうぎょ {stats.def}</span>
         <span>すばやさ {stats.spd}</span>
+      </div>
+      <div className="tiny dim">
+        装備: {owned.equippedWeaponId ? getEquipment(owned.equippedWeaponId).name : 'なし'} / {owned.equippedArmorId ? getEquipment(owned.equippedArmorId).name : 'なし'}
       </div>
 
       <div className="window-title" style={{ marginTop: 4 }}>

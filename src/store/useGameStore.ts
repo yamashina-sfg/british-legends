@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import type { DungeonMap, OwnedCharacter, SaveData } from '@/types';
-import { getCharacter, getDungeon, getEnemy, getWorld } from '@/data';
+import { getCharacter, getDungeon, getEnemy, getEquipment, getWorld } from '@/data';
 import { gainExp, statsAtLevel } from '@/engine/leveling';
 import { evolve as evolveEngine } from '@/engine/evolution';
 import { generateDungeonMap } from '@/engine/mapgen';
@@ -20,6 +20,7 @@ export type Scene =
   | 'saveSelect'
   | 'worldMap'
   | 'worldSelect'
+  | 'town'
   | 'dungeon'
   | 'battle'
   | 'gameOver'
@@ -29,6 +30,7 @@ export type Overlay = 'party' | 'character' | 'evolution' | 'materials' | 'codex
 
 interface RewardSummary {
   exp: number;
+  gold: number;
   drops: Record<string, number>;
   levelUps: string[];
 }
@@ -61,6 +63,7 @@ interface GameState {
   goSaveSelect: () => void;
   goWorldMap: () => void;
   selectWorld: (worldId: string) => void;
+  enterTown: (worldId: string) => void;
   openOverlay: (o: Overlay, charIndex?: number) => void;
   closeOverlay: () => void;
 
@@ -82,6 +85,8 @@ interface GameState {
   // 成長・進化
   evolveCharacter: (partyIndex: number) => { ok: boolean; message: string };
   healParty: () => void;
+  restAtInn: () => void;
+  buyEquipment: (partyIndex: number, equipmentId: string) => void;
 }
 
 function discover(save: SaveData, ids: string[]): string[] {
@@ -112,6 +117,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   goSaveSelect: () => set({ scene: 'saveSelect', overlay: null }),
   goWorldMap: () => set({ scene: 'worldMap', overlay: null, map: null, encounter: null }),
   selectWorld: (worldId) => set({ viewingWorldId: worldId, scene: 'worldSelect', overlay: null }),
+  enterTown: (worldId) => {
+    const save = get().save;
+    if (!save) return;
+    const party = save.party.length > 0 ? save.party : [createOwnedCharacter(getWorld(worldId).rewardCharacterId)];
+    const nextSave = { ...save, party, progress: { ...save.progress, currentWorldId: worldId } };
+    set({ save: nextSave, worldId, scene: 'town', overlay: null });
+    saveSlot(nextSave);
+  },
   openOverlay: (o, charIndex) =>
     set({ overlay: o, selectedCharIndex: charIndex ?? get().selectedCharIndex }),
   closeOverlay: () => set({ overlay: null }),
@@ -203,6 +216,19 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
         return;
       }
+      case 'rest': {
+        const party = save.party.map((p) => {
+          const stats = statsAtLevel(getCharacter(p.characterId), p.level);
+          return { ...p, currentHp: Math.min(stats.hp, p.currentHp + Math.ceil(stats.hp * 0.35)), currentMp: Math.min(stats.mp, p.currentMp + Math.ceil(stats.mp * 0.35)) };
+        });
+        const nextSave = { ...save, party };
+        set({ save: nextSave, map: result.map, mapToast: '休息碑に触れた。HPとMPが少し回復した。' });
+        saveSlot(nextSave);
+        return;
+      }
+      case 'memory':
+        set({ map: result.map, mapToast: result.entity?.eventText ?? '古い記憶が、静かに胸へ流れ込んだ。' });
+        return;
       case 'encounter': {
         const e = result.entity!;
         set({
@@ -236,6 +262,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const enemyIds = encounter.enemyIds;
 
     const totalExp = enemyIds.reduce((sum, id) => sum + getEnemy(id).exp, 0);
+    const totalGold = enemyIds.reduce((sum, id) => sum + Math.max(4, Math.floor(getEnemy(id).exp / 3)), 0);
 
     const drops: Record<string, number> = {};
     for (const id of enemyIds) {
@@ -270,6 +297,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       ...save,
       party: newParty,
       inventory,
+      gold: save.gold + totalGold,
       codex: { discoveredIds: discover(save, codexIds) },
     };
 
@@ -280,7 +308,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       save: nextSave,
       map: nextMap,
       encounter: null,
-      lastReward: { exp: totalExp, drops, levelUps },
+      lastReward: { exp: totalExp, gold: totalGold, drops, levelUps },
     });
     saveSlot(nextSave);
     battle.reset();
@@ -362,6 +390,32 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
     const nextSave = { ...save, party };
     set({ save: nextSave });
+    saveSlot(nextSave);
+  },
+
+  restAtInn: () => {
+    const save = get().save;
+    if (!save || save.gold < 8) return;
+    const party = save.party.map((p) => {
+      const stats = statsAtLevel(getCharacter(p.characterId), p.level);
+      return { ...p, currentHp: stats.hp, currentMp: stats.mp };
+    });
+    const nextSave = { ...save, gold: save.gold - 8, party };
+    set({ save: nextSave, mapToast: '蜜酒の火で、HPとMPが全回復した。' });
+    saveSlot(nextSave);
+  },
+
+  buyEquipment: (partyIndex, equipmentId) => {
+    const save = get().save;
+    const owned = save?.party[partyIndex];
+    if (!save || !owned) return;
+    const item = getEquipment(equipmentId);
+    const equippedAlready = item.slot === 'weapon' ? owned.equippedWeaponId === item.id : owned.equippedArmorId === item.id;
+    if (equippedAlready || save.gold < item.price) return;
+    const nextOwned = item.slot === 'weapon' ? { ...owned, equippedWeaponId: item.id } : { ...owned, equippedArmorId: item.id };
+    const party = save.party.map((p, index) => index === partyIndex ? nextOwned : p);
+    const nextSave = { ...save, party, gold: save.gold - item.price };
+    set({ save: nextSave, mapToast: `${item.name} を装備した！` });
     saveSlot(nextSave);
   },
 }));

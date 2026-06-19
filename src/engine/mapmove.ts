@@ -5,7 +5,7 @@ import { revealAround } from './mapgen';
 // マップ上の移動・敵AI（純粋ロジック）
 // ============================================================
 
-export type MoveEventType = 'blocked' | 'moved' | 'encounter' | 'stairs' | 'chest';
+export type MoveEventType = 'blocked' | 'moved' | 'encounter' | 'stairs' | 'chest' | 'rest' | 'memory';
 
 export interface MoveResult {
   map: DungeonMap;
@@ -99,6 +99,8 @@ export function resolveMove(prev: DungeonMap, dx: number, dy: number): MoveResul
       chest.opened = true;
       return { map, type: 'chest', entity: { ...chest } };
     }
+    if (target.kind === 'rest') return { map, type: 'rest', entity: target };
+    if (target.kind === 'memory') return { map, type: 'memory', entity: target };
   }
 
   // 通常移動

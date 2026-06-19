@@ -7,6 +7,7 @@ import { DungeonScene } from '@/scenes/DungeonScene';
 import { BattleScene } from '@/scenes/BattleScene';
 import { GameOverScene } from '@/scenes/GameOverScene';
 import { WorldClearScene } from '@/scenes/WorldClearScene';
+import { TownScene } from '@/scenes/TownScene';
 import { OverlayHost } from '@/overlays/OverlayHost';
 
 export default function App() {
@@ -18,6 +19,7 @@ export default function App() {
       {scene === 'saveSelect' && <SaveSelectScene />}
       {scene === 'worldMap' && <WorldMapScene />}
       {scene === 'worldSelect' && <WorldSelectScene />}
+      {scene === 'town' && <TownScene />}
       {scene === 'dungeon' && <DungeonScene />}
       {scene === 'battle' && <BattleScene />}
       {scene === 'gameOver' && <GameOverScene />}

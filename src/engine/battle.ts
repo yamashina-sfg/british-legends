@@ -1,6 +1,6 @@
 import type { Enemy, OwnedCharacter, Skill, Stats } from '@/types';
 import { getCharacter, getEnemy, getSkill } from '@/data';
-import { statsAtLevel } from './leveling';
+import { statsWithEquipment } from './equipment';
 import { calcDamage, calcHeal } from './damage';
 
 // ============================================================
@@ -28,6 +28,7 @@ export interface Combatant {
   atkBuff: number;
   /** 防御コマンドによる被ダメ半減（このラウンドのみ） */
   defending: boolean;
+  rageTriggered: boolean;
   alive: boolean;
 }
 
@@ -47,7 +48,7 @@ export interface LogEntry {
 // --- コンバタント生成 ----------------------------------------
 export function combatantFromOwned(owned: OwnedCharacter): Combatant {
   const char = getCharacter(owned.characterId);
-  const stats = statsAtLevel(char, owned.level);
+  const stats = statsWithEquipment(char, owned);
   return {
     uid: `ally_${owned.characterId}`,
     side: 'ally',
@@ -63,6 +64,7 @@ export function combatantFromOwned(owned: OwnedCharacter): Combatant {
     skillIds: owned.learnedSkillIds,
     atkBuff: 0,
     defending: false,
+    rageTriggered: false,
     alive: owned.currentHp > 0,
   };
 }
@@ -84,6 +86,7 @@ export function combatantFromEnemy(enemyId: string, index: number): Combatant {
     skillIds: enemy.skillIds,
     atkBuff: 0,
     defending: false,
+    rageTriggered: false,
     alive: true,
   };
 }
@@ -117,6 +120,9 @@ export function decideEnemyAction(actor: Combatant, all: Combatant[]): BattleAct
   const usable = actor.skillIds
     .map(getSkill)
     .filter((s) => s.mpCost <= actor.mp && s.id !== 'attack_basic');
+  if (actor.sourceId === 'dragon' && actor.rageTriggered && actor.skillIds.includes('dragon_breath') && Math.random() < 0.8) {
+    return { actorUid: actor.uid, type: 'skill', skillId: 'dragon_breath', targetUid: target?.uid };
+  }
   if (usable.length > 0 && Math.random() < 0.4) {
     const skill = usable[Math.floor(Math.random() * usable.length)];
     return { actorUid: actor.uid, type: 'skill', skillId: skill.id, targetUid: target?.uid };
@@ -180,6 +186,11 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
         const dmg = calcDamage({ attackerAtk: actor.stats.atk, defenderDef: t.stats.def, skill, atkBuff: actor.atkBuff });
         const dealt = applyDamage(t, dmg);
         logs.push({ text: `${t.name} に ${dealt} のダメージ！` });
+        if (t.sourceId === 'dragon' && !t.rageTriggered && t.hp > 0 && t.hp <= t.maxHp / 2) {
+          t.rageTriggered = true;
+          t.atkBuff += 10;
+          logs.push({ text: 'Dragonの鱗が砕け、灼熱の怒りが解き放たれた！' });
+        }
         if (!t.alive) logs.push({ text: `${t.name} を倒した！` });
       }
       break;
