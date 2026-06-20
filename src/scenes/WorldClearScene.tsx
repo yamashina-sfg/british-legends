@@ -5,7 +5,7 @@ import { Window } from '@/components/ui/Window';
 import { Sprite } from '@/components/ui/Sprite';
 
 export function WorldClearScene() {
-  const { save, newlyJoinedCharacterId, goWorldMap } = useGameStore();
+  const { save, newlyJoinedCharacterId, openLodge } = useGameStore();
   if (!save) return null;
 
   const clearedId = save.progress.currentWorldId;
@@ -41,8 +41,8 @@ export function WorldClearScene() {
       )}
 
       <div style={{ width: '70%', marginTop: 10 }}>
-        <Button primary center onClick={goWorldMap}>
-          ワールドマップへ
+        <Button primary center onClick={openLodge}>
+          Lodgeへ帰る
         </Button>
       </div>
     </div>

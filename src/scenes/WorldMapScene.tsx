@@ -3,8 +3,10 @@ import { WORLDS, WORLD_ORDER } from '@/data';
 import { MenuBar } from '@/components/common/MenuBar';
 import { PartyStatusBar } from '@/components/common/PartyStatusBar';
 
-const landmarkClass: Record<string, string> = {
-  beowulf: 'landmark-cave', hamlet: 'landmark-castle', macbeth: 'landmark-tower',
+const worldClass: Record<string, string> = {
+  beowulf: 'journey-world--beowulf',
+  hamlet: 'journey-world--hamlet',
+  macbeth: 'journey-world--macbeth',
 };
 
 export function WorldMapScene() {
@@ -12,46 +14,28 @@ export function WorldMapScene() {
   if (!save) return null;
   const unlocked = new Set(save.progress.unlockedWorldIds);
   const cleared = new Set(save.progress.clearedWorldIds);
+  const lastUnlockedId = save.progress.unlockedWorldIds[save.progress.unlockedWorldIds.length - 1];
+  const activeId = WORLD_ORDER.find((id) => unlocked.has(id) && !cleared.has(id)) ?? lastUnlockedId ?? WORLD_ORDER[0];
+  const activeWorld = WORLDS[activeId];
 
   return (
     <>
-      <div className="world-rpg-screen fade-in">
-        <aside className="world-sidebar rpg-window">
-          <div className="world-sidebar__title">BIBLIOTHECA</div>
+      <div className="journey-screen fade-in">
+        <aside className="journey-sidebar rpg-window">
+          <div className="journey-sidebar__title">BIBLIOTHECA</div>
           <div className="small dim">失われた物語を修復せよ</div>
-          <div className="world-objective"><span>目的</span><strong>Beowulf の世界へ向かう</strong></div>
-          <div className="world-party"><PartyStatusBar /></div>
-          <div className="world-sidebar__hint">地図上の拠点を選択</div>
+          <div className="journey-objective"><span>次の目的地</span><strong>{activeWorld.title}</strong><small>{activeWorld.era}</small></div>
+          <PartyStatusBar />
+          <div className="journey-sidebar__note">Lodgeを出発し、道の先の物語世界へ向かう。</div>
         </aside>
-        <main className="world-atlas" aria-label="文学世界地図">
-          <div className="atlas-label atlas-label--north">古英語世界</div>
-          <div className="atlas-river" />
-          <div className="atlas-forest atlas-forest--one" />
-          <div className="atlas-forest atlas-forest--two" />
-          <div className="atlas-mountains" />
-          <button className="atlas-lodge" onClick={openLodge}>
-            <i className="atlas-lodge__sprite" />
-            <strong>Bibliotheca Lodge</strong>
-            <small>回復・仲間</small>
-          </button>
-          <div className="atlas-boss-gate"><i />竜の塚</div>
-          {WORLD_ORDER.map((id, index) => {
-            const world = WORLDS[id];
-            const isUnlocked = unlocked.has(id);
-            return (
-              <button
-                key={id}
-                disabled={!isUnlocked}
-                onClick={() => selectWorld(id)}
-                className={`world-landmark ${landmarkClass[id] ?? 'landmark-town'} landmark-${index} ${isUnlocked ? '' : 'is-locked'} ${cleared.has(id) ? 'is-cleared' : ''}`}
-              >
-                <i className="world-landmark__sprite" />
-                <span>{isUnlocked ? world.title : 'LOCKED'}</span>
-                <small>{isUnlocked ? world.era : '未解放'}</small>
-              </button>
-            );
-          })}
-          <div className="atlas-player"><i /><span>YOU</span></div>
+        <main className={`journey-map ${worldClass[activeId] ?? ''}`} aria-label="Lodgeから作品世界への道">
+          <div className="journey-map__sky" /><div className="journey-map__hills" />
+          <div className="journey-route">
+            <button className="journey-stop journey-stop--lodge" onClick={openLodge}><i /><strong>Bibliotheca Lodge</strong><small>帰還の間</small></button>
+            <div className="journey-road"><i /><i /><i /><span>古い街道</span></div>
+            <button className="journey-stop journey-stop--world" onClick={() => selectWorld(activeId)}><i /><strong>{activeWorld.title}</strong><small>{activeWorld.author}</small></button>
+          </div>
+          <div className="journey-future">{WORLD_ORDER.filter((id) => id !== activeId).map((id) => <span key={id} className={unlocked.has(id) ? 'is-open' : ''}>{unlocked.has(id) ? WORLDS[id].title : '封印された世界'}</span>)}</div>
         </main>
       </div>
       <MenuBar />

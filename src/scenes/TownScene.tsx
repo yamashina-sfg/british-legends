@@ -1,47 +1,49 @@
 import { useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
-import { getCharacter, getWorld } from '@/data';
-import { Button } from '@/components/ui/Button';
-import { Window } from '@/components/ui/Window';
-import { PartyStatusBar } from '@/components/common/PartyStatusBar';
 import { MenuBar } from '@/components/common/MenuBar';
 
-const DIALOGUES = {
-  librarian: '司書: 各世界は、まだ物語の途中で凍りついています。道の先で、その結末を取り戻してください。',
-  traveler: '旅人: 洞窟の枝道には休息碑がある。急がず、帰る力を残しておくんだ。',
-  merchant: '商人: 剣は勝つため、薬は帰るため。Goldの使い道を間違えるなよ。',
-};
+const HINTS = [
+  '司書: 旅で見つけた素材は、机の上で進化の力に変えられます。',
+  '司書: 世界を修復するたび、この部屋にも失われた物語の光が戻ります。',
+  '司書: 不安になったら、ベッドで休んでから再びポータルへ向かいなさい。',
+];
 
 export function TownScene() {
-  const { save, worldId, restAtInn, enterWorld, goWorldMap, openOverlay } = useGameStore();
-  const [dialogue, setDialogue] = useState(DIALOGUES.librarian);
-  if (!save || !worldId) return null;
-  const world = getWorld(worldId);
-  const hero = save.party[0] ? getCharacter(save.party[0].characterId) : null;
+  const { save, healParty, goWorldMap, openOverlay } = useGameStore();
+  const [message, setMessage] = useState(HINTS[0]);
+  if (!save) return null;
+  const rank = Math.min(save.progress.clearedWorldIds.length, 3);
+
   return (
     <>
-    <div className={`town-scene town-theme-${worldId} fade-in`}>
-      <div className="town-backdrop"><i className="town-backdrop__hall" /><i className="town-backdrop__torch town-backdrop__torch--one" /><i className="town-backdrop__torch town-backdrop__torch--two" /></div>
-      <div className="town-hud rpg-window"><span>BIBLIOTHECA LODGE</span><strong>{world.title} への出発拠点</strong><b>G {save.gold}</b></div>
-      <div className="lodge-npcs" aria-label="Lodge NPCs">
-        <button onClick={() => setDialogue(DIALOGUES.librarian)}><i className="npc-sprite npc-librarian" />司書</button>
-        <button onClick={() => setDialogue(DIALOGUES.traveler)}><i className="npc-sprite npc-traveler" />旅人</button>
-        <button onClick={() => setDialogue(DIALOGUES.merchant)}><i className="npc-sprite npc-merchant" />商人</button>
+      <div className={`lodge-room lodge-rank-${rank} fade-in`}>
+        <div className="lodge-room__wall" />
+        <div className="lodge-room__floor" />
+        <header className="lodge-room__title"><span>BIBLIOTHECA LODGE</span><strong>帰還の間</strong><b>修復した世界 {save.progress.clearedWorldIds.length}</b></header>
+        <div className="lodge-room__hero"><i /><span>YOU</span></div>
+
+        <button className="lodge-object lodge-object--bed" onClick={() => { healParty(); setMessage('ベッドで休んだ。仲間のHPとMPが全回復した。'); }}>
+          <i /><span>ベッド</span>
+        </button>
+        <button className="lodge-object lodge-object--bookshelf" onClick={() => openOverlay('codex')}>
+          <i /><span>本棚</span>
+        </button>
+        <button className="lodge-object lodge-object--desk" onClick={() => openOverlay('evolution', 0)}>
+          <i /><span>進化の机</span>
+        </button>
+        <button className="lodge-object lodge-object--librarian" onClick={() => setMessage(HINTS[(rank + 1) % HINTS.length])}>
+          <i /><span>司書</span>
+        </button>
+        <button className="lodge-object lodge-object--portal" onClick={goWorldMap}>
+          <i /><span>ワールドポータル</span>
+        </button>
+
+        {rank >= 1 && <i className="lodge-upgrade lodge-upgrade--fireplace" aria-label="暖炉" />}
+        {rank >= 2 && <i className="lodge-upgrade lodge-upgrade--trophies" aria-label="トロフィー棚" />}
+        {rank >= 3 && <i className="lodge-upgrade lodge-upgrade--window" aria-label="修復されたステンドグラス" />}
+        <div className="lodge-room__message rpg-window">{message}</div>
       </div>
-      <div className="lodge-dialogue rpg-window">{dialogue}</div>
-      <div className="town-actions town-actions--primary">
-        <Button primary center onClick={() => enterWorld(worldId)}>道をたどり、ダンジョンへ</Button>
-        <Button center onClick={goWorldMap}>ワールドマップへ</Button>
-      </div>
-      <div className="town-grid">
-        <Window title="宿屋・セーブ" className="town-window">
-          <p>蜜酒の火が、傷ついた旅人を休ませる。セーブは行動ごとに記録される。</p>
-          <Button disabled={save.gold < 8} onClick={restAtInn}>8Gで休む</Button>
-        </Window>
-        <Window title="仲間・進化" className="town-window town-window--party"><PartyStatusBar />{hero && <small>{hero.stageName} の成長を確認し、素材が揃ったら進化させよう。</small>}<Button onClick={() => openOverlay('party')}>仲間を確認する</Button></Window>
-      </div>
-    </div>
-    <MenuBar />
+      <MenuBar />
     </>
   );
 }
