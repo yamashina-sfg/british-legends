@@ -29,7 +29,6 @@ export function WorldMapScene() {
           <div className="atlas-forest atlas-forest--one" />
           <div className="atlas-forest atlas-forest--two" />
           <div className="atlas-mountains" />
-          <div className="atlas-route" aria-label="LodgeからBeowulf洞窟への道" />
           <button className="atlas-lodge" onClick={openLodge}>
             <i className="atlas-lodge__sprite" />
             <strong>Bibliotheca Lodge</strong>
