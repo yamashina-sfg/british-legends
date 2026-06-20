@@ -5,7 +5,7 @@ import { Window } from '@/components/ui/Window';
 import { Sprite } from '@/components/ui/Sprite';
 
 export function WorldSelectScene() {
-  const { viewingWorldId, enterTown, goWorldMap, save } = useGameStore();
+  const { viewingWorldId, enterWorld, goWorldMap, save } = useGameStore();
   if (!viewingWorldId || !save) return null;
   const world = getWorld(viewingWorldId);
   const dungeon = getDungeon(world.dungeonId);
@@ -41,8 +41,8 @@ export function WorldSelectScene() {
       </Window>
 
       <div className="spacer" />
-      <Button primary center onClick={() => enterTown(viewingWorldId)}>
-        {cleared ? '町へ戻る' : '前哨地へ向かう'}
+      <Button primary center onClick={() => enterWorld(viewingWorldId)}>
+        {cleared ? 'もう一度ダンジョンへ' : 'ダンジョンへ出発'}
       </Button>
       <Button center onClick={goWorldMap}>
         ワールドマップへ
