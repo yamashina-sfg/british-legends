@@ -1,7 +1,8 @@
 import { useGameStore } from '@/store/useGameStore';
 
-const ITEMS: { key: 'party' | 'materials' | 'codex' | 'settings'; label: string }[] = [
+const ITEMS: { key: 'party' | 'store' | 'materials' | 'codex' | 'settings'; label: string }[] = [
   { key: 'party', label: 'パーティ' },
+  { key: 'store', label: 'ストア' },
   { key: 'materials', label: '素材' },
   { key: 'codex', label: '図鑑' },
   { key: 'settings', label: '設定' },

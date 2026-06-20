@@ -27,7 +27,7 @@ export type Scene =
   | 'gameOver'
   | 'worldClear';
 
-export type Overlay = 'party' | 'character' | 'evolution' | 'materials' | 'codex' | 'settings' | null;
+export type Overlay = 'party' | 'character' | 'evolution' | 'materials' | 'codex' | 'settings' | 'store' | null;
 
 interface RewardSummary {
   exp: number;

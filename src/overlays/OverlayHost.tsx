@@ -5,6 +5,7 @@ import { EvolutionOverlay } from './EvolutionOverlay';
 import { MaterialsOverlay } from './MaterialsOverlay';
 import { CodexOverlay } from './CodexOverlay';
 import { SettingsOverlay } from './SettingsOverlay';
+import { StoreOverlay } from './StoreOverlay';
 
 export function OverlayHost() {
   const overlay = useGameStore((s) => s.overlay);
@@ -20,6 +21,7 @@ export function OverlayHost() {
         {overlay === 'materials' && <MaterialsOverlay />}
         {overlay === 'codex' && <CodexOverlay />}
         {overlay === 'settings' && <SettingsOverlay />}
+        {overlay === 'store' && <StoreOverlay />}
       </div>
     </div>
   );

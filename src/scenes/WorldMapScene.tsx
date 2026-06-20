@@ -29,14 +29,11 @@ export function WorldMapScene() {
           <div className="atlas-forest atlas-forest--one" />
           <div className="atlas-forest atlas-forest--two" />
           <div className="atlas-mountains" />
-          <div className="atlas-road atlas-road--lodge" />
-          <div className="atlas-road atlas-road--beowulf" />
-          <div className="atlas-road atlas-road--hamlet" />
-          <div className="atlas-road atlas-road--macbeth" />
+          <div className="atlas-route" aria-label="LodgeからBeowulf洞窟への道" />
           <button className="atlas-lodge" onClick={openLodge}>
             <i className="atlas-lodge__sprite" />
             <strong>Bibliotheca Lodge</strong>
-            <small>回復・店・仲間</small>
+            <small>回復・仲間</small>
           </button>
           <div className="atlas-boss-gate"><i />竜の塚</div>
           {WORLD_ORDER.map((id, index) => {
