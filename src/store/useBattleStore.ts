@@ -22,7 +22,9 @@ interface BattleState {
   combatants: Combatant[];
   log: LogEntry[];
   phase: BattlePhase;
-  /** 入力待ちの生存中味方のindex（combatants内のally順） */
+  /** このラウンドでコマンドを選ぶ仲間。戦闘中に並びが変わっても入力順は固定する。 */
+  turnActorUids: string[];
+  /** turnActorUids 内の入力待ち index */
   inputIndex: number;
   planned: BattleAction[];
 
@@ -41,6 +43,7 @@ export const useBattleStore = create<BattleState>((set, get) => ({
   combatants: [],
   log: [],
   phase: 'input',
+  turnActorUids: [],
   inputIndex: 0,
   planned: [],
 
@@ -52,8 +55,9 @@ export const useBattleStore = create<BattleState>((set, get) => ({
       isBoss,
       enemyIds,
       combatants: [...allies, ...enemies],
-      log: [{ text: isBoss ? 'ボスが立ちはだかる！' : '魔物が現れた！' }],
-      phase: 'input',
+      log: [{ text: allies.length > 0 ? (isBoss ? 'ボスが立ちはだかる！' : '魔物が現れた！') : '戦える仲間がいない……。' }],
+      phase: allies.length > 0 ? 'input' : 'lost',
+      turnActorUids: allies.map((ally) => ally.uid),
       inputIndex: 0,
       planned: [],
     });
@@ -63,22 +67,23 @@ export const useBattleStore = create<BattleState>((set, get) => ({
   livingEnemies: () => livingOf(get().combatants, 'enemy'),
 
   currentActor: () => {
-    const allies = livingOf(get().combatants, 'ally');
-    return allies[get().inputIndex];
+    const { combatants, turnActorUids, inputIndex } = get();
+    const uid = turnActorUids[inputIndex];
+    return combatants.find((combatant) => combatant.uid === uid && combatant.alive);
   },
 
   chooseCommand: (a) => {
-    const { combatants, planned, inputIndex } = get();
-    const allies = livingOf(combatants, 'ally');
-    const actor = allies[inputIndex];
-    if (!actor) return;
+    const { combatants, planned, inputIndex, turnActorUids } = get();
+    const actorUid = turnActorUids[inputIndex];
+    const actor = combatants.find((combatant) => combatant.uid === actorUid && combatant.alive);
+    if (!actor || planned.some((action) => action.actorUid === actor.uid)) return;
 
     const action: BattleAction = { ...a, actorUid: actor.uid };
     const nextPlanned = [...planned, action];
     const nextIndex = inputIndex + 1;
 
     // まだ入力すべき味方が残っている
-    if (nextIndex < allies.length) {
+    if (nextIndex < turnActorUids.length) {
       set({ planned: nextPlanned, inputIndex: nextIndex });
       return;
     }
@@ -107,11 +112,12 @@ export const useBattleStore = create<BattleState>((set, get) => ({
       combatants: working,
       log: [...get().log, ...roundLog],
       planned: [],
+      turnActorUids: livingOf(working, 'ally').map((ally) => ally.uid),
       inputIndex: 0,
       phase,
     });
   },
 
   reset: () =>
-    set({ active: false, combatants: [], log: [], phase: 'input', inputIndex: 0, planned: [], enemyIds: [], isBoss: false }),
+    set({ active: false, combatants: [], log: [], phase: 'input', turnActorUids: [], inputIndex: 0, planned: [], enemyIds: [], isBoss: false }),
 }));

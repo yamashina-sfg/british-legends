@@ -4,11 +4,12 @@ import { useGameStore } from '@/store/useGameStore';
 import { Button } from '@/components/ui/Button';
 import { Window } from '@/components/ui/Window';
 
-type StoreTab = 'weapon' | 'armor' | 'item';
+type StoreTab = 'weapon' | 'armor' | 'accessory' | 'item';
 
 const TAB_LABELS: Record<StoreTab, string> = {
   weapon: '武器',
-  armor: '防具・護符',
+  armor: '防具',
+  accessory: '装飾品',
   item: '道具',
 };
 
@@ -21,7 +22,7 @@ export function StoreOverlay() {
   const { save, buyEquipment, buyItem, closeOverlay } = useGameStore();
   if (!save) return null;
 
-  const equipment = Object.values(EQUIPMENT).filter((item) => tab === 'weapon' ? item.slot === 'weapon' : item.slot !== 'weapon');
+  const equipment = tab === 'item' ? [] : Object.values(EQUIPMENT).filter((item) => item.slot === tab);
 
   return (
     <Window title="BIBLIOTHECA STORE" className="store-overlay">

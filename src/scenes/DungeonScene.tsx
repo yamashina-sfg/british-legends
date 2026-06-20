@@ -7,6 +7,12 @@ import { DungeonMap } from '@/components/dungeon/DungeonMap';
 import { PartyStatusBar } from '@/components/common/PartyStatusBar';
 import { MenuBar } from '@/components/common/MenuBar';
 
+const FLOOR_ATMOSPHERE: Record<string, string[]> = {
+  beowulf: ['ヘオロットの酒宴場', 'グレンデル母の沼', '竜の塚・灼熱の回廊'],
+  hamlet: ['エルシノア城・大広間', '王家の地下墓所', '玉座の間・決闘の広間'],
+  macbeth: ['荒野の魔女道', 'ダンシネイン城・回廊', '血の王座・終幕の間'],
+};
+
 export function DungeonScene() {
   const { map, worldId, movePlayer, retreatToMap, lastReward, mapToast, save } = useGameStore();
 
@@ -31,6 +37,7 @@ export function DungeonScene() {
   const world = getWorld(worldId);
   const dgn = getDungeon(world.dungeonId);
   const rate = explorationRate(map);
+  const atmosphere = FLOOR_ATMOSPHERE[worldId]?.[map.floorIndex] ?? map.floorName;
 
   // 出現する敵（このフロアのエンティティから）
   const enemyIds = [...new Set(map.entities.flatMap((e) => e.enemyIds ?? []))];
@@ -39,7 +46,7 @@ export function DungeonScene() {
     <>
       <div className={`scene dungeon-rpg-scene dungeon-world-${worldId} fade-in`} style={{ gap: 10 }}>
         <div className="dungeon-hud rpg-window">
-          <div className="dungeon-hud__location"><span>AREA</span><strong>{dgn.name}</strong><small>{map.floorName} {map.floorIndex + 1}/{dgn.floors.length}</small></div>
+          <div className="dungeon-hud__location"><span>AREA</span><strong>{atmosphere}</strong><small>{dgn.name} / 第{map.floorIndex + 1}層</small></div>
           <div className="dungeon-hud__objective"><span>QUEST</span><strong>{map.isBossFloor ? '竜の塚の主を討て' : '奥へ進み、文学世界を修復せよ'}</strong></div>
           <div className="dungeon-hud__progress"><span>探索率</span><strong>{rate}%</strong><i><b style={{ width: `${rate}%` }} /></i></div>
         </div>

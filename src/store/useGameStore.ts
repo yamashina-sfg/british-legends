@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { DungeonMap, OwnedCharacter, SaveData } from '@/types';
 import { getCharacter, getDungeon, getEnemy, getEquipment, getWorld, STORE_ITEMS } from '@/data';
-import { gainExp, statsAtLevel } from '@/engine/leveling';
+import { gainExp } from '@/engine/leveling';
 import { evolve as evolveEngine } from '@/engine/evolution';
 import { generateDungeonMap } from '@/engine/mapgen';
 import { resolveMove, removeEntity } from '@/engine/mapmove';
@@ -395,7 +395,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const save = get().save;
     if (!save) return;
     const party = save.party.map((p) => {
-      const stats = statsAtLevel(getCharacter(p.characterId), p.level);
+      const stats = statsWithEquipment(getCharacter(p.characterId), p);
       return { ...p, currentHp: stats.hp, currentMp: stats.mp };
     });
     const nextSave = { ...save, party };
@@ -407,7 +407,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const save = get().save;
     if (!save || save.gold < 8) return;
     const party = save.party.map((p) => {
-      const stats = statsAtLevel(getCharacter(p.characterId), p.level);
+      const stats = statsWithEquipment(getCharacter(p.characterId), p);
       return { ...p, currentHp: stats.hp, currentMp: stats.mp };
     });
     const nextSave = { ...save, gold: save.gold - 8, party };
@@ -420,7 +420,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     const owned = save?.party[partyIndex];
     if (!save || !owned) return;
     const item = getEquipment(equipmentId);
-    const equippedAlready = item.slot === 'weapon' ? owned.equippedWeaponId === item.id : owned.equippedArmorId === item.id;
+    const equippedId = item.slot === 'weapon'
+      ? owned.equippedWeaponId
+      : item.slot === 'armor'
+        ? owned.equippedArmorId
+        : owned.equippedAccessoryId;
+    const equippedAlready = equippedId === item.id;
     if (equippedAlready || save.gold < item.price) return;
     const nextOwned = item.slot === 'weapon'
       ? { ...owned, equippedWeaponId: item.id }

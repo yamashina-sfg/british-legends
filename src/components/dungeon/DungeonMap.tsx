@@ -26,7 +26,7 @@ interface Props {
 export function DungeonMap({ map }: Props) {
   return (
     <div
-      className="dungeon-map"
+      className={`dungeon-map dungeon-map--${map.worldId} dungeon-map--floor-${map.floorIndex}`}
       style={{ width: map.width * TILE, height: map.height * TILE }}
     >
       {/* タイル層 */}

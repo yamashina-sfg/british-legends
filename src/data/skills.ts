@@ -13,6 +13,7 @@ export const SKILLS: Record<string, Skill> = {
   },
   recovery_potion: { id: 'recovery_potion', name: '回復薬', type: 'heal', target: 'self', mpCost: 0, power: 34, description: 'HPを34回復する。' },
   high_recovery_potion: { id: 'high_recovery_potion', name: '上級回復薬', type: 'heal', target: 'self', mpCost: 0, power: 82, description: 'HPを82回復する。' },
+  elixir: { id: 'elixir', name: '生命の霊薬', type: 'heal', target: 'self', mpCost: 0, power: 160, description: 'HPを160回復する。' },
 
   // --- Beowulf 系 ---
   mighty_grip: {

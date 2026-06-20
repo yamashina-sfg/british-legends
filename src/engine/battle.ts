@@ -46,11 +46,12 @@ export interface LogEntry {
 }
 
 // --- コンバタント生成 ----------------------------------------
-export function combatantFromOwned(owned: OwnedCharacter): Combatant {
+export function combatantFromOwned(owned: OwnedCharacter, partyIndex = 0): Combatant {
   const char = getCharacter(owned.characterId);
   const stats = statsWithEquipment(char, owned);
   return {
-    uid: `ally_${owned.characterId}`,
+    // characterId は仲間の種類なので、同じ仲間が編成されても戦闘内IDは必ず分ける。
+    uid: `ally_${owned.characterId}_${partyIndex}`,
     side: 'ally',
     name: char.name,
     spriteId: char.spriteId,
