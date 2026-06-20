@@ -37,6 +37,10 @@ export function TownScene() {
         <button onClick={() => setDialogue(DIALOGUES.merchant)}><i className="npc-sprite npc-merchant" />商人</button>
       </div>
       <div className="lodge-dialogue rpg-window">{dialogue}</div>
+      <div className="town-actions town-actions--primary">
+        <Button primary center onClick={() => enterWorld(worldId)}>道をたどり、ダンジョンへ</Button>
+        <Button center onClick={goWorldMap}>ワールドマップへ</Button>
+      </div>
       <div className="town-grid">
         <Window title="宿屋・セーブ" className="town-window">
           <p>蜜酒の火が、傷ついた旅人を休ませる。セーブは行動ごとに記録される。</p>
@@ -51,7 +55,6 @@ export function TownScene() {
         </Window>
         <Window title="仲間・進化" className="town-window town-window--party"><PartyStatusBar />{hero && <small>{hero.stageName} の成長を確認し、素材が揃ったら進化させよう。</small>}<Button onClick={() => openOverlay('party')}>仲間を確認する</Button></Window>
       </div>
-      <div className="town-actions"><Button primary center onClick={() => enterWorld(worldId)}>道をたどり、ダンジョンへ</Button><Button center onClick={goWorldMap}>ワールドマップへ</Button></div>
     </div>
   );
 }
