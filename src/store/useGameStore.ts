@@ -1,10 +1,11 @@
 import { create } from 'zustand';
 import type { DungeonMap, OwnedCharacter, SaveData } from '@/types';
-import { getCharacter, getDungeon, getEnemy, getEquipment, getWorld } from '@/data';
+import { getCharacter, getDungeon, getEnemy, getEquipment, getWorld, STORE_ITEMS } from '@/data';
 import { gainExp, statsAtLevel } from '@/engine/leveling';
 import { evolve as evolveEngine } from '@/engine/evolution';
 import { generateDungeonMap } from '@/engine/mapgen';
 import { resolveMove, removeEntity } from '@/engine/mapmove';
+import { statsWithEquipment } from '@/engine/equipment';
 import {
   createNewSave,
   createOwnedCharacter,
@@ -64,6 +65,7 @@ interface GameState {
   goWorldMap: () => void;
   selectWorld: (worldId: string) => void;
   enterTown: (worldId: string) => void;
+  openLodge: () => void;
   openOverlay: (o: Overlay, charIndex?: number) => void;
   closeOverlay: () => void;
 
@@ -87,6 +89,8 @@ interface GameState {
   healParty: () => void;
   restAtInn: () => void;
   buyEquipment: (partyIndex: number, equipmentId: string) => void;
+  buyItem: (itemId: string) => void;
+  consumeItem: (itemId: string) => boolean;
 }
 
 function discover(save: SaveData, ids: string[]): string[] {
@@ -125,6 +129,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ save: nextSave, worldId, scene: 'town', overlay: null });
     saveSlot(nextSave);
   },
+  openLodge: () => {
+    const save = get().save;
+    if (!save) return;
+    const fallbackWorld = save.progress.currentWorldId ?? save.progress.unlockedWorldIds[0];
+    if (fallbackWorld) get().enterTown(fallbackWorld);
+  },
   openOverlay: (o, charIndex) =>
     set({ overlay: o, selectedCharIndex: charIndex ?? get().selectedCharIndex }),
   closeOverlay: () => set({ overlay: null }),
@@ -161,7 +171,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
     // ダンジョン入場時は全回復（街を出る感覚）
     party = party.map((p) => {
-      const stats = statsAtLevel(getCharacter(p.characterId), p.level);
+      const stats = statsWithEquipment(getCharacter(p.characterId), p);
       return { ...p, currentHp: stats.hp, currentMp: stats.mp };
     });
     const nextSave: SaveData = {
@@ -218,7 +228,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
       case 'rest': {
         const party = save.party.map((p) => {
-          const stats = statsAtLevel(getCharacter(p.characterId), p.level);
+          const stats = statsWithEquipment(getCharacter(p.characterId), p);
           return { ...p, currentHp: Math.min(stats.hp, p.currentHp + Math.ceil(stats.hp * 0.35)), currentMp: Math.min(stats.mp, p.currentMp + Math.ceil(stats.mp * 0.35)) };
         });
         const nextSave = { ...save, party };
@@ -412,10 +422,34 @@ export const useGameStore = create<GameState>((set, get) => ({
     const item = getEquipment(equipmentId);
     const equippedAlready = item.slot === 'weapon' ? owned.equippedWeaponId === item.id : owned.equippedArmorId === item.id;
     if (equippedAlready || save.gold < item.price) return;
-    const nextOwned = item.slot === 'weapon' ? { ...owned, equippedWeaponId: item.id } : { ...owned, equippedArmorId: item.id };
+    const nextOwned = item.slot === 'weapon'
+      ? { ...owned, equippedWeaponId: item.id }
+      : item.slot === 'armor'
+        ? { ...owned, equippedArmorId: item.id }
+        : { ...owned, equippedAccessoryId: item.id };
     const party = save.party.map((p, index) => index === partyIndex ? nextOwned : p);
     const nextSave = { ...save, party, gold: save.gold - item.price };
     set({ save: nextSave, mapToast: `${item.name} を装備した！` });
     saveSlot(nextSave);
+  },
+
+  buyItem: (itemId) => {
+    const save = get().save;
+    const item = STORE_ITEMS[itemId];
+    if (!save || !item || save.gold < item.price) return;
+    const items = { ...save.items, [itemId]: (save.items[itemId] ?? 0) + 1 };
+    const nextSave = { ...save, items, gold: save.gold - item.price };
+    set({ save: nextSave, mapToast: `${item.name} を購入した。` });
+    saveSlot(nextSave);
+  },
+
+  consumeItem: (itemId) => {
+    const save = get().save;
+    if (!save || (save.items[itemId] ?? 0) <= 0) return false;
+    const items = { ...save.items, [itemId]: save.items[itemId] - 1 };
+    const nextSave = { ...save, items };
+    set({ save: nextSave });
+    saveSlot(nextSave);
+    return true;
   },
 }));

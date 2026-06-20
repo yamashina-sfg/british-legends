@@ -6,8 +6,9 @@ import { DUNGEONS } from './dungeons';
 import { WORLDS } from './worlds';
 import { CODEX } from './codex';
 import { EQUIPMENT } from './equipment';
+import { STORE_ITEMS } from './items';
 
-export { SKILLS, MATERIALS, ENEMIES, CHARACTERS, DUNGEONS, WORLDS, CODEX, EQUIPMENT };
+export { SKILLS, MATERIALS, ENEMIES, CHARACTERS, DUNGEONS, WORLDS, CODEX, EQUIPMENT, STORE_ITEMS };
 export { WORLD_ORDER } from './worlds';
 
 // --- ルックアップヘルパ（存在しないIDは例外で早期検知） ---

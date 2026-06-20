@@ -4,7 +4,7 @@ import { statsAtLevel } from './leveling';
 
 export function statsWithEquipment(character: Character, owned: OwnedCharacter): Stats {
   const base = statsAtLevel(character, owned.level);
-  return [owned.equippedWeaponId, owned.equippedArmorId]
+  return [owned.equippedWeaponId, owned.equippedArmorId, owned.equippedAccessoryId]
     .filter(Boolean)
     .reduce<Stats>((stats, id) => {
       const bonus = getEquipment(id!).bonus;

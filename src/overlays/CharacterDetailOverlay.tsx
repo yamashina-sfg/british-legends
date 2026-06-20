@@ -42,7 +42,7 @@ export function CharacterDetailOverlay() {
         <span>すばやさ {stats.spd}</span>
       </div>
       <div className="tiny dim">
-        装備: {owned.equippedWeaponId ? getEquipment(owned.equippedWeaponId).name : 'なし'} / {owned.equippedArmorId ? getEquipment(owned.equippedArmorId).name : 'なし'}
+        装備: {owned.equippedWeaponId ? getEquipment(owned.equippedWeaponId).name : 'なし'} / {owned.equippedArmorId ? getEquipment(owned.equippedArmorId).name : 'なし'} / {owned.equippedAccessoryId ? getEquipment(owned.equippedAccessoryId).name : 'なし'}
       </div>
 
       <div className="window-title" style={{ marginTop: 4 }}>

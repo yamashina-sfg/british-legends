@@ -15,7 +15,7 @@ export function WorldSelectScene() {
   const cleared = save.progress.clearedWorldIds.includes(viewingWorldId);
 
   return (
-    <div className="scene fade-in">
+    <div className={`scene world-select-scene world-theme-${viewingWorldId} fade-in`}>
       <div className="scene-header">{world.title}</div>
       <Window>
         <div className="small dim">{world.author}・{world.era}</div>

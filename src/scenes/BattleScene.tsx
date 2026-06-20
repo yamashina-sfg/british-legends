@@ -1,18 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { useBattleStore } from '@/store/useBattleStore';
-import { getSkill } from '@/data';
+import { getSkill, STORE_ITEMS } from '@/data';
 import { Button } from '@/components/ui/Button';
 import { Window } from '@/components/ui/Window';
 import { Gauge } from '@/components/ui/Gauge';
 import { Sprite } from '@/components/ui/Sprite';
 import type { Combatant } from '@/engine/battle';
 
-type Mode = 'command' | 'skill' | 'target';
+type Mode = 'command' | 'skill' | 'item' | 'target';
 
 export function BattleScene() {
   const { combatants, log, phase, currentActor, chooseCommand } = useBattleStore();
-  const { onBattleWon, onBattleLost } = useGameStore();
+  const { onBattleWon, onBattleLost, save, consumeItem } = useGameStore();
   const [mode, setMode] = useState<Mode>('command');
   const [pendingSkillId, setPendingSkillId] = useState<string | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
@@ -100,7 +100,7 @@ export function BattleScene() {
             <div className="battle-command-grid">
               <Button onClick={() => setMode('target')}>▶ たたかう</Button>
               <Button onClick={() => setMode('skill')}>とくぎ</Button>
-              <Button disabled>どうぐ</Button>
+              <Button onClick={() => setMode('item')}>どうぐ</Button>
               <Button onClick={() => chooseCommand({ type: 'defend' })}>ぼうぎょ</Button>
             </div>
           )}
@@ -109,6 +109,18 @@ export function BattleScene() {
               {actor.skillIds.filter((id) => id !== 'attack_basic').map(getSkill).map((skill) => (
                 <Button key={skill.id} disabled={actor.mp < skill.mpCost} onClick={() => onPickSkill(skill.id)}>
                   <span>{skill.name}</span><span className="spacer" /><span className="dim tiny">MP {skill.mpCost}</span>
+                </Button>
+              ))}
+              <Button onClick={() => setMode('command')}>もどる</Button>
+            </div>
+          )}
+          {phase === 'input' && actor && mode === 'item' && (
+            <div className="menu-list battle-menu-list">
+              {Object.values(STORE_ITEMS).filter((item) => item.skillId).map((item) => (
+                <Button key={item.id} disabled={(save?.items[item.id] ?? 0) <= 0} onClick={() => {
+                  if (consumeItem(item.id) && item.skillId) chooseCommand({ type: 'skill', skillId: item.skillId });
+                }}>
+                  <span>{item.name} ×{save?.items[item.id] ?? 0}</span><span className="spacer" /><span className="dim tiny">{item.description}</span>
                 </Button>
               ))}
               <Button onClick={() => setMode('command')}>もどる</Button>

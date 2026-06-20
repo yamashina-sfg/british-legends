@@ -8,7 +8,7 @@ const landmarkClass: Record<string, string> = {
 };
 
 export function WorldMapScene() {
-  const { save, selectWorld } = useGameStore();
+  const { save, selectWorld, openLodge } = useGameStore();
   if (!save) return null;
   const unlocked = new Set(save.progress.unlockedWorldIds);
   const cleared = new Set(save.progress.clearedWorldIds);
@@ -29,6 +29,16 @@ export function WorldMapScene() {
           <div className="atlas-forest atlas-forest--one" />
           <div className="atlas-forest atlas-forest--two" />
           <div className="atlas-mountains" />
+          <div className="atlas-road atlas-road--lodge" />
+          <div className="atlas-road atlas-road--beowulf" />
+          <div className="atlas-road atlas-road--hamlet" />
+          <div className="atlas-road atlas-road--macbeth" />
+          <button className="atlas-lodge" onClick={openLodge}>
+            <i className="atlas-lodge__sprite" />
+            <strong>Bibliotheca Lodge</strong>
+            <small>回復・店・仲間</small>
+          </button>
+          <div className="atlas-boss-gate"><i />竜の塚</div>
           {WORLD_ORDER.map((id, index) => {
             const world = WORLDS[id];
             const isUnlocked = unlocked.has(id);

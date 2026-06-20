@@ -37,7 +37,7 @@ export function DungeonScene() {
 
   return (
     <>
-      <div className="scene dungeon-rpg-scene fade-in" style={{ gap: 10 }}>
+      <div className={`scene dungeon-rpg-scene dungeon-world-${worldId} fade-in`} style={{ gap: 10 }}>
         <div className="dungeon-hud rpg-window">
           <div className="dungeon-hud__location"><span>AREA</span><strong>{dgn.name}</strong><small>{map.floorName} {map.floorIndex + 1}/{dgn.floors.length}</small></div>
           <div className="dungeon-hud__objective"><span>QUEST</span><strong>{map.isBossFloor ? '竜の塚の主を討て' : '奥へ進み、文学世界を修復せよ'}</strong></div>

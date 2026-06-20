@@ -187,6 +187,7 @@ export interface OwnedCharacter {
   learnedSkillIds: string[];
   equippedWeaponId?: string;
   equippedArmorId?: string;
+  equippedAccessoryId?: string;
 }
 
 export interface SaveProgress {
@@ -203,6 +204,8 @@ export interface SaveData {
   party: OwnedCharacter[];
   /** materialId -> 所持数 */
   inventory: Record<string, number>;
+  /** 回復薬など、素材とは別に消費する道具 */
+  items: Record<string, number>;
   gold: number;
   codex: { discoveredIds: string[] };
 }
