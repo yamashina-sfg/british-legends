@@ -9,6 +9,12 @@ const worldClass: Record<string, string> = {
   macbeth: 'journey-world--macbeth',
 };
 
+const journeyLabels: Record<string, string> = {
+  beowulf: '古英語世界・海辺の街道',
+  hamlet: 'ルネサンス世界・エルシノア街道',
+  macbeth: 'スコットランド・雷鳴の荒野',
+};
+
 const MAP_COLUMNS = 18;
 const MAP_ROWS = 13;
 const ROAD_TILES = new Set(['2:9', '3:9', '4:9', '5:9', '6:9', '7:9', '8:9', '8:10', '9:10', '10:10', '11:10']);
@@ -51,7 +57,7 @@ export function WorldMapScene() {
         </aside>
         <main className={`journey-map ${worldClass[activeId] ?? ''}`} aria-label="Lodgeから作品世界への道">
           <div className="terrain-map" aria-hidden="true">{terrain.map((type, index) => <i key={index} className={`terrain-tile terrain-tile--${type}`} />)}</div>
-          <div className="journey-map__label">古英語世界・海辺の街道</div>
+          <div className="journey-map__label">{journeyLabels[activeId] ?? activeWorld.title}</div>
           <i className="journey-map__sign" aria-hidden="true" />
           <i className="journey-map__traveler journey-map__traveler--one" aria-hidden="true" />
           <i className="journey-map__traveler journey-map__traveler--two" aria-hidden="true" />
