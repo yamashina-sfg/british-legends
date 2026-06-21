@@ -14,18 +14,24 @@ const hamlet: OwnedCharacter = {
 };
 
 describe('battle command input', () => {
-  it('requests exactly one command from each living ally before resolving the round', () => {
+  it('requests exactly one attack command from each living ally before resolving the round', () => {
     const battle = useBattleStore.getState();
     battle.start([beowulf, hamlet], ['grendel'], false);
 
     expect(useBattleStore.getState().currentActor()?.sourceId).toBe('beowulf_young');
-    useBattleStore.getState().chooseCommand({ type: 'defend' });
+    const firstActorUid = useBattleStore.getState().currentActor()!.uid;
+    const enemyUid = useBattleStore.getState().livingEnemies()[0].uid;
+    expect(useBattleStore.getState().chooseCommand(firstActorUid, { type: 'attack', targetUid: enemyUid })).toBe(true);
 
     expect(useBattleStore.getState().phase).toBe('input');
     expect(useBattleStore.getState().currentActor()?.sourceId).toBe('hamlet_prince');
     expect(useBattleStore.getState().planned).toHaveLength(1);
 
-    useBattleStore.getState().chooseCommand({ type: 'defend' });
+    expect(useBattleStore.getState().chooseCommand(firstActorUid, { type: 'attack', targetUid: enemyUid })).toBe(false);
+    expect(useBattleStore.getState().currentActor()?.sourceId).toBe('hamlet_prince');
+
+    const secondActorUid = useBattleStore.getState().currentActor()!.uid;
+    expect(useBattleStore.getState().chooseCommand(secondActorUid, { type: 'attack', targetUid: enemyUid })).toBe(true);
     expect(useBattleStore.getState().planned).toHaveLength(0);
     expect(useBattleStore.getState().inputIndex).toBe(0);
   });

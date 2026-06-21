@@ -32,7 +32,8 @@ interface BattleState {
   livingAllies: () => Combatant[];
   livingEnemies: () => Combatant[];
   currentActor: () => Combatant | undefined;
-  chooseCommand: (a: Omit<BattleAction, 'actorUid'>) => void;
+  /** 表示中の仲間だけが送れる。古いクリックや二重送信は false で拒否する。 */
+  chooseCommand: (actorUid: string, a: Omit<BattleAction, 'actorUid'>) => boolean;
   reset: () => void;
 }
 
@@ -72,11 +73,12 @@ export const useBattleStore = create<BattleState>((set, get) => ({
     return combatants.find((combatant) => combatant.uid === uid && combatant.alive);
   },
 
-  chooseCommand: (a) => {
+  chooseCommand: (requestedActorUid, a) => {
     const { combatants, planned, inputIndex, turnActorUids } = get();
     const actorUid = turnActorUids[inputIndex];
     const actor = combatants.find((combatant) => combatant.uid === actorUid && combatant.alive);
-    if (!actor || planned.some((action) => action.actorUid === actor.uid)) return;
+    // 直前の仲間のクリックが遅れて届いても、次の仲間のターンを消費させない。
+    if (!actor || actor.uid !== requestedActorUid || planned.some((action) => action.actorUid === actor.uid)) return false;
 
     const action: BattleAction = { ...a, actorUid: actor.uid };
     const nextPlanned = [...planned, action];
@@ -85,7 +87,7 @@ export const useBattleStore = create<BattleState>((set, get) => ({
     // まだ入力すべき味方が残っている
     if (nextIndex < turnActorUids.length) {
       set({ planned: nextPlanned, inputIndex: nextIndex });
-      return;
+      return true;
     }
 
     // 全味方の入力完了 → ラウンド解決
@@ -116,6 +118,7 @@ export const useBattleStore = create<BattleState>((set, get) => ({
       inputIndex: 0,
       phase,
     });
+    return true;
   },
 
   reset: () =>

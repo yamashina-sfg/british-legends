@@ -15,10 +15,13 @@ export function BattleScene() {
   const { onBattleWon, onBattleLost, save, consumeItem } = useGameStore();
   const [mode, setMode] = useState<Mode>('command');
   const [pendingSkillId, setPendingSkillId] = useState<string | null>(null);
+  const [modeActorUid, setModeActorUid] = useState<string | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const enemies = combatants.filter((c) => c.side === 'enemy');
   const allies = combatants.filter((c) => c.side === 'ally');
   const actor = phase === 'input' ? currentActor() : undefined;
+  // actor が切り替わった瞬間は、前の仲間のターゲット選択画面を絶対に引き継がない。
+  const visibleMode: Mode = modeActorUid === actor?.uid ? mode : 'command';
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
@@ -28,12 +31,24 @@ export function BattleScene() {
     if (phase === 'input') {
       setMode('command');
       setPendingSkillId(null);
+      setModeActorUid(actor?.uid ?? null);
     }
   }, [phase, actor?.uid]);
 
+  const submitCommand = (command: Parameters<typeof chooseCommand>[1]) => {
+    if (!actor) return false;
+    const accepted = chooseCommand(actor.uid, command);
+    if (accepted) {
+      setMode('command');
+      setPendingSkillId(null);
+      setModeActorUid(null);
+    }
+    return accepted;
+  };
+
   const onSelectTarget = (target: Combatant) => {
-    if (pendingSkillId) chooseCommand({ type: 'skill', skillId: pendingSkillId, targetUid: target.uid });
-    else chooseCommand({ type: 'attack', targetUid: target.uid });
+    if (pendingSkillId) submitCommand({ type: 'skill', skillId: pendingSkillId, targetUid: target.uid });
+    else submitCommand({ type: 'attack', targetUid: target.uid });
   };
 
   const onPickSkill = (skillId: string) => {
@@ -41,7 +56,8 @@ export function BattleScene() {
     if (skill.target === 'single') {
       setPendingSkillId(skillId);
       setMode('target');
-    } else chooseCommand({ type: 'skill', skillId });
+      setModeActorUid(actor?.uid ?? null);
+    } else submitCommand({ type: 'skill', skillId });
   };
 
   return (
@@ -70,9 +86,9 @@ export function BattleScene() {
             <button
               key={e.uid}
               type="button"
-              disabled={!e.alive || mode !== 'target' || phase !== 'input'}
+              disabled={!e.alive || visibleMode !== 'target' || phase !== 'input'}
               onClick={() => onSelectTarget(e)}
-              className={`battle-unit battle-unit--enemy ${!e.alive ? 'is-fainted' : ''} ${mode === 'target' && e.alive ? 'is-targetable' : ''}`}
+              className={`battle-unit battle-unit--enemy ${!e.alive ? 'is-fainted' : ''} ${visibleMode === 'target' && e.alive ? 'is-targetable' : ''}`}
             >
               <Sprite label={e.name} side="enemy" size="lg" faint={!e.alive} />
               <span>{e.name}</span>
@@ -96,40 +112,40 @@ export function BattleScene() {
         </Window>
 
         <Window className="battle-command-window" title={phase === 'input' && actor ? `${actor.name} のコマンド` : 'BATTLE'}>
-          {phase === 'input' && actor && mode === 'command' && (
+          {phase === 'input' && actor && visibleMode === 'command' && (
             <div className="battle-command-grid">
-              <Button onClick={() => setMode('target')}>▶ たたかう</Button>
-              <Button onClick={() => setMode('skill')}>とくぎ</Button>
-              <Button onClick={() => setMode('item')}>どうぐ</Button>
-              <Button onClick={() => chooseCommand({ type: 'defend' })}>ぼうぎょ</Button>
+              <Button onClick={() => { setMode('target'); setModeActorUid(actor.uid); }}>▶ たたかう</Button>
+              <Button onClick={() => { setMode('skill'); setModeActorUid(actor.uid); }}>とくぎ</Button>
+              <Button onClick={() => { setMode('item'); setModeActorUid(actor.uid); }}>どうぐ</Button>
+              <Button onClick={() => submitCommand({ type: 'defend' })}>ぼうぎょ</Button>
             </div>
           )}
-          {phase === 'input' && actor && mode === 'skill' && (
+          {phase === 'input' && actor && visibleMode === 'skill' && (
             <div className="menu-list battle-menu-list">
               {actor.skillIds.filter((id) => id !== 'attack_basic').map(getSkill).map((skill) => (
                 <Button key={skill.id} disabled={actor.mp < skill.mpCost} onClick={() => onPickSkill(skill.id)}>
                   <span>{skill.name}</span><span className="spacer" /><span className="dim tiny">MP {skill.mpCost}</span>
                 </Button>
               ))}
-              <Button onClick={() => setMode('command')}>もどる</Button>
+              <Button onClick={() => { setMode('command'); setModeActorUid(actor.uid); }}>もどる</Button>
             </div>
           )}
-          {phase === 'input' && actor && mode === 'item' && (
+          {phase === 'input' && actor && visibleMode === 'item' && (
             <div className="menu-list battle-menu-list">
               {Object.values(STORE_ITEMS).filter((item) => item.skillId).map((item) => (
                 <Button key={item.id} disabled={(save?.items[item.id] ?? 0) <= 0} onClick={() => {
-                  if (consumeItem(item.id) && item.skillId) chooseCommand({ type: 'skill', skillId: item.skillId });
+                  if (item.skillId && submitCommand({ type: 'skill', skillId: item.skillId })) consumeItem(item.id);
                 }}>
                   <span>{item.name} ×{save?.items[item.id] ?? 0}</span><span className="spacer" /><span className="dim tiny">{item.description}</span>
                 </Button>
               ))}
-              <Button onClick={() => setMode('command')}>もどる</Button>
+              <Button onClick={() => { setMode('command'); setModeActorUid(actor.uid); }}>もどる</Button>
             </div>
           )}
-          {phase === 'input' && mode === 'target' && (
+          {phase === 'input' && actor && visibleMode === 'target' && (
             <div className="menu-list battle-menu-list">
               <div className="tiny dim">敵を選択してください</div>
-              <Button onClick={() => { setMode(pendingSkillId ? 'skill' : 'command'); setPendingSkillId(null); }}>もどる</Button>
+              <Button onClick={() => { setMode(pendingSkillId ? 'skill' : 'command'); setPendingSkillId(null); setModeActorUid(actor.uid); }}>もどる</Button>
             </div>
           )}
           {phase === 'resolving' && <div className="center dim">敵の行動を見守る…</div>}
