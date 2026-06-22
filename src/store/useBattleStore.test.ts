@@ -13,6 +13,11 @@ const hamlet: OwnedCharacter = {
   learnedSkillIds: ['attack_basic', 'poison_blade'],
 };
 
+const macbeth: OwnedCharacter = {
+  characterId: 'macbeth_thane', level: 1, exp: 0, currentHp: 90, currentMp: 18,
+  learnedSkillIds: ['attack_basic', 'bloody_dagger'],
+};
+
 describe('battle command input', () => {
   it('requests exactly one attack command from each living ally before resolving the round', () => {
     const battle = useBattleStore.getState();
@@ -38,5 +43,22 @@ describe('battle command input', () => {
 
   it('assigns unique combatant ids even when two party entries share a character id', () => {
     expect(combatantFromOwned(beowulf, 0).uid).not.toBe(combatantFromOwned(beowulf, 1).uid);
+  });
+
+  it('resolves an attack from every party member in one player phase', () => {
+    const battle = useBattleStore.getState();
+    battle.start([beowulf, hamlet, macbeth], ['dragon'], false);
+    const enemyUid = useBattleStore.getState().livingEnemies()[0].uid;
+
+    for (const characterId of ['beowulf_young', 'hamlet_prince', 'macbeth_thane']) {
+      const actor = useBattleStore.getState().currentActor();
+      expect(actor?.sourceId).toBe(characterId);
+      expect(useBattleStore.getState().chooseCommand(actor!.uid, { type: 'attack', targetUid: enemyUid })).toBe(true);
+    }
+
+    const messages = useBattleStore.getState().log.map((entry) => entry.text).join('\n');
+    expect(messages).toContain('Beowulf の攻撃！');
+    expect(messages).toContain('Hamlet の攻撃！');
+    expect(messages).toContain('Macbeth の攻撃！');
   });
 });
