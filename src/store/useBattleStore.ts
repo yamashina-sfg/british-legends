@@ -80,34 +80,42 @@ export const useBattleStore = create<BattleState>((set, get) => ({
     // 直前の仲間のクリックが遅れて届いても、次の仲間のターンを消費させない。
     if (!actor || actor.uid !== requestedActorUid || planned.some((action) => action.actorUid === actor.uid)) return false;
 
+    // 行動は入力した瞬間に解決する。これにより、各仲間のダメージが画面とログへ即時反映される。
+    const working = (inputIndex === 0 ? resetRoundFlags(combatants) : combatants)
+      .map((combatant) => ({ ...combatant, stats: { ...combatant.stats } }));
     const action: BattleAction = { ...a, actorUid: actor.uid };
-    const nextPlanned = [...planned, action];
-    const nextIndex = inputIndex + 1;
-
-    // まだ入力すべき味方が残っている
-    if (nextIndex < turnActorUids.length) {
-      set({ planned: nextPlanned, inputIndex: nextIndex });
-      return true;
-    }
-
-    // 全味方の入力完了 → ラウンド解決
-    set({ phase: 'resolving' });
-    let working = resetRoundFlags(combatants).map((c) => ({ ...c, stats: { ...c.stats } }));
-
-    // 敵の行動を決定
-    const enemyActions = livingOf(working, 'enemy').map((e) => decideEnemyAction(e, working));
-    const allActions = orderActions([...nextPlanned, ...enemyActions], working);
-
-    const roundLog: LogEntry[] = [];
-    for (const act of allActions) {
-      if (isBattleOver(working)) break;
-      roundLog.push(...resolveAction(working, act));
-    }
+    const roundLog = resolveAction(working, action);
 
     let phase: BattlePhase = 'input';
+    const nextIndex = inputIndex + 1;
+
+    // 敵を倒した場合は、残りの入力を待たずに勝利へ進む。
     if (isBattleOver(working)) {
       phase = allyWon(working) ? 'won' : 'lost';
       roundLog.push({ text: phase === 'won' ? '戦いに勝利した！' : '全滅してしまった……。' });
+    } else if (nextIndex < turnActorUids.length) {
+      set({
+        combatants: working,
+        log: [...get().log, ...roundLog],
+        planned: [],
+        inputIndex: nextIndex,
+        phase,
+      });
+      return true;
+    } else {
+      // 味方全員が行動した後だけ、敵側のターンを解決する。
+      phase = 'resolving';
+      const enemyActions = orderActions(livingOf(working, 'enemy').map((enemy) => decideEnemyAction(enemy, working)), working);
+      for (const enemyAction of enemyActions) {
+        if (isBattleOver(working)) break;
+        roundLog.push(...resolveAction(working, enemyAction));
+      }
+      if (isBattleOver(working)) {
+        phase = allyWon(working) ? 'won' : 'lost';
+        roundLog.push({ text: phase === 'won' ? '戦いに勝利した！' : '全滅してしまった……。' });
+      } else {
+        phase = 'input';
+      }
     }
 
     set({

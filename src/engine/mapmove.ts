@@ -99,8 +99,13 @@ export function resolveMove(prev: DungeonMap, dx: number, dy: number): MoveResul
       chest.opened = true;
       return { map, type: 'chest', entity: { ...chest } };
     }
-    if (target.kind === 'rest') return { map, type: 'rest', entity: target };
-    if (target.kind === 'memory') return { map, type: 'memory', entity: target };
+    // 休息碑・記憶は通路を塞ぐ障害物ではない。踏んだうえでイベントを発生させる。
+    if (target.kind === 'rest' || target.kind === 'memory') {
+      map.player.x = tx;
+      map.player.y = ty;
+      revealAround(map.visited, tx, ty);
+      return { map, type: target.kind, entity: target };
+    }
   }
 
   // 通常移動

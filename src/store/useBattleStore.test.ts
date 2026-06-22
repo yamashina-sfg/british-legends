@@ -26,11 +26,14 @@ describe('battle command input', () => {
     expect(useBattleStore.getState().currentActor()?.sourceId).toBe('beowulf_young');
     const firstActorUid = useBattleStore.getState().currentActor()!.uid;
     const enemyUid = useBattleStore.getState().livingEnemies()[0].uid;
+    const initialEnemyHp = useBattleStore.getState().livingEnemies()[0].hp;
     expect(useBattleStore.getState().chooseCommand(firstActorUid, { type: 'attack', targetUid: enemyUid })).toBe(true);
 
     expect(useBattleStore.getState().phase).toBe('input');
     expect(useBattleStore.getState().currentActor()?.sourceId).toBe('hamlet_prince');
-    expect(useBattleStore.getState().planned).toHaveLength(1);
+    expect(useBattleStore.getState().planned).toHaveLength(0);
+    expect(useBattleStore.getState().log.map((entry) => entry.text).join('\n')).toContain('Beowulf の攻撃！');
+    expect(useBattleStore.getState().livingEnemies()[0].hp).toBeLessThan(initialEnemyHp);
 
     expect(useBattleStore.getState().chooseCommand(firstActorUid, { type: 'attack', targetUid: enemyUid })).toBe(false);
     expect(useBattleStore.getState().currentActor()?.sourceId).toBe('hamlet_prince');
