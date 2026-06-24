@@ -7,8 +7,17 @@ import { Window } from '@/components/ui/Window';
 import { Gauge } from '@/components/ui/Gauge';
 import { Sprite } from '@/components/ui/Sprite';
 import type { Combatant } from '@/engine/battle';
+import beowulfAttackField from '@/assets/battle/beowulf-attack-field.png';
+import hamletAttackField from '@/assets/battle/hamlet-attack-field.png';
+import macbethAttackField from '@/assets/battle/macbeth-attack-field.png';
 
 type Mode = 'command' | 'skill' | 'item' | 'target';
+
+const ATTACK_FIELDS: Record<string, string> = {
+  Beowulf: beowulfAttackField,
+  Hamlet: hamletAttackField,
+  Macbeth: macbethAttackField,
+};
 
 export function BattleScene() {
   const { combatants, log, phase, currentActor, chooseCommand, lastAction } = useBattleStore();
@@ -22,6 +31,8 @@ export function BattleScene() {
   const enemies = combatants.filter((c) => c.side === 'enemy');
   const allies = combatants.filter((c) => c.side === 'ally');
   const actor = phase === 'input' ? currentActor() : undefined;
+  const actionActor = combatants.find((combatant) => combatant.uid === actionPoseUid);
+  const actionField = actionActor ? ATTACK_FIELDS[actionActor.name] : undefined;
   // actor が切り替わった瞬間は、前の仲間のターゲット選択画面を絶対に引き継がない。
   const visibleMode: Mode = modeActorUid === actor?.uid ? mode : 'command';
 
@@ -87,6 +98,7 @@ export function BattleScene() {
         <div className="battle-arena__ruin battle-arena__ruin--two" />
         <div className="battle-arena__back-plateau" />
         <div className="battle-arena__front-plateau" />
+        {actionField && <div className="battle-action-backdrop" style={{ backgroundImage: `url(${actionField})` }} />}
         <div className="battle-allies">
           {allies.map((a) => (
             <div key={a.uid} className={`battle-unit battle-unit--ally ${!a.alive ? 'is-fainted' : ''}`}>
