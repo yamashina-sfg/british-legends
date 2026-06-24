@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { useBattleStore } from '@/store/useBattleStore';
-import { getSkill, STORE_ITEMS } from '@/data';
+import { getEnemy, getSkill, STORE_ITEMS } from '@/data';
 import { Button } from '@/components/ui/Button';
 import { Window } from '@/components/ui/Window';
 import { Gauge } from '@/components/ui/Gauge';
@@ -33,6 +33,8 @@ export function BattleScene() {
   const actor = phase === 'input' ? currentActor() : undefined;
   const actionActor = combatants.find((combatant) => combatant.uid === actionPoseUid);
   const actionField = actionActor ? ATTACK_FIELDS[actionActor.name] : undefined;
+  const battlefieldWorld = enemies[0] ? getEnemy(enemies[0].sourceId).worldId : 'beowulf';
+  const battlefieldImage = ATTACK_FIELDS[battlefieldWorld === 'beowulf' ? 'Beowulf' : battlefieldWorld === 'hamlet' ? 'Hamlet' : 'Macbeth'];
   // actor が切り替わった瞬間は、前の仲間のターゲット選択画面を絶対に引き継がない。
   const visibleMode: Mode = modeActorUid === actor?.uid ? mode : 'command';
 
@@ -87,7 +89,8 @@ export function BattleScene() {
 
   return (
     <div className="battle-scene fade-in">
-      <div className="battle-arena" aria-label="battlefield">
+      <div className={`battle-arena battle-arena--${battlefieldWorld}`} aria-label="battlefield">
+        <div className="battle-field-backdrop" style={{ backgroundImage: `url(${battlefieldImage})` }} />
         <div className="battle-arena__sky" />
         <div className="battle-arena__ink-cloud battle-arena__ink-cloud--one" />
         <div className="battle-arena__ink-cloud battle-arena__ink-cloud--two" />
