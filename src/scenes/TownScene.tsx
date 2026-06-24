@@ -48,7 +48,7 @@ export function TownScene() {
           <span className="lodge-object__label"><b>図鑑の本棚</b><small>{discoveredEntries.length} / {totalCodexEntries} 冊</small></span>
         </button>
         <button className="lodge-object lodge-object--desk" onClick={() => openOverlay('evolution', 0)}>
-          <i /><span className="lodge-object__label">進化の机</span>
+          <i /><span className="lodge-object__label">進化の作業台</span>
         </button>
         <button className="lodge-object lodge-object--librarian" onClick={() => setMessage(HINTS[(rank + 1) % HINTS.length])}>
           <i /><span>司書</span>
