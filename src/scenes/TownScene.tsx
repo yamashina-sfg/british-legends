@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { MenuBar } from '@/components/common/MenuBar';
+import { CODEX } from '@/data';
 
 const HINTS = [
   '司書: 旅で見つけた素材は、机の上で進化の力に変えられます。',
@@ -14,6 +15,12 @@ export function TownScene() {
   if (!save) return null;
   const rank = Math.min(save.progress.clearedWorldIds.length, 3);
   const tiles = Array.from({ length: 120 });
+  const discoveredEntries = save.codex.discoveredIds
+    .map((id) => CODEX[id])
+    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
+  const totalCodexEntries = Object.keys(CODEX).length;
+  const bookshelfSlots = 24;
+  const filledBookCount = Math.round((discoveredEntries.length / totalCodexEntries) * bookshelfSlots);
 
   return (
     <>
@@ -34,7 +41,13 @@ export function TownScene() {
           <i /><span>ベッド</span>
         </button>
         <button className="lodge-object lodge-object--bookshelf" onClick={() => openOverlay('codex')}>
-          <i /><span>本棚</span>
+          <span className="lodge-bookshelf" aria-hidden="true">
+            {Array.from({ length: bookshelfSlots }, (_, index) => {
+              const entry = index < filledBookCount ? discoveredEntries[index % Math.max(1, discoveredEntries.length)] : null;
+              return <i key={index} className={`lodge-bookshelf__book ${entry ? `is-filled is-${entry.type}` : 'is-empty'}`} />;
+            })}
+          </span>
+          <span className="lodge-object__label"><b>図鑑の本棚</b><small>{discoveredEntries.length} / {totalCodexEntries} 冊</small></span>
         </button>
         <button className="lodge-object lodge-object--desk" onClick={() => openOverlay('evolution', 0)}>
           <i /><span>進化の机</span>
