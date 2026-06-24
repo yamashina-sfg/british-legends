@@ -1,8 +1,12 @@
+import beowulfMapSprite from '@/assets/characters/beowulf-map.png';
+import beowulfPortrait from '@/assets/characters/beowulf-portrait.png';
+
 interface Props {
   label: string;
   side?: 'ally' | 'enemy';
   size?: 'sm' | 'md' | 'lg';
   faint?: boolean;
+  presentation?: 'sprite' | 'portrait';
 }
 
 const sizeClass = { sm: 'sprite-sm', md: '', lg: 'sprite-lg' };
@@ -20,20 +24,32 @@ function spriteKind(label: string, side?: Props['side']) {
   return side === 'enemy' ? 'grendel' : 'wanderer';
 }
 
-export function Sprite({ label, side, size = 'md', faint }: Props) {
+export function Sprite({ label, side, size = 'md', faint, presentation = 'sprite' }: Props) {
   const kind = spriteKind(label, side);
   const sideClass = side ? `sprite-${side}` : '';
+  const isBeowulf = side !== 'enemy' && kind === 'wanderer' && label.toLowerCase().includes('beowulf');
+  const usesBeowulfArt = isBeowulf && presentation === 'sprite';
+  const usesBeowulfPortrait = isBeowulf && presentation === 'portrait';
   return (
     <div
       aria-label={label}
-      className={`sprite pixel-sprite ${sideClass} sprite-${kind} ${sizeClass[size]}`}
+      className={`sprite pixel-sprite ${sideClass} sprite-${kind} ${usesBeowulfArt ? 'sprite-beowulf-art' : ''} ${usesBeowulfPortrait ? 'sprite-beowulf-portrait' : ''} ${sizeClass[size]}`}
       style={faint ? { opacity: 0.25, filter: 'grayscale(1)' } : undefined}
     >
-      <span className="pixel-sprite__head" />
-      <span className="pixel-sprite__body" />
-      <span className="pixel-sprite__arm pixel-sprite__arm--left" />
-      <span className="pixel-sprite__arm pixel-sprite__arm--right" />
-      <span className="pixel-sprite__weapon" />
+      {usesBeowulfArt || usesBeowulfPortrait ? (
+        <span
+          className="pixel-sprite__generated-art"
+          style={{ backgroundImage: `url(${usesBeowulfPortrait ? beowulfPortrait : beowulfMapSprite})` }}
+        />
+      ) : (
+        <>
+          <span className="pixel-sprite__head" />
+          <span className="pixel-sprite__body" />
+          <span className="pixel-sprite__arm pixel-sprite__arm--left" />
+          <span className="pixel-sprite__arm pixel-sprite__arm--right" />
+          <span className="pixel-sprite__weapon" />
+        </>
+      )}
     </div>
   );
 }

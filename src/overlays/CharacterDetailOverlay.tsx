@@ -22,7 +22,7 @@ export function CharacterDetailOverlay() {
   return (
     <Window title={`${char.name} の詳細`} className="col">
       <div className="row" style={{ gap: 12 }}>
-        <Sprite label={char.name} side="ally" size="lg" />
+        <Sprite label={char.name} side="ally" size="lg" presentation="portrait" />
         <div className="col" style={{ flex: 1, gap: 4 }}>
           <div className="accent">{char.stageName}</div>
           <div className="small">Lv {owned.level}</div>
