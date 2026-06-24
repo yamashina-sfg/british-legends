@@ -2,10 +2,10 @@ import { useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { MenuBar } from '@/components/common/MenuBar';
 import { ObjectiveBanner } from '@/components/common/ObjectiveBanner';
-import { CODEX, getCharacter } from '@/data';
+import { getCharacter } from '@/data';
 import { getObjective } from '@/engine/objective';
 import { checkEvolution } from '@/engine/evolution';
-import bibliothecaCabinInterior from '@/assets/lodge/bibliotheca-cabin-interior.png';
+import bibliothecaCabinInterior from '@/assets/lodge/bibliotheca-cabin-interactive.png';
 
 const HINTS = [
   '司書: 旅で見つけた素材は、机の上で進化の力に変えられます。',
@@ -26,12 +26,6 @@ export function TownScene() {
   );
   const rank = Math.min(save.progress.clearedWorldIds.length, 3);
   const tiles = Array.from({ length: 120 });
-  const discoveredEntries = save.codex.discoveredIds
-    .map((id) => CODEX[id])
-    .filter((entry): entry is NonNullable<typeof entry> => Boolean(entry));
-  const totalCodexEntries = Object.keys(CODEX).length;
-  const bookshelfSlots = 24;
-  const filledBookCount = Math.round((discoveredEntries.length / totalCodexEntries) * bookshelfSlots);
 
   return (
     <>
@@ -46,21 +40,9 @@ export function TownScene() {
         <header className="lodge-room__title"><span>BIBLIOTHECA LODGE</span><strong>帰還の間</strong><b>修復した世界 {save.progress.clearedWorldIds.length}</b></header>
         <div className="lodge-room__hero"><i /><span>YOU</span></div>
 
-        <button className="lodge-object lodge-object--bed" onClick={() => { healParty(); setMessage(`ベッドで休んだ。${save.party.map((p) => getCharacter(p.characterId).name).join('・') || '仲間'} のHPとMPが全回復した。`); }}>
-          <i /><span className="lodge-object__label">休息のベッド</span>
-        </button>
-        <button className="lodge-object lodge-object--bookshelf" onClick={() => openOverlay('codex')}>
-          <span className="lodge-bookshelf" aria-hidden="true">
-            {Array.from({ length: bookshelfSlots }, (_, index) => {
-              const entry = index < filledBookCount ? discoveredEntries[index % Math.max(1, discoveredEntries.length)] : null;
-              return <i key={index} className={`lodge-bookshelf__book ${entry ? `is-filled is-${entry.type}` : 'is-empty'}`} />;
-            })}
-          </span>
-          <span className="lodge-object__label"><b>図鑑の本棚</b><small>{discoveredEntries.length} / {totalCodexEntries} 冊</small></span>
-        </button>
-        <button className="lodge-object lodge-object--desk" onClick={() => (evolvableIndex >= 0 ? openOverlay('evolution', evolvableIndex) : openOverlay('party'))}>
-          <i /><span className="lodge-object__label">進化の作業台</span>
-        </button>
+        <button className="lodge-hotspot lodge-hotspot--bed" aria-label="休息のベッド" title="休息のベッド" onClick={() => { healParty(); setMessage(`ベッドで休んだ。${save.party.map((p) => getCharacter(p.characterId).name).join('・') || '仲間'} のHPとMPが全回復した。`); }} />
+        <button className="lodge-hotspot lodge-hotspot--bookshelf" aria-label="図鑑の本棚" title="図鑑の本棚" onClick={() => openOverlay('codex')} />
+        <button className="lodge-hotspot lodge-hotspot--desk" aria-label="進化の作業台" title="進化の作業台" onClick={() => (evolvableIndex >= 0 ? openOverlay('evolution', evolvableIndex) : openOverlay('party'))} />
         <button className="lodge-object lodge-object--shop" onClick={() => openOverlay('store')}>
           <i /><span className="lodge-object__label"><b>武具商の棚</b><small>所持 {save.gold} G</small></span>
         </button>
