@@ -31,8 +31,6 @@ export function TownScene() {
         <i className="lodge-room__window"><b /><b /></i>
         <i className="lodge-room__curtain lodge-room__curtain--left" />
         <i className="lodge-room__curtain lodge-room__curtain--right" />
-        <i className="lodge-room__picture lodge-room__picture--one" />
-        <i className="lodge-room__picture lodge-room__picture--two" />
         <i className="lodge-room__rug" />
         <header className="lodge-room__title"><span>BIBLIOTHECA LODGE</span><strong>帰還の間</strong><b>修復した世界 {save.progress.clearedWorldIds.length}</b></header>
         <div className="lodge-room__hero"><i /><span>YOU</span></div>
@@ -59,10 +57,6 @@ export function TownScene() {
           <i /><span>ワールドポータル</span>
         </button>
 
-        <i className="lodge-upgrade lodge-upgrade--fireplace" aria-label="暖炉" />
-        {rank >= 1 && <i className="lodge-upgrade lodge-upgrade--plant" aria-label="観葉植物" />}
-        {rank >= 2 && <i className="lodge-upgrade lodge-upgrade--trophies" aria-label="トロフィー棚" />}
-        {rank >= 3 && <i className="lodge-upgrade lodge-upgrade--window" aria-label="修復されたステンドグラス" />}
         <div className="lodge-room__message rpg-window">{message}</div>
       </div>
       <MenuBar />
