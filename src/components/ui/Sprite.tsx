@@ -16,8 +16,8 @@ function spriteKind(label: string, side?: Props['side']) {
   const normalized = label.toLowerCase().replace(/[^a-z]/g, '');
   if (normalized.includes('dragon')) return 'dragon';
   if (normalized.includes('grendel')) return normalized.includes('mother') ? 'mother' : 'grendel';
-  if (normalized.includes('ghost')) return 'ghost';
   if (normalized.includes('banquo')) return 'banquo';
+  if (normalized.includes('ghost')) return 'ghost';
   if (normalized.includes('witch')) return 'witch';
   if (normalized.includes('guard') || normalized.includes('soldier')) return 'guard';
   if (normalized.includes('fate')) return 'fate';
@@ -31,12 +31,14 @@ export function Sprite({ label, side, size = 'md', faint, presentation = 'sprite
   const kind = spriteKind(label, side);
   const sideClass = side ? `sprite-${side}` : '';
   const playableKind = label.toLowerCase().includes('beowulf') ? 'beowulf' : label.toLowerCase().includes('hamlet') ? 'hamlet' : label.toLowerCase().includes('macbeth') ? 'macbeth' : kind;
-  const generatedArt = presentation === 'sprite' ? getCharacterArt(playableKind, pose) : undefined;
+  const generatedArt = presentation === 'sprite' || playableKind !== 'beowulf'
+    ? getCharacterArt(playableKind, presentation === 'portrait' ? 'idle' : pose)
+    : undefined;
   const usesBeowulfPortrait = presentation === 'portrait' && playableKind === 'beowulf';
   return (
     <div
       aria-label={label}
-      className={`sprite pixel-sprite ${sideClass} sprite-${kind} ${generatedArt ? 'sprite-generated' : ''} ${usesBeowulfPortrait ? 'sprite-beowulf-portrait' : ''} ${sizeClass[size]}`}
+      className={`sprite pixel-sprite ${sideClass} sprite-${kind} ${generatedArt ? 'sprite-generated' : ''} ${presentation === 'portrait' && generatedArt ? 'sprite-generated-portrait' : ''} ${usesBeowulfPortrait ? 'sprite-beowulf-portrait' : ''} ${sizeClass[size]}`}
       style={faint ? { opacity: 0.25, filter: 'grayscale(1)' } : undefined}
     >
       {generatedArt || usesBeowulfPortrait ? (

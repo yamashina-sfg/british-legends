@@ -387,6 +387,8 @@ body {
 .pixel-sprite span { position: absolute; display: block; image-rendering: pixelated; }
 .sprite-generated { overflow: visible; }
 .sprite-generated .pixel-sprite__generated-art { inset: -14% -22% -10%; background-repeat: no-repeat; background-position: center bottom; background-size: contain; }
+.sprite-generated-portrait { overflow: hidden; width: 132px; height: 132px; border: 3px solid #c49a58; background: #182526; }
+.sprite-generated-portrait .pixel-sprite__generated-art { inset: 2px; background-size: contain; }
 .sprite-beowulf-portrait { overflow: hidden; width: 132px; height: 132px; border: 3px solid #c49a58; background: #182526; }
 .sprite-beowulf-portrait .pixel-sprite__generated-art { inset: 0; background-repeat: no-repeat; background-position: center bottom; background-size: 128%; }
 .pixel-sprite__head { width: 30%; height: 22%; top: 8%; left: 35%; background: #f1c295; box-shadow: -8px 0 0 #34243b, 8px 0 0 #34243b, 0 -6px 0 #34243b; }
