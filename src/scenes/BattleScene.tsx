@@ -11,12 +11,13 @@ import type { Combatant } from '@/engine/battle';
 type Mode = 'command' | 'skill' | 'item' | 'target';
 
 export function BattleScene() {
-  const { combatants, log, phase, currentActor, chooseCommand } = useBattleStore();
+  const { combatants, log, phase, currentActor, chooseCommand, lastAction } = useBattleStore();
   const { onBattleWon, onBattleLost, save, consumeItem } = useGameStore();
   const [mode, setMode] = useState<Mode>('command');
   const [pendingSkillId, setPendingSkillId] = useState<string | null>(null);
   const [modeActorUid, setModeActorUid] = useState<string | null>(null);
   const [targetActorUid, setTargetActorUid] = useState<string | null>(null);
+  const [actionPoseUid, setActionPoseUid] = useState<string | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
   const enemies = combatants.filter((c) => c.side === 'enemy');
   const allies = combatants.filter((c) => c.side === 'ally');
@@ -36,6 +37,13 @@ export function BattleScene() {
       setTargetActorUid(null);
     }
   }, [phase, actor?.uid]);
+
+  useEffect(() => {
+    if (!lastAction) return;
+    setActionPoseUid(lastAction.actorUid);
+    const timeout = window.setTimeout(() => setActionPoseUid(null), 440);
+    return () => window.clearTimeout(timeout);
+  }, [lastAction]);
 
   const submitCommand = (command: Parameters<typeof chooseCommand>[1]) => {
     if (!actor) return false;
@@ -82,7 +90,7 @@ export function BattleScene() {
         <div className="battle-allies">
           {allies.map((a) => (
             <div key={a.uid} className={`battle-unit battle-unit--ally ${!a.alive ? 'is-fainted' : ''}`}>
-              <Sprite label={a.name} side="ally" size="lg" faint={!a.alive} />
+              <Sprite label={a.name} side="ally" size="lg" pose={!a.alive ? 'hurt' : actionPoseUid === a.uid ? 'attack' : 'idle'} faint={!a.alive} />
               <span>{a.name}</span>
             </div>
           ))}
@@ -96,7 +104,7 @@ export function BattleScene() {
               onClick={() => onSelectTarget(e)}
               className={`battle-unit battle-unit--enemy ${!e.alive ? 'is-fainted' : ''} ${visibleMode === 'target' && e.alive ? 'is-targetable' : ''}`}
             >
-              <Sprite label={e.name} side="enemy" size="lg" faint={!e.alive} />
+              <Sprite label={e.name} side="enemy" size="lg" pose={!e.alive ? 'hurt' : 'idle'} faint={!e.alive} />
               <span>{e.name}</span>
               {e.alive && <Gauge value={e.hp} max={e.maxHp} type="hp" />}
             </button>
