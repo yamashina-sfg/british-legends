@@ -38,7 +38,7 @@ export function Sprite({ label, side, size = 'md', faint, presentation = 'sprite
   return (
     <div
       aria-label={label}
-      className={`sprite pixel-sprite ${sideClass} sprite-${kind} ${generatedArt ? 'sprite-generated' : ''} ${presentation === 'portrait' && generatedArt ? 'sprite-generated-portrait' : ''} ${usesBeowulfPortrait ? 'sprite-beowulf-portrait' : ''} ${sizeClass[size]}`}
+      className={`sprite pixel-sprite ${sideClass} sprite-${kind} ${generatedArt ? `sprite-generated sprite-pose-${pose}` : ''} ${presentation === 'portrait' && generatedArt ? 'sprite-generated-portrait' : ''} ${usesBeowulfPortrait ? 'sprite-beowulf-portrait' : ''} ${sizeClass[size]}`}
       style={faint ? { opacity: 0.25, filter: 'grayscale(1)' } : undefined}
     >
       {generatedArt || usesBeowulfPortrait ? (

@@ -52,7 +52,7 @@ export function BattleScene() {
   useEffect(() => {
     if (!lastAction) return;
     setActionPoseUid(lastAction.actorUid);
-    const timeout = window.setTimeout(() => setActionPoseUid(null), 440);
+    const timeout = window.setTimeout(() => setActionPoseUid(null), 760);
     return () => window.clearTimeout(timeout);
   }, [lastAction]);
 
