@@ -5,7 +5,7 @@ import { ObjectiveBanner } from '@/components/common/ObjectiveBanner';
 import { getCharacter } from '@/data';
 import { getObjective } from '@/engine/objective';
 import { checkEvolution } from '@/engine/evolution';
-import bibliothecaCabinInterior from '@/assets/lodge/bibliotheca-cabin-interactive.png';
+import bibliothecaCabinInterior from '@/assets/lodge/bibliotheca-cabin-portal-v2.png';
 import { Sprite } from '@/components/ui/Sprite';
 
 const HINTS = [
@@ -53,9 +53,7 @@ export function TownScene() {
           <i /><span className="lodge-object__label"><b>武具商の棚</b><small>所持 {save.gold} G</small></span>
         </button>
         <button className="lodge-hotspot lodge-hotspot--librarian" aria-label="司書の助言" onClick={() => setMessage(HINTS[(rank + 1) % HINTS.length])}><span>司書の助言</span></button>
-        <button className="lodge-object lodge-object--portal" onClick={goWorldMap}>
-          <i /><span>ワールドポータル</span>
-        </button>
+        <button className="lodge-hotspot lodge-hotspot--portal" aria-label="ワールドポータル" onClick={goWorldMap}><span>ワールドポータル</span></button>
 
         <div className="lodge-room__objective"><ObjectiveBanner compact /></div>
         <div className="lodge-room__message rpg-window">{message}</div>
