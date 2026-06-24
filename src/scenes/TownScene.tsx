@@ -38,7 +38,7 @@ export function TownScene() {
         <div className="lodge-room__hero"><i /><span>YOU</span></div>
 
         <button className="lodge-object lodge-object--bed" onClick={() => { healParty(); setMessage('ベッドで休んだ。仲間のHPとMPが全回復した。'); }}>
-          <i /><span>ベッド</span>
+          <i /><span className="lodge-object__label">休息のベッド</span>
         </button>
         <button className="lodge-object lodge-object--bookshelf" onClick={() => openOverlay('codex')}>
           <span className="lodge-bookshelf" aria-hidden="true">
@@ -50,7 +50,7 @@ export function TownScene() {
           <span className="lodge-object__label"><b>図鑑の本棚</b><small>{discoveredEntries.length} / {totalCodexEntries} 冊</small></span>
         </button>
         <button className="lodge-object lodge-object--desk" onClick={() => openOverlay('evolution', 0)}>
-          <i /><span>進化の机</span>
+          <i /><span className="lodge-object__label">進化の机</span>
         </button>
         <button className="lodge-object lodge-object--librarian" onClick={() => setMessage(HINTS[(rank + 1) % HINTS.length])}>
           <i /><span>司書</span>
