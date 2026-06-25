@@ -536,7 +536,7 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
 @media (max-width: 700px) { .lodge-object--bookshelf { left: 21%; top: 18%; transform: scale(.72); transform-origin: top left; }.lodge-object--bed { left: 6%; bottom: 18%; transform: scale(.72); transform-origin: bottom left; }.lodge-object--desk { right: 7%; bottom: 20%; transform: scale(.7); transform-origin: bottom right; } }
 
 /* Bibliotheca Lodge: the return room now reads as a real timber cabin, not a flat UI chamber. */
-.lodge-room--cabin { background-color: #201712; background-position: center; background-size: cover; background-repeat: no-repeat; }
+.lodge-room--cabin { background-color: #201712; background-image: var(--lodge-bg-desktop); background-position: center; background-size: cover; background-repeat: no-repeat; }
 .lodge-room--cabin .lodge-room__wall,
 .lodge-room--cabin .lodge-room__floor,
 .lodge-room--cabin .lodge-room__ceiling-beam,
@@ -669,7 +669,7 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
   }
 }
 
-@media (hover: none) and (orientation: landscape) and (max-height: 520px) {
+@media (hover: none) and (orientation: landscape) and (max-width: 1200px), (hover: none) and (orientation: landscape) and (max-height: 700px) {
   body {
     overflow: hidden;
   }
@@ -697,8 +697,23 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
     font-size: 10px;
   }
 
+  .audio-toggle {
+    top: 8px;
+    right: 10px;
+    width: 30px;
+    height: 30px;
+  }
+
+  .scene {
+    padding: 6px 8px;
+    gap: 6px;
+    overflow: hidden;
+  }
+
   .lodge-room--cabin {
     min-height: 0;
+    height: calc(100dvh - 48px);
+    background-image: var(--lodge-bg-mobile);
     background-size: cover;
     background-position: center;
   }
@@ -709,15 +724,151 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
   }
 
   .lodge-room--cabin .lodge-room__message {
-    bottom: 3%;
-    max-height: 58px;
+    left: 4.8%;
+    right: 4.8%;
+    bottom: 5%;
+    max-height: 64px;
     padding: 8px 12px;
     font-size: 10px;
   }
 
   .lodge-party-figures {
-    bottom: 17%;
+    left: 43%;
+    bottom: 18%;
     transform: scale(.72);
     transform-origin: bottom left;
+  }
+
+  .lodge-hotspot--bed { left: 0; top: 48%; width: 31%; height: 39%; }
+  .lodge-hotspot--bookshelf { left: 66%; top: 4%; width: 34%; height: 58%; }
+  .lodge-hotspot--desk { left: 66%; top: 52%; width: 34%; height: 39%; }
+  .lodge-hotspot--portal { left: 57%; top: 12%; width: 12%; height: 47%; }
+  .lodge-hotspot--librarian { left: 39%; top: 37%; width: 18%; height: 27%; }
+
+  .dungeon-rpg-scene {
+    position: relative;
+    max-width: none;
+    height: calc(100dvh - 48px);
+    padding: 6px 8px;
+    gap: 5px !important;
+    overflow: hidden;
+  }
+
+  .dungeon-hud {
+    grid-template-columns: 1.1fr 1.4fr .55fr;
+    gap: 7px;
+    padding: 7px 9px;
+  }
+
+  .dungeon-hud strong {
+    font-size: 11px;
+  }
+
+  .dungeon-hud small,
+  .dungeon-hud span {
+    font-size: 8px;
+  }
+
+  .dungeon-stage {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(150px, 22vw);
+    gap: 8px;
+    align-items: stretch;
+  }
+
+  .dungeon-stage .dungeon-map {
+    max-width: 100%;
+    max-height: 100%;
+    transform: scale(.86);
+    transform-origin: top center;
+  }
+
+  .dungeon-stage__sidebar {
+    padding: 8px;
+    gap: 5px;
+    font-size: 9px;
+    overflow: hidden;
+  }
+
+  .dungeon-stage__sidebar .party-status,
+  .dungeon-stage__sidebar .row {
+    gap: 4px !important;
+  }
+
+  .map-legend {
+    display: none;
+  }
+
+  .dpad {
+    position: absolute;
+    z-index: 15;
+    right: 14px;
+    bottom: 54px;
+    grid-template-columns: repeat(3, 34px);
+    grid-template-rows: repeat(3, 34px);
+    gap: 3px;
+    opacity: .92;
+  }
+
+  .dpad button {
+    font-size: 14px;
+    background: rgba(34, 43, 44, .88);
+  }
+
+  .dungeon-rpg-scene > .btn {
+    min-height: 34px;
+    padding: 7px 10px;
+    font-size: 11px;
+  }
+
+  .world-rpg-screen,
+  .journey-screen {
+    height: calc(100dvh - 48px);
+    min-height: 0;
+    grid-template-columns: minmax(190px, 24vw) minmax(0, 1fr);
+    gap: 8px;
+    padding: 8px;
+    overflow: hidden;
+  }
+
+  .journey-sidebar,
+  .world-sidebar {
+    min-height: 0;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .journey-sidebar__title,
+  .world-sidebar__title {
+    font-size: 15px;
+  }
+
+  .journey-map,
+  .world-atlas {
+    min-height: 0;
+  }
+
+  .journey-map--art {
+    background-size: cover;
+    background-position: center;
+  }
+
+  .battle-scene {
+    height: calc(100dvh - 48px);
+    grid-template-rows: minmax(210px, 1fr) auto 74px;
+  }
+
+  .battle-hud {
+    grid-template-columns: minmax(0, 1fr) minmax(220px, .75fr);
+    gap: 7px;
+    padding: 6px 8px;
+  }
+
+  .battle-message-window {
+    margin: 0 8px 8px;
+    padding: 8px 12px;
+    font-size: 11px;
   }
 }

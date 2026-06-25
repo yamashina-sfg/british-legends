@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { MenuBar } from '@/components/common/MenuBar';
 import { ObjectiveBanner } from '@/components/common/ObjectiveBanner';
@@ -6,6 +6,7 @@ import { getCharacter } from '@/data';
 import { getObjective } from '@/engine/objective';
 import { checkEvolution } from '@/engine/evolution';
 import bibliothecaCabinInterior from '@/assets/lodge/bibliotheca-cabin-portal-v2.png';
+import bibliothecaCabinMobile from '@/assets/lodge/bibliotheca-cabin-mobile-landscape-v1.png';
 import { Sprite } from '@/components/ui/Sprite';
 
 const HINTS = [
@@ -30,7 +31,13 @@ export function TownScene() {
 
   return (
     <>
-      <div className={`lodge-room lodge-room--cabin lodge-rank-${rank} fade-in`} style={{ backgroundImage: `url(${bibliothecaCabinInterior})` }}>
+      <div
+        className={`lodge-room lodge-room--cabin lodge-rank-${rank} fade-in`}
+        style={{
+          '--lodge-bg-desktop': `url(${bibliothecaCabinInterior})`,
+          '--lodge-bg-mobile': `url(${bibliothecaCabinMobile})`,
+        } as CSSProperties}
+      >
         <div className="lodge-room__wall" />
         <div className="lodge-room__floor">{tiles.map((_, index) => <i key={index} />)}</div>
         <i className="lodge-room__ceiling-beam" />
