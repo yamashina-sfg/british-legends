@@ -52,7 +52,9 @@ export function DungeonScene() {
         </div>
 
         <div className="dungeon-stage">
-          <DungeonMap map={map} />
+          <div className="dungeon-map-frame" aria-label="ダンジョンマップ">
+            <DungeonMap map={map} />
+          </div>
           <aside className="dungeon-stage__sidebar rpg-window">
             <span className="dungeon-sidebar__label">PARTY</span>
             <PartyStatusBar />

@@ -7,6 +7,7 @@ import { getObjective } from '@/engine/objective';
 import { checkEvolution } from '@/engine/evolution';
 import bibliothecaCabinInterior from '@/assets/lodge/bibliotheca-cabin-portal-v2.png';
 import bibliothecaCabinMobile from '@/assets/lodge/bibliotheca-cabin-mobile-landscape-v1.png';
+import bibliothecaCabinPortrait from '@/assets/lodge/bibliotheca-cabin-mobile-portrait-v1.png';
 import { Sprite } from '@/components/ui/Sprite';
 
 const HINTS = [
@@ -36,6 +37,7 @@ export function TownScene() {
         style={{
           '--lodge-bg-desktop': `url(${bibliothecaCabinInterior})`,
           '--lodge-bg-mobile': `url(${bibliothecaCabinMobile})`,
+          '--lodge-bg-portrait': `url(${bibliothecaCabinPortrait})`,
         } as CSSProperties}
       >
         <div className="lodge-room__wall" />

@@ -72,14 +72,6 @@ export default function App() {
         <OverlayHost />
         <AudioManager />
       </div>
-      <aside className="rotate-device">
-        <div className="rotate-device__panel">
-          <span>BIBLIOTHECA LODGE</span>
-          <strong>横向きでプレイしてください</strong>
-          <p>このRPGは横持ち画面に合わせて、背景・キャラ・操作範囲を調整しています。</p>
-          <i />
-        </div>
-      </aside>
     </AppErrorBoundary>
   );
 }
