@@ -11,7 +11,7 @@ const ITEMS: { key: 'party' | 'store' | 'materials' | 'codex' | 'settings'; labe
 export function MenuBar() {
   const openOverlay = useGameStore((s) => s.openOverlay);
   return (
-    <div className="row" style={{ gap: 6, padding: '8px 12px', borderTop: '2px solid var(--border)' }}>
+    <div className="menu-bar">
       {ITEMS.map((it) => (
         <button key={it.key} className="btn btn-center small" onClick={() => openOverlay(it.key)}>
           {it.label}

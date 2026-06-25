@@ -61,6 +61,15 @@ body {
   overflow: hidden;
 }
 
+.menu-bar {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  padding: 8px 12px;
+  border-top: 2px solid var(--border);
+  background: #161d1b;
+}
+
 /* DQ風ウィンドウ */
 .window {
   background: #29253c;
@@ -534,17 +543,17 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
 .lodge-room--cabin .lodge-object--bookshelf { left: 61%; top: 25%; }.lodge-room--cabin .lodge-object--bed { left: 25%; bottom: 18%; }.lodge-room--cabin .lodge-object--desk { right: 17%; bottom: 18%; }.lodge-room--cabin .lodge-object--portal { right: 5%; top: 20%; }.lodge-room--cabin .lodge-object--librarian { left: 48%; top: 42%; }.lodge-room--cabin .lodge-object--shop { left: 7%; right: auto; bottom: 18%; }.lodge-room--cabin .lodge-room__hero { left: 47%; bottom: 24%; }.lodge-room--cabin .lodge-room__message { background: rgba(22, 15, 11, .9); border-color: #c8a469; }
 @media (max-width: 700px) { .lodge-room--cabin { background-position: 42% center; }.lodge-room--cabin .lodge-object--bookshelf { left: 58%; top: 28%; }.lodge-room--cabin .lodge-object--bed { left: 17%; bottom: 18%; }.lodge-room--cabin .lodge-object--desk { right: 4%; bottom: 19%; }.lodge-room--cabin .lodge-object--shop { left: 4%; bottom: 17%; }.lodge-room--cabin .lodge-room__hero { left: 45%; } }
 
-/* The visible furniture is painted into the cabin background; these buttons are its exact interaction zones. */
+/* The visible furniture is painted into the cabin background; these buttons are its interaction zones. */
 .lodge-room--cabin .lodge-object--bed,
 .lodge-room--cabin .lodge-object--bookshelf,
 .lodge-room--cabin .lodge-object--desk { display: none; }
 .lodge-hotspot { position: absolute; z-index: 8; display: block; padding: 0; border: 0; background: transparent; cursor: pointer; }
 .lodge-hotspot--bed { left: 2%; top: 57%; width: 31%; height: 30%; }.lodge-hotspot--bookshelf { left: 68%; top: 4%; width: 31%; height: 53%; }.lodge-hotspot--desk { left: 68%; top: 52%; width: 31%; height: 42%; }
 .lodge-hotspot--portal { left: 59%; top: 8%; width: 10%; height: 45%; }
-.lodge-hotspot--librarian { left: 43%; top: 36%; width: 14%; height: 23%; }.lodge-hotspot > span { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); min-width: max-content; padding: 3px 6px; color: #f3dfaa; background: rgba(28, 19, 13, .9); border: 1px solid #b48b4c; font: 10px var(--font); line-height: 1; white-space: nowrap; }.lodge-hotspot:hover { box-shadow: inset 0 0 0 3px rgba(235, 198, 104, .55); }.lodge-hotspot:focus-visible { outline: 3px solid #f0ca68; outline-offset: -3px; }
+.lodge-hotspot--librarian { left: 43%; top: 36%; width: 14%; height: 23%; }.lodge-hotspot > span { position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); min-width: max-content; padding: 3px 6px; color: #f3dfaa; background: rgba(28, 19, 13, .9); border: 1px solid #b48b4c; font: 10px var(--font); line-height: 1; white-space: nowrap; }.lodge-hotspot:focus-visible { outline: 3px solid #f0ca68; outline-offset: -3px; }
 .lodge-party-figures { position: absolute; z-index: 6; left: 42%; bottom: 19%; display: flex; align-items: end; gap: 7px; pointer-events: none; }.lodge-party-figures .sprite { filter: drop-shadow(3px 4px 0 rgba(12, 8, 5, .7)); }.lodge-party-figures .sprite-generated { overflow: visible; }.lodge-party-figures .pixel-sprite__generated-art { inset: -6% -12%; }
 .lodge-room--cabin .lodge-room__objective { display: none; }
-@media (max-width: 700px) { .lodge-hotspot--bed { left: 0; top: 57%; width: 36%; height: 31%; }.lodge-hotspot--bookshelf { left: 66%; top: 3%; width: 34%; height: 55%; }.lodge-hotspot--desk { left: 65%; top: 52%; width: 35%; height: 43%; }.lodge-hotspot--librarian { left: 40%; top: 37%; width: 20%; height: 21%; }.lodge-party-figures { left: 38%; bottom: 18%; gap: 2px; transform: scale(.8); transform-origin: bottom left; } }
+@media (max-width: 700px) { .lodge-room--cabin { min-height: calc(100dvh - 172px); background-size: contain; background-position: center top; }.lodge-room--cabin .lodge-room__title { left: 4%; top: 4%; max-width: 44%; transform: scale(.86); transform-origin: top left; }.lodge-room--cabin .lodge-room__message { left: 3%; right: 3%; bottom: 3%; max-height: 86px; padding: 9px 10px; font-size: 10px; }.lodge-hotspot > span { font-size: 8px; padding: 2px 4px; }.lodge-hotspot--bed { left: 0; top: 58%; width: 34%; height: 27%; }.lodge-hotspot--bookshelf { left: 66%; top: 5%; width: 33%; height: 48%; }.lodge-hotspot--desk { left: 69%; top: 57%; width: 30%; height: 30%; }.lodge-hotspot--portal { left: 57%; top: 17%; width: 13%; height: 32%; }.lodge-hotspot--librarian { left: 39%; top: 34%; width: 21%; height: 22%; }.lodge-hotspot--librarian::after { content: none; }.lodge-party-figures { left: 38%; bottom: 19%; gap: 0; transform: scale(.7); transform-origin: bottom left; } }
 
 /* Painted world maps keep the travel route visible while buttons remain exact hotspots. */
 .journey-map--art { background-color: #1a2620; background-position: center; background-size: cover; background-repeat: no-repeat; image-rendering: pixelated; }
@@ -564,8 +573,13 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
 .journey-map__party .pixel-sprite__generated-art { inset: -8% -18%; }
 
 @media (max-width: 700px) {
+  body { overflow: auto; }
+  #root { align-items: flex-start; }
+  .game-frame { width: 100vw; min-height: 100dvh; height: auto; border-width: 0; box-shadow: none; overflow: visible; }
+  .menu-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; padding: 7px 8px max(7px, env(safe-area-inset-bottom)); position: sticky; bottom: 0; z-index: 30; }
+  .menu-bar .btn { min-height: 42px; padding: 9px 5px; font-size: 11px; }
   .journey-map--art .journey-stop--lodge { left: calc(50% - 70px); top: 14%; }
   .journey-map--art .journey-stop--world { left: calc(50% - 70px); top: 78%; }
   .journey-map__party { left: 42%; top: 49%; gap: 0; transform: scale(.85); transform-origin: top left; }
-  .lodge-hotspot--portal { left: 57%; top: 7%; width: 13%; height: 46%; }
+  .lodge-hotspot--portal { left: 57%; top: 17%; width: 13%; height: 32%; }
 }

@@ -52,7 +52,7 @@ export function TownScene() {
         <button className="lodge-object lodge-object--shop" onClick={() => openOverlay('store')}>
           <i /><span className="lodge-object__label"><b>武具商の棚</b><small>所持 {save.gold} G</small></span>
         </button>
-        <button className="lodge-hotspot lodge-hotspot--librarian" aria-label="司書の助言" onClick={() => setMessage(HINTS[(rank + 1) % HINTS.length])}><span>司書の助言</span></button>
+        <button className="lodge-hotspot lodge-hotspot--librarian" aria-label="司書の助言" onClick={() => setMessage(HINTS[(rank + 1) % HINTS.length])} />
         <button className="lodge-hotspot lodge-hotspot--portal" aria-label="ワールドポータル" onClick={goWorldMap}><span>ワールドポータル</span></button>
 
         <div className="lodge-room__objective"><ObjectiveBanner compact /></div>
