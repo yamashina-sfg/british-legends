@@ -59,19 +59,27 @@ export default function App() {
 
   return (
     <AppErrorBoundary>
-    <div className="game-frame">
-      {scene === 'title' && <TitleScene />}
-      {scene === 'saveSelect' && <SaveSelectScene />}
-      {scene === 'worldMap' && <WorldMapScene />}
-      {scene === 'worldSelect' && <WorldSelectScene />}
-      {scene === 'town' && <TownScene />}
-      {scene === 'dungeon' && <DungeonScene />}
-      {scene === 'battle' && <BattleScene />}
-      {scene === 'gameOver' && <GameOverScene />}
-      {scene === 'worldClear' && <WorldClearScene />}
-      <OverlayHost />
-      <AudioManager />
-    </div>
+      <div className="game-frame">
+        {scene === 'title' && <TitleScene />}
+        {scene === 'saveSelect' && <SaveSelectScene />}
+        {scene === 'worldMap' && <WorldMapScene />}
+        {scene === 'worldSelect' && <WorldSelectScene />}
+        {scene === 'town' && <TownScene />}
+        {scene === 'dungeon' && <DungeonScene />}
+        {scene === 'battle' && <BattleScene />}
+        {scene === 'gameOver' && <GameOverScene />}
+        {scene === 'worldClear' && <WorldClearScene />}
+        <OverlayHost />
+        <AudioManager />
+      </div>
+      <aside className="rotate-device">
+        <div className="rotate-device__panel">
+          <span>BIBLIOTHECA LODGE</span>
+          <strong>横向きでプレイしてください</strong>
+          <p>このRPGは横持ち画面に合わせて、背景・キャラ・操作範囲を調整しています。</p>
+          <i />
+        </div>
+      </aside>
     </AppErrorBoundary>
   );
 }

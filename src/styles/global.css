@@ -70,6 +70,10 @@ body {
   background: #161d1b;
 }
 
+.rotate-device {
+  display: none;
+}
+
 /* DQ風ウィンドウ */
 .window {
   background: #29253c;
@@ -582,4 +586,138 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
   .journey-map--art .journey-stop--world { left: calc(50% - 70px); top: 78%; }
   .journey-map__party { left: 42%; top: 49%; gap: 0; transform: scale(.85); transform-origin: top left; }
   .lodge-hotspot--portal { left: 57%; top: 17%; width: 13%; height: 32%; }
+}
+
+@media (hover: none) and (orientation: portrait) and (max-width: 900px) {
+  body {
+    overflow: hidden;
+  }
+
+  .game-frame {
+    filter: blur(2px) brightness(.45);
+    pointer-events: none;
+  }
+
+  .rotate-device {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(6, 5, 10, .72);
+  }
+
+  .rotate-device__panel {
+    width: min(330px, 92vw);
+    display: grid;
+    justify-items: center;
+    gap: 12px;
+    padding: 22px 18px;
+    color: #f3e6c2;
+    text-align: center;
+    background: #202b28;
+    border: 3px solid #e7d8b8;
+    box-shadow: 0 0 0 4px #151111, inset 0 0 0 2px #8f6570;
+  }
+
+  .rotate-device__panel span {
+    color: #d6b45f;
+    font-size: 11px;
+    letter-spacing: 2px;
+  }
+
+  .rotate-device__panel strong {
+    color: #f5d172;
+    font-size: 18px;
+    line-height: 1.45;
+  }
+
+  .rotate-device__panel p {
+    color: #cfc4a8;
+    font-size: 12px;
+    line-height: 1.7;
+  }
+
+  .rotate-device__panel i {
+    position: relative;
+    width: 92px;
+    height: 52px;
+    border: 5px solid #d7c391;
+    box-shadow: inset 0 0 0 4px #4e3d38, 0 6px #111717;
+  }
+
+  .rotate-device__panel i::before {
+    content: '';
+    position: absolute;
+    left: 9px;
+    right: 9px;
+    top: 10px;
+    bottom: 10px;
+    background: #6a95a0;
+    box-shadow: inset 0 0 0 3px #21333b;
+  }
+
+  .rotate-device__panel i::after {
+    content: '↻';
+    position: absolute;
+    right: -13px;
+    top: -18px;
+    color: #f1cc67;
+    font-size: 22px;
+    text-shadow: 2px 2px #151111;
+  }
+}
+
+@media (hover: none) and (orientation: landscape) and (max-height: 520px) {
+  body {
+    overflow: hidden;
+  }
+
+  #root {
+    align-items: stretch;
+  }
+
+  .game-frame {
+    width: 100vw;
+    height: 100dvh;
+    border-width: 0;
+    box-shadow: none;
+  }
+
+  .menu-bar {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+    padding: 6px 8px;
+  }
+
+  .menu-bar .btn {
+    min-height: 34px;
+    padding: 7px 5px;
+    font-size: 10px;
+  }
+
+  .lodge-room--cabin {
+    min-height: 0;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .lodge-room--cabin .lodge-room__title {
+    transform: scale(.86);
+    transform-origin: top left;
+  }
+
+  .lodge-room--cabin .lodge-room__message {
+    bottom: 3%;
+    max-height: 58px;
+    padding: 8px 12px;
+    font-size: 10px;
+  }
+
+  .lodge-party-figures {
+    bottom: 17%;
+    transform: scale(.72);
+    transform-origin: bottom left;
+  }
 }
