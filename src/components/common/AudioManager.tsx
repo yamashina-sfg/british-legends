@@ -9,6 +9,10 @@ type TrackName = 'title' | 'opening' | 'lodge' | 'world' | 'dungeon' | 'battle' 
 
 const STORAGE_KEY = 'british-legends:bgm-enabled';
 
+const FILE_TRACKS: Partial<Record<TrackName, { src: string; volume: number; loop: boolean }>> = {
+  opening: { src: '/audio/opening-suite.wav', volume: 0.42, loop: true },
+};
+
 function trackForScene(scene: Scene): TrackName {
   if (scene === 'opening') return 'opening';
   if (scene === 'battle') return 'battle';
@@ -86,6 +90,9 @@ function playTone(
 
 function startTrack(ctx: AudioContext, scene: Scene) {
   const track = trackForScene(scene);
+  if (FILE_TRACKS[track]) {
+    return () => {};
+  }
   const master = makeGain(ctx, track === 'battle' ? 0.16 : 0.12, ctx.destination);
   const stops: Array<() => void> = [];
   const timers: number[] = [];
@@ -171,15 +178,53 @@ export function AudioManager() {
   const scene = useGameStore((state) => state.scene);
   const [enabled, setEnabled] = useState(() => localStorage.getItem(STORAGE_KEY) !== 'off');
   const contextRef = useRef<AudioContext | null>(null);
+  const fileAudioRef = useRef<HTMLAudioElement | null>(null);
   const stopRef = useRef<() => void>(() => {});
 
   const stopCurrent = useCallback(() => {
     stopRef.current();
     stopRef.current = () => {};
+    const audio = fileAudioRef.current;
+    if (audio) {
+      const startVolume = audio.volume;
+      const fadeStartedAt = performance.now();
+      const fade = () => {
+        const progress = Math.min(1, (performance.now() - fadeStartedAt) / 420);
+        audio.volume = Math.max(0, startVolume * (1 - progress));
+        if (progress < 1 && !audio.paused) {
+          window.requestAnimationFrame(fade);
+          return;
+        }
+        audio.pause();
+        audio.currentTime = 0;
+      };
+      fade();
+      fileAudioRef.current = null;
+    }
   }, []);
 
   const startCurrent = useCallback(async () => {
     if (!enabled) return;
+    const fileTrack = FILE_TRACKS[trackForScene(scene)];
+    if (fileTrack) {
+      stopCurrent();
+      const audio = new Audio(fileTrack.src);
+      audio.loop = fileTrack.loop;
+      audio.volume = 0;
+      audio.preload = 'auto';
+      fileAudioRef.current = audio;
+      stopRef.current = () => {};
+      await audio.play().catch(() => undefined);
+      const fadeStartedAt = performance.now();
+      const fade = () => {
+        if (fileAudioRef.current !== audio || audio.paused) return;
+        const progress = Math.min(1, (performance.now() - fadeStartedAt) / 900);
+        audio.volume = fileTrack.volume * progress;
+        if (progress < 1) window.requestAnimationFrame(fade);
+      };
+      fade();
+      return;
+    }
     const ctx = contextRef.current ?? createContext();
     if (!ctx) return;
     contextRef.current = ctx;
