@@ -165,11 +165,14 @@ export function BattleScene() {
                 <div className="row"><strong>{a.name}</strong><span className="spacer" />{actor?.uid === a.uid && phase === 'input' && <span className="cursor">▶</span>}</div>
                 {(() => {
                   const character = getCharacter(a.sourceId);
+                  const flaw = a.tragicFlaw?.flaw ?? character.tragicFlaw;
+                  const meter = a.tragicFlaw?.flaw.meter;
+                  const meterValue = a.tragicFlaw?.state.meter ?? 0;
                   return (
                     <div className="battle-role-line">
                       <span>{character.role ?? 'Adventurer'}</span>
-                      {character.tragicFlaw && <b>宿命: {character.tragicFlaw.name}</b>}
-                      {a.tragicCharge > 0 && <em>逡巡 {a.tragicCharge}/3</em>}
+                      {flaw && <b title={flaw.description}>{flaw.icon} Tragic Flaw: {flaw.theme}</b>}
+                      {meter && <em>{meter.label} {meterValue}/{meter.max}</em>}
                     </div>
                   );
                 })()}

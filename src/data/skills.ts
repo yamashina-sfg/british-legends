@@ -44,6 +44,15 @@ export const SKILLS: Record<string, Skill> = {
     power: 6,
     description: '守りを固めながら敵の視線を引く。Beowulfを前線の支柱にする。',
   },
+  last_stand: {
+    id: 'last_stand',
+    name: 'Last Stand',
+    type: 'attack',
+    target: 'single',
+    mpCost: 6,
+    power: 2.1,
+    description: '最後の力で叩き込む一撃。HPが少ないほど威力が上がる。',
+  },
   dragon_slash: {
     id: 'dragon_slash',
     name: 'ドラゴンスレイヤー',
@@ -101,6 +110,15 @@ export const SKILLS: Record<string, Skill> = {
     mpCost: 0,
     power: 12,
     description: 'HPを犠牲に攻撃力を大きく上げる。短期決戦向け。',
+  },
+  bloody_crown: {
+    id: 'bloody_crown',
+    name: 'Bloody Crown',
+    type: 'attack',
+    target: 'single',
+    mpCost: 0,
+    power: 2.6,
+    description: '自身のHP20%を代償に、血塗られた王冠の一撃を放つ。',
   },
   prophecy: {
     id: 'prophecy',

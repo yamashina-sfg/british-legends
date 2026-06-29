@@ -27,6 +27,71 @@ export interface Skill {
   description: string;
 }
 
+// --- Tragic Flaw System ------------------------------------
+export type FlawStatKey = 'atk' | 'def' | 'spd';
+
+export type TragicFlawEffect =
+  | {
+      type: 'statMultiplier';
+      stat: FlawStatKey;
+      multiplier: number;
+      when: 'hpBelowRatio' | 'bossBattle';
+      thresholdRatio?: number;
+    }
+  | {
+      type: 'meterOnCommand';
+      command: 'defend';
+      amount: number;
+    }
+  | {
+      type: 'consumeMeterForDamage';
+      minMultiplier: number;
+      maxMultiplier: number;
+      requireFullMeter?: boolean;
+    }
+  | {
+      type: 'hpCost';
+      ratio: number;
+    }
+  | {
+      type: 'damageByMissingHp';
+      maxBonusMultiplier: number;
+    }
+  | {
+      type: 'atkMultiplierByHpSpent';
+      stepRatio: number;
+      multiplierPerStep: number;
+      maxMultiplier: number;
+    };
+
+export interface TragicFlawSection {
+  name: string;
+  description: string;
+  effects: TragicFlawEffect[];
+}
+
+export interface TragicFlaw {
+  id: string;
+  theme: string;
+  icon: string;
+  description: string;
+  meter?: {
+    label: string;
+    max: number;
+    startsAt?: number;
+  };
+  tragicFlaw: TragicFlawSection;
+  passiveAbility: TragicFlawSection;
+  activeSkill: TragicFlawSection & {
+    skillId: string;
+  };
+  battleTrait: TragicFlawSection;
+  awakeningCondition: {
+    name: string;
+    description: string;
+  };
+}
+
 // --- 素材 ---------------------------------------------------
 export interface Material {
   id: string;
@@ -87,10 +152,7 @@ export interface Character {
   /** 戦闘での役割。UIとスキル設計の目印に使う。 */
   role?: 'Tank' | 'Attacker' | 'Support' | 'Magic';
   /** 文学テーマを戦闘ルール化した固有宿命。 */
-  tragicFlaw?: {
-    name: string;
-    description: string;
-  };
+  tragicFlaw?: TragicFlaw;
   /** 次段階への進化条件（最終段階は null） */
   evolution: EvolutionStep | null;
 }

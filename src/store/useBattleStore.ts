@@ -11,6 +11,7 @@ import {
   resetRoundFlags,
   resolveAction,
 } from '@/engine/battle';
+import { cloneFlawRuntime } from '@/engine/tragicFlaw';
 import type { OwnedCharacter } from '@/types';
 
 export type BattlePhase = 'input' | 'resolving' | 'won' | 'lost';
@@ -46,7 +47,7 @@ const nextLivingTurnIndex = (turnActorUids: string[], combatants: Combatant[], s
 const ENEMY_TURN_DELAY_MS = 760;
 
 const cloneCombatants = (combatants: Combatant[]) =>
-  combatants.map((combatant) => ({ ...combatant, stats: { ...combatant.stats } }));
+  combatants.map((combatant) => ({ ...combatant, stats: { ...combatant.stats }, tragicFlaw: cloneFlawRuntime(combatant.tragicFlaw) }));
 
 const resolveEnemyCounter = (combatants: Combatant[]) => {
   const enemyAction = orderActions(
@@ -75,7 +76,7 @@ export const useBattleStore = create<BattleState>((set, get) => ({
   lastAction: null,
 
   start: (party, enemyIds, isBoss) => {
-    const allies = party.filter((p) => p.currentHp > 0).map(combatantFromOwned);
+    const allies = party.filter((p) => p.currentHp > 0).map((member, index) => combatantFromOwned(member, index, isBoss));
     const enemies = buildEnemyCombatants(enemyIds);
     set({
       active: true,

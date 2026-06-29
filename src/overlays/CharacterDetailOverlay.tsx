@@ -45,6 +45,30 @@ export function CharacterDetailOverlay() {
         装備: {owned.equippedWeaponId ? getEquipment(owned.equippedWeaponId).name : 'なし'} / {owned.equippedArmorId ? getEquipment(owned.equippedArmorId).name : 'なし'} / {owned.equippedAccessoryId ? getEquipment(owned.equippedAccessoryId).name : 'なし'}
       </div>
 
+      {char.tragicFlaw && (
+        <div className="tragic-flaw-detail">
+          <div className="tragic-flaw-detail__header">
+            <span className="tragic-flaw-icon">{char.tragicFlaw.icon}</span>
+            <div>
+              <div className="window-title">Tragic Flaw: {char.tragicFlaw.theme}</div>
+              <div className="tiny dim">{char.tragicFlaw.description}</div>
+            </div>
+          </div>
+          <div className="tragic-flaw-detail__grid">
+            {[char.tragicFlaw.passiveAbility, char.tragicFlaw.activeSkill, char.tragicFlaw.battleTrait].map((section) => (
+              <div key={section.name}>
+                <strong>{section.name}</strong>
+                <p>{section.description}</p>
+              </div>
+            ))}
+            <div>
+              <strong>{char.tragicFlaw.awakeningCondition.name}</strong>
+              <p>{char.tragicFlaw.awakeningCondition.description}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="window-title" style={{ marginTop: 4 }}>
         とくぎ
       </div>
