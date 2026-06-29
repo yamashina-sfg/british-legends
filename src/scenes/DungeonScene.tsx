@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { checkEvolution } from '@/engine/evolution';
-import { getCharacter, getDungeon, getEnemy, getMaterial, getWorld, STORE_ITEMS } from '@/data';
+import { CODEX, getCharacter, getDungeon, getEnemy, getEquipment, getMaterial, getSkill, getWorld, STORE_ITEMS } from '@/data';
 import { explorationRate } from '@/engine/mapgen';
 import { Button } from '@/components/ui/Button';
 import { DungeonMap } from '@/components/dungeon/DungeonMap';
@@ -13,6 +13,25 @@ const FLOOR_ATMOSPHERE: Record<string, string[]> = {
   hamlet: ['エルシノア城・大広間', '王家の地下墓所', '玉座の間・決闘の広間'],
   macbeth: ['荒野の魔女道', 'ダンシネイン城・回廊', '血の王座・終幕の間'],
 };
+
+const WORLD_CODEX_REFS: Record<string, string[]> = {
+  beowulf: ['beowulf', 'grendel', 'dragon'],
+  hamlet: ['hamlet', 'ghost', 'claudius', 'royal_guard'],
+  macbeth: ['macbeth', 'witch', 'banquos_ghost', 'macbeths_fate', 'soldier'],
+};
+
+function codexTotalForWorld(worldId: string) {
+  return Object.values(CODEX).filter((entry) =>
+    entry.id.includes(worldId) || (WORLD_CODEX_REFS[worldId] ?? []).some((ref) => entry.refId.includes(ref)),
+  ).length;
+}
+
+function codexFoundForWorld(worldId: string, discoveredIds: string[] = []) {
+  return discoveredIds.filter((id) => {
+    const entry = CODEX[id];
+    return entry && (entry.id.includes(worldId) || (WORLD_CODEX_REFS[worldId] ?? []).some((ref) => entry.refId.includes(ref)));
+  }).length;
+}
 
 export function DungeonScene() {
   const { map, worldId, movePlayer, retreatToMap, lastReward, mapToast, save } = useGameStore();
@@ -38,6 +57,13 @@ export function DungeonScene() {
   const world = getWorld(worldId);
   const dgn = getDungeon(world.dungeonId);
   const rate = explorationRate(map);
+  const progress = save.exploration?.[worldId];
+  const openedChests = map.entities.filter((e) => e.kind === 'chest' && e.opened).length;
+  const totalChests = map.entities.filter((e) => e.kind === 'chest').length;
+  const foundSecrets = map.discoveredSecretIds?.length ?? 0;
+  const totalSecrets = map.entities.filter((e) => e.kind === 'secretDoor').length;
+  const codexFound = progress?.codexFound ?? codexFoundForWorld(worldId, save.codex.discoveredIds);
+  const codexTotal = progress?.codexTotal || codexTotalForWorld(worldId);
   const atmosphere = FLOOR_ATMOSPHERE[worldId]?.[map.floorIndex] ?? map.floorName;
 
   // 出現する敵（このフロアのエンティティから）
@@ -62,7 +88,7 @@ export function DungeonScene() {
       <div className={`scene dungeon-rpg-scene dungeon-world-${worldId} fade-in`} style={{ gap: 10 }}>
         <div className="dungeon-hud rpg-window">
           <div className="dungeon-hud__location"><span>AREA</span><strong>{atmosphere}</strong><small>{dgn.name} / 第{map.floorIndex + 1}層</small></div>
-          <div className="dungeon-hud__objective"><span>QUEST</span><strong>{map.isBossFloor ? '竜の塚の主を討て' : '奥へ進み、文学世界を修復せよ'}</strong></div>
+          <div className="dungeon-hud__objective"><span>QUEST</span><strong>{map.isBossFloor ? 'ボスの攻略法を見極めて討て' : '鍵・隠し壁・記録を探し、文学世界を修復せよ'}</strong></div>
           <div className="dungeon-hud__progress"><span>探索率</span><strong>{rate}%</strong><i><b style={{ width: `${rate}%` }} /></i></div>
         </div>
 
@@ -76,7 +102,13 @@ export function DungeonScene() {
             <span className="dungeon-sidebar__label">ENCOUNTER</span>
             <div className="dungeon-enemy-list">{enemyIds.length > 0 ? enemyIds.map((id) => <span key={id}>{getEnemy(id).name}</span>) : <span>静寂</span>}</div>
             <span className="dungeon-sidebar__label">TREASURE</span>
-            <div className="dungeon-treasure-count">{Object.keys(save?.inventory ?? {}).length} 種類の素材</div>
+            <div className="dungeon-treasure-count">
+              宝箱 {openedChests}/{totalChests}<br />
+              秘密部屋 {foundSecrets}/{totalSecrets}<br />
+              図鑑 {codexFound}/{codexTotal}<br />
+              最高探索率 {Math.max(progress?.bestRate ?? 0, rate)}%
+              {progress?.shortcutsUnlocked && <><br />ショートカット解放済み</>}
+            </div>
             {nextEvolutionTarget && (
               <>
                 <span className="dungeon-sidebar__label">NEXT EVOLVE</span>
@@ -107,6 +139,8 @@ export function DungeonScene() {
           <span><i className="legend-stairs" /> 階段</span>
           <span><i className="legend-boss" /> ボス</span>
           <span><i className="legend-rest" /> 休息碑</span>
+          <span><i className="legend-key" /> 鍵</span>
+          <span><i className="legend-door" /> 扉</span>
         </div>
 
         {/* トースト / 報酬 */}
@@ -122,6 +156,16 @@ export function DungeonScene() {
             )}
             {Object.entries(lastReward.bonusItems).length > 0 && (
               <span>{Object.entries(lastReward.bonusItems).map(([id, q]) => `${STORE_ITEMS[id]?.name ?? id}×${q}`).join(' / ')}</span>
+            )}
+            {lastReward.bonusRewards.length > 0 && (
+              <span>
+                {lastReward.bonusRewards.map((reward) => {
+                  if (reward.kind === 'equipment') return reward.label ?? getEquipment(reward.id).name;
+                  if (reward.kind === 'skill') return `${reward.label ?? 'スキル'}:${getSkill(reward.id).name}`;
+                  if (reward.kind === 'gold') return `${reward.qty}G`;
+                  return reward.label ?? reward.id;
+                }).join(' / ')}
+              </span>
             )}
             {lastReward.levelUps.map((text) => (
               <b key={text}>{text}</b>

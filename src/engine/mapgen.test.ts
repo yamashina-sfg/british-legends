@@ -3,7 +3,14 @@ import { generateDungeonMap } from './mapgen';
 import { resolveMove } from './mapmove';
 import type { DungeonMap } from '@/types';
 
-function canReach(map: DungeonMap, target: { x: number; y: number }) {
+function canReach(map: DungeonMap, target: { x: number; y: number }): boolean {
+  if (map.tiles[target.y]?.[target.x] !== 'floor') {
+    return [[1, 0], [-1, 0], [0, 1], [0, -1]].some(([dx, dy]) => {
+      const x = target.x + dx;
+      const y = target.y + dy;
+      return x >= 0 && y >= 0 && x < map.width && y < map.height && map.tiles[y][x] === 'floor' && canReach(map, { x, y });
+    });
+  }
   const seen = new Set<string>([`${map.player.x},${map.player.y}`]);
   const queue = [{ ...map.player }];
   while (queue.length) {
@@ -50,6 +57,8 @@ describe('dungeon accessibility', () => {
       ],
       player: { x: 1, y: 1 },
       entities: [{ id: 'rest', kind: 'rest', x: 2, y: 1, label: '休息碑' }],
+      foundKeyIds: [],
+      discoveredSecretIds: [],
       visited: Array.from({ length: 3 }, () => Array(5).fill(false)),
       isBossFloor: false,
     };
@@ -74,6 +83,8 @@ describe('dungeon accessibility', () => {
         { id: 'enemy', kind: 'enemy', x: 4, y: 2, enemyIds: ['grendel'], label: 'Grendel' },
         { id: 'boss', kind: 'boss', x: 4, y: 3, enemyIds: ['dragon'], label: 'Dragon' },
       ],
+      foundKeyIds: [],
+      discoveredSecretIds: [],
       visited: Array.from({ length: 5 }, () => Array(6).fill(false)),
       isBossFloor: true,
     };

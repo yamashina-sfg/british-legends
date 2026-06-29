@@ -8,6 +8,7 @@ import { Gauge } from '@/components/ui/Gauge';
 import { Sprite } from '@/components/ui/Sprite';
 import { playBattleSfx, preloadBattleSfx } from '@/audio/sfx';
 import type { Combatant } from '@/engine/battle';
+import { meterPercent } from '@/engine/tragicFlaw';
 import beowulfAttackField from '@/assets/battle/beowulf-attack-field.png';
 import hamletAttackField from '@/assets/battle/hamlet-attack-field.png';
 import macbethAttackField from '@/assets/battle/macbeth-attack-field.png';
@@ -117,6 +118,19 @@ export function BattleScene() {
     } else submitCommand({ type: 'skill', skillId });
   };
 
+  const flawChip = (combatant: Combatant) => {
+    const runtime = combatant.tragicFlaw;
+    if (!runtime) return null;
+    const meter = meterPercent(runtime);
+    return (
+      <div className="tragic-flaw-chip" title={runtime.flaw.description}>
+        <span className="tragic-flaw-chip__icon">{runtime.flaw.icon}</span>
+        <span>{runtime.flaw.theme}</span>
+        {meter !== null && <span className="tragic-flaw-chip__meter">{runtime.flaw.meter?.label} {meter}%</span>}
+      </div>
+    );
+  };
+
   return (
     <div className="battle-scene fade-in">
       <div className={`battle-arena battle-arena--${battlefieldWorld}`} aria-label="battlefield">
@@ -168,11 +182,11 @@ export function BattleScene() {
                   return (
                     <div className="battle-role-line">
                       <span>{character.role ?? 'Adventurer'}</span>
-                      {character.tragicFlaw && <b>宿命: {character.tragicFlaw.name}</b>}
-                      {a.tragicCharge > 0 && <em>逡巡 {a.tragicCharge}/3</em>}
+                      {character.tragicFlaw && <b>宿命: {character.tragicFlaw.theme}</b>}
                     </div>
                   );
                 })()}
+                {flawChip(a)}
                 <div className="battle-stat-line"><span>HP {a.hp}/{a.maxHp}</span><Gauge value={a.hp} max={a.maxHp} type="hp" /></div>
                 <div className="battle-stat-line"><span>MP {a.mp}/{a.maxMp}</span><Gauge value={a.mp} max={a.maxMp} type="mp" /></div>
               </div>
@@ -181,6 +195,17 @@ export function BattleScene() {
         </Window>
 
         <Window className="battle-command-window" title={phase === 'input' && actor ? `${actor.name} のコマンド` : 'BATTLE'}>
+          {phase === 'input' && actor?.tragicFlaw && (
+            <div className="tragic-flaw-panel">
+              <div className="row">
+                <span className="tragic-flaw-panel__icon">{actor.tragicFlaw.flaw.icon}</span>
+                <strong>{actor.tragicFlaw.flaw.theme}</strong>
+                <span className="spacer" />
+                <span className="tiny dim">{actor.tragicFlaw.flaw.activeSkill.name}</span>
+              </div>
+              <div className="tiny dim">{actor.tragicFlaw.flaw.battleTrait.description}</div>
+            </div>
+          )}
           {phase === 'input' && actor && visibleMode === 'command' && (
             <div className="battle-command-grid">
               <Button onClick={() => { setMode('target'); setModeActorUid(actor.uid); setTargetActorUid(actor.uid); }}>▶ たたかう</Button>
@@ -193,7 +218,9 @@ export function BattleScene() {
             <div className="menu-list battle-menu-list">
               {actor.skillIds.filter((id) => id !== 'attack_basic').map(getSkill).map((skill) => (
                 <Button key={skill.id} disabled={actor.mp < skill.mpCost} onClick={() => onPickSkill(skill.id)}>
-                  <span>{skill.name}</span><span className="spacer" /><span className="dim tiny">MP {skill.mpCost} / {skill.description}</span>
+                  <span>{skill.name}</span>
+                  {actor.tragicFlaw?.flaw.activeSkill.skillId === skill.id && <span className="tragic-skill-mark">宿命</span>}
+                  <span className="spacer" /><span className="dim tiny">MP {skill.mpCost} / {skill.description}</span>
                 </Button>
               ))}
               <Button onClick={() => { setMode('command'); setModeActorUid(actor.uid); }}>もどる</Button>

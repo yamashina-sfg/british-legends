@@ -1,4 +1,107 @@
-import type { Character } from '@/types';
+import type { Character, TragicFlaw } from '@/types';
+
+const HEROISM: TragicFlaw = {
+  id: 'heroism',
+  theme: 'Heroism',
+  icon: '⚔',
+  description: '英雄とは、倒れかけても前へ出る者である。低HPでは守りを捨て、物語の最後まで戦い抜く。',
+  tragicFlaw: {
+    name: '栄光への渇き',
+    description: 'HP30%以下で攻撃力+40%、防御-20%。',
+    effects: [
+      { type: 'statMultiplier', stat: 'atk', multiplier: 1.4, when: 'hpBelowRatio', thresholdRatio: 0.3 },
+      { type: 'statMultiplier', stat: 'def', multiplier: 0.8, when: 'hpBelowRatio', thresholdRatio: 0.3 },
+    ],
+  },
+  passiveAbility: {
+    name: 'Heroic Spirit',
+    description: '瀕死になると英雄の精神が覚醒し、守りより勝利を選ぶ。',
+    effects: [],
+  },
+  activeSkill: {
+    skillId: 'last_stand',
+    name: 'Last Stand',
+    description: '大ダメージ。HPが少ないほど威力が上昇する。',
+    effects: [{ type: 'damageByMissingHp', maxBonusMultiplier: 1.5 }],
+  },
+  battleTrait: {
+    name: 'Monster-Slayer',
+    description: 'ボス戦で攻撃力と防御力が上昇する。',
+    effects: [
+      { type: 'statMultiplier', stat: 'atk', multiplier: 1.15, when: 'bossBattle' },
+      { type: 'statMultiplier', stat: 'def', multiplier: 1.1, when: 'bossBattle' },
+    ],
+  },
+  awakeningCondition: {
+    name: 'HP30%以下',
+    description: '最後まで戦い抜く英雄として覚醒する。',
+  },
+};
+
+const INDECISION: TragicFlaw = {
+  id: 'indecision',
+  theme: 'Indecision',
+  icon: '?',
+  description: '逡巡は弱さではない。考え続けた時間が、次の一撃の重さになる。',
+  meter: { label: 'Resolve', max: 100 },
+  tragicFlaw: {
+    name: '逡巡',
+    description: '攻撃せず待機するとResolveが増える。最大時、次の攻撃が2.5倍。',
+    effects: [{ type: 'meterOnCommand', command: 'defend', amount: 50 }],
+  },
+  passiveAbility: {
+    name: 'Thinking',
+    description: '防御/待機でResolve+50。最大になると次の通常攻撃で全消費し、大きく威力上昇。',
+    effects: [{ type: 'consumeMeterForDamage', minMultiplier: 2, maxMultiplier: 2.5, requireFullMeter: true }],
+  },
+  activeSkill: {
+    skillId: 'to_be_or_not',
+    name: 'To Be, Or Not To Be',
+    description: 'Resolveを全消費し、超高火力攻撃を放つ。',
+    effects: [{ type: 'consumeMeterForDamage', minMultiplier: 1.2, maxMultiplier: 3 }],
+  },
+  battleTrait: {
+    name: '考えるほど強くなる',
+    description: '行動しないターンが、次の決断の威力になる。',
+    effects: [],
+  },
+  awakeningCondition: {
+    name: 'Resolve最大',
+    description: '逡巡が決意へ変わり、次の攻撃が強化される。',
+  },
+};
+
+const AMBITION: TragicFlaw = {
+  id: 'ambition',
+  theme: 'Ambition',
+  icon: '♛',
+  description: '王冠は血を求める。代償を払うほど、野心は刃を鋭くする。',
+  tragicFlaw: {
+    name: '野心',
+    description: '自身のHPを消費するたび、戦闘中の攻撃力が上昇する。',
+    effects: [],
+  },
+  passiveAbility: {
+    name: 'Ambition',
+    description: 'HPを累計10%消費するごとに攻撃力+12%。最大+72%。',
+    effects: [{ type: 'atkMultiplierByHpSpent', stepRatio: 0.1, multiplierPerStep: 0.12, maxMultiplier: 1.72 }],
+  },
+  activeSkill: {
+    skillId: 'bloody_crown',
+    name: 'Bloody Crown',
+    description: '自身のHP20%を消費し、超高火力攻撃を放つ。',
+    effects: [{ type: 'hpCost', ratio: 0.2 }],
+  },
+  battleTrait: {
+    name: 'リスクを負うほど強い',
+    description: '自ら傷を負う選択が、そのまま攻撃性能へ変わる。',
+    effects: [],
+  },
+  awakeningCondition: {
+    name: 'HP消費',
+    description: '血を払うほど王冠への執着が増す。',
+  },
+};
 
 // 進化段階ごとに1レコード。進化＝OwnedCharacter.characterId を nextCharacterId に差し替えるだけ。
 export const CHARACTERS: Record<string, Character> = {
@@ -13,7 +116,7 @@ export const CHARACTERS: Record<string, Character> = {
     growthRate: { hp: 12, mp: 2, atk: 4, def: 2, spd: 1 },
     skillIds: ['attack_basic', 'mighty_grip', 'shield_oath'],
     role: 'Tank',
-    tragicFlaw: { name: '英雄', description: 'HP30%以下でHeroic Spiritが発動。攻撃力が上がるが防御が下がる。' },
+    tragicFlaw: HEROISM,
     evolution: {
       requiredLevel: 5,
       requiredMaterials: [{ materialId: 'grendel_claw', qty: 3 }],
@@ -30,7 +133,7 @@ export const CHARACTERS: Record<string, Character> = {
     growthRate: { hp: 16, mp: 3, atk: 5, def: 3, spd: 1 },
     skillIds: ['attack_basic', 'mighty_grip', 'shield_oath', 'hero_roar'],
     role: 'Tank',
-    tragicFlaw: { name: '英雄', description: 'HP30%以下でHeroic Spiritが発動。攻撃力が上がるが防御が下がる。' },
+    tragicFlaw: HEROISM,
     evolution: {
       requiredLevel: 12,
       requiredMaterials: [
@@ -50,7 +153,7 @@ export const CHARACTERS: Record<string, Character> = {
     growthRate: { hp: 20, mp: 4, atk: 6, def: 4, spd: 2 },
     skillIds: ['attack_basic', 'mighty_grip', 'shield_oath', 'hero_roar', 'dragon_slash'],
     role: 'Tank',
-    tragicFlaw: { name: '英雄', description: 'HP30%以下でHeroic Spiritが発動。攻撃力が上がるが防御が下がる。' },
+    tragicFlaw: HEROISM,
     evolution: {
       requiredLevel: 20,
       requiredMaterials: [{ materialId: 'dragon_scale', qty: 5 }],
@@ -67,7 +170,7 @@ export const CHARACTERS: Record<string, Character> = {
     growthRate: { hp: 26, mp: 5, atk: 8, def: 5, spd: 2 },
     skillIds: ['attack_basic', 'mighty_grip', 'shield_oath', 'hero_roar', 'dragon_slash'],
     role: 'Tank',
-    tragicFlaw: { name: '英雄', description: 'HP30%以下でHeroic Spiritが発動。攻撃力が上がるが防御が下がる。' },
+    tragicFlaw: HEROISM,
     evolution: null,
   },
 
@@ -82,7 +185,7 @@ export const CHARACTERS: Record<string, Character> = {
     growthRate: { hp: 10, mp: 4, atk: 4, def: 2, spd: 2 },
     skillIds: ['attack_basic', 'hesitation', 'poison_blade'],
     role: 'Attacker',
-    tragicFlaw: { name: '逡巡', description: '攻撃しないターンで逡巡を溜め、次の一撃を強化する。' },
+    tragicFlaw: INDECISION,
     evolution: {
       requiredLevel: 8,
       requiredMaterials: [{ materialId: 'ghost_fragment', qty: 4 }],
@@ -99,7 +202,7 @@ export const CHARACTERS: Record<string, Character> = {
     growthRate: { hp: 14, mp: 5, atk: 5, def: 3, spd: 2 },
     skillIds: ['attack_basic', 'hesitation', 'poison_blade', 'to_be_or_not'],
     role: 'Attacker',
-    tragicFlaw: { name: '逡巡', description: '攻撃しないターンで逡巡を溜め、次の一撃を強化する。' },
+    tragicFlaw: INDECISION,
     evolution: {
       requiredLevel: 16,
       requiredMaterials: [
@@ -119,7 +222,7 @@ export const CHARACTERS: Record<string, Character> = {
     growthRate: { hp: 18, mp: 6, atk: 7, def: 4, spd: 3 },
     skillIds: ['attack_basic', 'hesitation', 'poison_blade', 'to_be_or_not'],
     role: 'Attacker',
-    tragicFlaw: { name: '逡巡', description: '攻撃しないターンで逡巡を溜め、次の一撃を強化する。' },
+    tragicFlaw: INDECISION,
     evolution: null,
   },
 
@@ -134,7 +237,7 @@ export const CHARACTERS: Record<string, Character> = {
     growthRate: { hp: 13, mp: 3, atk: 5, def: 3, spd: 1 },
     skillIds: ['attack_basic', 'bloody_ambition', 'bloody_dagger'],
     role: 'Attacker',
-    tragicFlaw: { name: '野心', description: 'HPを犠牲に攻撃力を上げる。危険なほど強い短期決戦型。' },
+    tragicFlaw: AMBITION,
     evolution: {
       requiredLevel: 8,
       requiredMaterials: [{ materialId: 'witch_scroll', qty: 4 }],
@@ -151,7 +254,7 @@ export const CHARACTERS: Record<string, Character> = {
     growthRate: { hp: 17, mp: 4, atk: 6, def: 4, spd: 2 },
     skillIds: ['attack_basic', 'bloody_ambition', 'bloody_dagger', 'prophecy'],
     role: 'Magic',
-    tragicFlaw: { name: '野心', description: 'HPを犠牲に攻撃力を上げる。危険なほど強い短期決戦型。' },
+    tragicFlaw: AMBITION,
     evolution: {
       requiredLevel: 16,
       requiredMaterials: [
@@ -171,7 +274,7 @@ export const CHARACTERS: Record<string, Character> = {
     growthRate: { hp: 22, mp: 5, atk: 8, def: 5, spd: 2 },
     skillIds: ['attack_basic', 'bloody_ambition', 'bloody_dagger', 'prophecy'],
     role: 'Magic',
-    tragicFlaw: { name: '野心', description: 'HPを犠牲に攻撃力を上げる。危険なほど強い短期決戦型。' },
+    tragicFlaw: AMBITION,
     evolution: null,
   },
   gulliver_traveler: {

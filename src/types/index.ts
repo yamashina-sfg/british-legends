@@ -27,6 +27,71 @@ export interface Skill {
   description: string;
 }
 
+// --- Tragic Flaw System ------------------------------------
+export type FlawStatKey = 'atk' | 'def' | 'spd';
+
+export type TragicFlawEffect =
+  | {
+      type: 'statMultiplier';
+      stat: FlawStatKey;
+      multiplier: number;
+      when: 'hpBelowRatio' | 'bossBattle';
+      thresholdRatio?: number;
+    }
+  | {
+      type: 'meterOnCommand';
+      command: 'defend';
+      amount: number;
+    }
+  | {
+      type: 'consumeMeterForDamage';
+      minMultiplier: number;
+      maxMultiplier: number;
+      requireFullMeter?: boolean;
+    }
+  | {
+      type: 'hpCost';
+      ratio: number;
+    }
+  | {
+      type: 'damageByMissingHp';
+      maxBonusMultiplier: number;
+    }
+  | {
+      type: 'atkMultiplierByHpSpent';
+      stepRatio: number;
+      multiplierPerStep: number;
+      maxMultiplier: number;
+    };
+
+export interface TragicFlawSection {
+  name: string;
+  description: string;
+  effects: TragicFlawEffect[];
+}
+
+export interface TragicFlaw {
+  id: string;
+  theme: string;
+  icon: string;
+  description: string;
+  meter?: {
+    label: string;
+    max: number;
+    startsAt?: number;
+  };
+  tragicFlaw: TragicFlawSection;
+  passiveAbility: TragicFlawSection;
+  activeSkill: TragicFlawSection & {
+    skillId: string;
+  };
+  battleTrait: TragicFlawSection;
+  awakeningCondition: {
+    name: string;
+    description: string;
+  };
+}
+
 // --- 素材 ---------------------------------------------------
 export interface Material {
   id: string;
@@ -41,6 +106,16 @@ export interface DropEntry {
   materialId: string;
   /** 0..1 のドロップ確率 */
   rate: number;
+}
+
+export type RewardKind = 'material' | 'gold' | 'equipment' | 'skill' | 'codex' | 'item' | 'story' | 'key';
+
+export interface RewardEntry {
+  kind: RewardKind;
+  id: string;
+  qty: number;
+  label?: string;
+  rarity?: 'common' | 'rare' | 'legendary';
 }
 
 export interface Enemy {
@@ -87,10 +162,7 @@ export interface Character {
   /** 戦闘での役割。UIとスキル設計の目印に使う。 */
   role?: 'Tank' | 'Attacker' | 'Support' | 'Magic';
   /** 文学テーマを戦闘ルール化した固有宿命。 */
-  tragicFlaw?: {
-    name: string;
-    description: string;
-  };
+  tragicFlaw?: TragicFlaw;
   /** 次段階への進化条件（最終段階は null） */
   evolution: EvolutionStep | null;
 }
@@ -120,7 +192,7 @@ export interface Dungeon {
 // --- タイルマップ（自動生成・移動可能） ----------------------
 export type TileType = 'floor' | 'wall' | 'water';
 
-export type MapEntityKind = 'enemy' | 'boss' | 'chest' | 'stairs' | 'rest' | 'memory';
+export type MapEntityKind = 'enemy' | 'boss' | 'chest' | 'stairs' | 'rest' | 'memory' | 'key' | 'lockedDoor' | 'secretDoor';
 
 export interface MapEntity {
   id: string;
@@ -131,6 +203,10 @@ export interface MapEntity {
   enemyIds?: string[];
   /** chest の中身 */
   materialId?: string;
+  rewards?: RewardEntry[];
+  keyId?: string;
+  locked?: boolean;
+  hidden?: boolean;
   opened?: boolean;
   /** 表示用ラベル（スプライト未実装のため頭文字を使う） */
   label?: string;
@@ -148,6 +224,8 @@ export interface DungeonMap {
   tiles: TileType[][];
   player: { x: number; y: number };
   entities: MapEntity[];
+  foundKeyIds: string[];
+  discoveredSecretIds: string[];
   /** visited[y][x] = 探索済み（探索率の算出に使う） */
   visited: boolean[][];
   isBossFloor: boolean;
@@ -223,6 +301,19 @@ export interface SaveData {
   inventory: Record<string, number>;
   /** 回復薬など、素材とは別に消費する道具 */
   items: Record<string, number>;
+  equipmentInventory: string[];
+  storyFragments: string[];
+  learnedSkillBooks: string[];
+  exploration: Record<string, {
+    bestRate: number;
+    openedChests: string[];
+    totalChests: number;
+    foundSecrets: string[];
+    totalSecrets: number;
+    codexFound: number;
+    codexTotal: number;
+    shortcutsUnlocked: boolean;
+  }>;
   gold: number;
   codex: { discoveredIds: string[] };
 }

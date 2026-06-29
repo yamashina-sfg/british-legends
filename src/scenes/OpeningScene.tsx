@@ -269,8 +269,8 @@ export function OpeningScene() {
       <div className="opening-scene__dust" aria-hidden="true" />
       {beat.title && (
         <div className="opening-scene__chapter">
-          <span>{beat.title}</span>
-          <strong>Lost stories are being restored</strong>
+          <span>{String(beatIndex + 1).padStart(2, '0')}</span>
+          <strong>{beat.title}</strong>
         </div>
       )}
 

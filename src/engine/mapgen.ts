@@ -1,5 +1,5 @@
-import type { DungeonMap, MapEntity, TileType } from '@/types';
-import { getDungeon, getEnemy, getMaterial, getWorld, MATERIALS } from '@/data';
+import type { DungeonMap, MapEntity, RewardEntry, TileType } from '@/types';
+import { getDungeon, getEnemy, getEquipment, getMaterial, getWorld, MATERIALS, STORE_ITEMS } from '@/data';
 
 // ============================================================
 // ダンジョンマップ自動生成（セルオートマトンで洞窟を生成）
@@ -131,8 +131,65 @@ interface FixedEntityTemplate {
   kind: MapEntity['kind'];
   enemyIds?: string[];
   materialId?: string;
+  rewards?: RewardEntry[];
+  keyId?: string;
+  locked?: boolean;
+  hidden?: boolean;
   label?: string;
   eventText?: string;
+}
+
+const RARE_EQUIPMENT: Record<string, string[]> = {
+  beowulf: ['grendel_fang_blade', 'dragon_heart_mail'],
+  hamlet: ['glass_rapier', 'royal_ring'],
+  macbeth: ['witchfire_dagger', 'cursed_crown'],
+};
+
+const STORY_FRAGMENTS: Record<string, string[]> = {
+  beowulf: ['heorot-song', 'mere-descent', 'dragon-cup'],
+  hamlet: ['ghost-record', 'players-note', 'poisoned-cup'],
+  macbeth: ['witch-prophecy', 'duncan-blood', 'birnam-branch'],
+};
+
+function chestRewards(worldId: string, floorIndex: number, materialId?: string): RewardEntry[] {
+  const rewards: RewardEntry[] = [];
+  if (materialId) rewards.push({ kind: 'material', id: materialId, qty: 1, label: getMaterial(materialId).name });
+  const roll = Math.random();
+  if (roll < 0.2) {
+    const gold = 18 + floorIndex * 12 + Math.floor(Math.random() * 18);
+    rewards.push({ kind: 'gold', id: 'gold', qty: gold, label: `${gold}G` });
+  } else if (roll < 0.38) {
+    const itemIds = Object.keys(STORE_ITEMS);
+    const id = itemIds[Math.floor(Math.random() * itemIds.length)];
+    rewards.push({ kind: 'item', id, qty: 1, label: STORE_ITEMS[id].name });
+  } else if (roll < 0.58) {
+    const pool = RARE_EQUIPMENT[worldId] ?? [];
+    const id = pool[floorIndex % Math.max(1, pool.length)];
+    if (id) rewards.push({ kind: 'equipment', id, qty: 1, label: getEquipment(id).name, rarity: 'rare' });
+  } else if (roll < 0.74) {
+    const skillByWorld: Record<string, string[]> = {
+      beowulf: ['hero_roar', 'shield_oath'],
+      hamlet: ['hesitation', 'poison_blade'],
+      macbeth: ['prophecy', 'bloody_ambition'],
+    };
+    const pool = skillByWorld[worldId] ?? ['hero_roar'];
+    rewards.push({ kind: 'skill', id: pool[floorIndex % pool.length], qty: 1, label: 'スキルブック', rarity: 'rare' });
+  } else if (roll < 0.88) {
+    rewards.push({ kind: 'codex', id: `codex_story_${worldId}`, qty: 1, label: '図鑑ページ' });
+  } else {
+    const pool = STORY_FRAGMENTS[worldId] ?? [`${worldId}-fragment`];
+    rewards.push({ kind: 'story', id: pool[floorIndex % pool.length], qty: 1, label: 'ストーリー断片', rarity: 'rare' });
+  }
+  return rewards;
+}
+
+function secretRewards(worldId: string, floorIndex: number): RewardEntry[] {
+  const equipmentId = RARE_EQUIPMENT[worldId]?.[(floorIndex + 1) % 2];
+  return [
+    ...(equipmentId ? [{ kind: 'equipment' as const, id: equipmentId, qty: 1, label: getEquipment(equipmentId).name, rarity: 'rare' as const }] : []),
+    { kind: 'codex', id: `codex_story_${worldId}`, qty: 1, label: '図鑑ページ' },
+    { kind: 'gold', id: 'gold', qty: 30 + floorIndex * 15, label: 'Gold' },
+  ];
 }
 
 const BEOWULF_FIXED_FLOORS: Array<{
@@ -390,6 +447,10 @@ function fixedMapFromTemplates(worldId: string, floorIndex: number, templates: t
           y,
           enemyIds: marker.enemyIds,
           materialId: marker.materialId,
+          rewards: marker.kind === 'chest' ? (marker.rewards ?? chestRewards(worldId, floorIndex, marker.materialId)) : marker.rewards,
+          keyId: marker.keyId,
+          locked: marker.locked,
+          hidden: marker.hidden,
           opened: marker.kind === 'chest' ? false : undefined,
           label: marker.label,
           eventText: marker.eventText,
@@ -400,6 +461,8 @@ function fixedMapFromTemplates(worldId: string, floorIndex: number, templates: t
   });
   const visited = Array.from({ length: H }, () => Array(W).fill(false));
   revealAround(visited, player.x, player.y);
+  const isBossFloor = entities.some((entity) => entity.kind === 'boss');
+  enrichFixedExploration(worldId, floorIndex, tiles, player, entities, isBossFloor, counter);
   return {
     worldId,
     floorIndex,
@@ -409,9 +472,73 @@ function fixedMapFromTemplates(worldId: string, floorIndex: number, templates: t
     tiles,
     player,
     entities,
+    foundKeyIds: [],
+    discoveredSecretIds: [],
     visited,
-    isBossFloor: entities.some((entity) => entity.kind === 'boss'),
+    isBossFloor,
   };
+}
+
+function enrichFixedExploration(
+  worldId: string,
+  floorIndex: number,
+  tiles: TileType[][],
+  player: { x: number; y: number },
+  entities: MapEntity[],
+  isBossFloor: boolean,
+  startCounter: number,
+) {
+  let counter = startCounter;
+  const occupied = (x: number, y: number) => entities.some((entity) => entity.x === x && entity.y === y);
+  const floorCells: { x: number; y: number; dist: number }[] = [];
+  for (let y = 1; y < H - 1; y += 1) {
+    for (let x = 1; x < W - 1; x += 1) {
+      if (tiles[y][x] !== 'floor' || occupied(x, y) || (x === player.x && y === player.y)) continue;
+      floorCells.push({ x, y, dist: Math.abs(player.x - x) + Math.abs(player.y - y) });
+    }
+  }
+  floorCells.sort((a, b) => b.dist - a.dist);
+
+  if (!isBossFloor) {
+    const key = floorCells[Math.floor(floorCells.length * 0.45)] ?? floorCells[0];
+    const door = floorCells[0];
+    if (key && door) {
+      const keyId = `${worldId}-f${floorIndex}-archive-key`;
+      entities.push({ id: `fixed_${floorIndex}_${counter++}`, kind: 'key', x: key.x, y: key.y, keyId, label: '書庫の鍵' });
+      entities.push({ id: `fixed_${floorIndex}_${counter++}`, kind: 'lockedDoor', x: door.x, y: door.y, keyId, locked: true, label: '鍵付き扉' });
+      const sideChest = floorCells.find((cell) => Math.abs(cell.x - door.x) + Math.abs(cell.y - door.y) <= 3 && !occupied(cell.x, cell.y));
+      if (sideChest) {
+        entities.push({
+          id: `fixed_${floorIndex}_${counter++}`,
+          kind: 'chest',
+          x: sideChest.x,
+          y: sideChest.y,
+          rewards: chestRewards(worldId, floorIndex),
+          opened: false,
+          label: '封印宝箱',
+        });
+      }
+    }
+  }
+
+  const candidates = floorCells.flatMap((anchor) =>
+    ([[1, 0], [-1, 0], [0, 1], [0, -1]] as [number, number][])
+      .map(([dx, dy]) => ({ x: anchor.x + dx, y: anchor.y + dy }))
+      .filter((cell) => cell.x > 0 && cell.y > 0 && cell.x < W - 1 && cell.y < H - 1 && tiles[cell.y][cell.x] === 'wall' && !occupied(cell.x, cell.y)),
+  );
+  const secret = candidates[Math.floor(candidates.length * 0.35)] ?? candidates[0];
+  if (secret) {
+    entities.push({
+      id: `fixed_${floorIndex}_${counter++}`,
+      kind: 'secretDoor',
+      x: secret.x,
+      y: secret.y,
+      hidden: true,
+      opened: false,
+      rewards: secretRewards(worldId, floorIndex),
+      label: '秘密部屋',
+    });
+  }
 }
 
 /** ワールドの素材からランダムに1つ */
@@ -520,6 +647,7 @@ export function generateDungeonMap(worldId: string, floorIndex: number): Dungeon
       x: tile.x,
       y: tile.y,
       materialId: matId,
+      rewards: chestRewards(worldId, floorIndex, matId),
       opened: false,
       label: getMaterial(matId).name,
     });
@@ -550,6 +678,8 @@ export function generateDungeonMap(worldId: string, floorIndex: number): Dungeon
     tiles,
     player: { x: player.x, y: player.y },
     entities,
+    foundKeyIds: [],
+    discoveredSecretIds: [],
     visited,
     isBossFloor,
   };
