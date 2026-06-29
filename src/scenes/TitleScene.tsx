@@ -12,13 +12,19 @@ export function TitleScene() {
   return (
     <div className="title-scene fade-in" style={{ '--title-art': `url(${beowulfWorldArt})` } as CSSProperties}>
       <div className="title-scene__veil" />
+      <div className="title-scene__keyart" aria-hidden="true">
+        <i className="title-scene__book" />
+        <i className="title-scene__blade" />
+        <i className="title-scene__crown" />
+      </div>
       <div className="title-scene__content">
         <div className="title-scene__kicker">BIBLIOTHECA IS BEING ERASED</div>
         <h1>
           British Legends
           <span>ブリティッシュ・レジェンズ</span>
         </h1>
-        <p>文学は教材ではない。剣で守るべき、失われかけた世界だ。</p>
+        <p className="title-scene__tagline">Restore the Lost Stories.</p>
+        <p>The Journey Through British Literature Begins.</p>
       </div>
 
       <div className="title-scene__menu menu-list">
@@ -30,6 +36,7 @@ export function TitleScene() {
         </Button>
       </div>
 
+      <div className="title-scene__loadline"><span /></div>
       <div className="title-scene__footer">
         Turn-based dark fantasy RPG / Tragic Flaw System
       </div>

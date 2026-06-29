@@ -5,7 +5,7 @@ type WebAudioWindow = Window & {
   webkitAudioContext?: typeof AudioContext;
 };
 
-type TrackName = 'title' | 'opening' | 'lodge' | 'world' | 'dungeon' | 'battle' | 'clear';
+type TrackName = 'title' | 'opening' | 'lodge' | 'world' | 'dungeon' | 'battle' | 'boss' | 'clear';
 
 const STORAGE_KEY = 'british-legends:bgm-enabled';
 
@@ -17,7 +17,7 @@ const fileBufferCache = new Map<string, Promise<AudioBuffer>>();
 
 function trackForScene(scene: Scene): TrackName {
   if (scene === 'opening') return 'opening';
-  if (scene === 'battle') return 'battle';
+  if (scene === 'battle') return useGameStore.getState().encounter?.isBoss ? 'boss' : 'battle';
   if (scene === 'dungeon') return 'dungeon';
   if (scene === 'town') return 'lodge';
   if (scene === 'worldClear') return 'clear';
@@ -135,7 +135,7 @@ function startTrack(ctx: AudioContext, scene: Scene) {
   if (FILE_TRACKS[track]) {
     return () => {};
   }
-  const master = makeGain(ctx, track === 'battle' ? 0.16 : 0.12, ctx.destination);
+  const master = makeGain(ctx, track === 'battle' || track === 'boss' ? 0.16 : 0.12, ctx.destination);
   const stops: Array<() => void> = [];
   const timers: number[] = [];
 
@@ -152,27 +152,29 @@ function startTrack(ctx: AudioContext, scene: Scene) {
       if (hopeful && step % 2 === 0) playTone(ctx, master, 523.25, 1.0, 0.022, 'triangle');
       step += 1;
     }, 1550));
-  } else if (track === 'battle') {
+  } else if (track === 'battle' || track === 'boss') {
     const filter = ctx.createBiquadFilter();
     filter.type = 'lowpass';
-    filter.frequency.value = 520;
-    filter.Q.value = 0.65;
+    filter.frequency.value = track === 'boss' ? 420 : 520;
+    filter.Q.value = track === 'boss' ? 0.95 : 0.65;
     filter.connect(master);
 
     // Dark battle cue: no percussion/noise, just low drones and slow dissonant pulses.
-    stops.push(startOscillator(ctx, filter, 49.0, 'sine', 0.22));
-    stops.push(startOscillator(ctx, filter, 65.41, 'triangle', 0.08));
-    stops.push(startOscillator(ctx, filter, 92.5, 'sine', 0.045));
+    stops.push(startOscillator(ctx, filter, track === 'boss' ? 36.71 : 49.0, 'sine', track === 'boss' ? 0.28 : 0.22));
+    stops.push(startOscillator(ctx, filter, track === 'boss' ? 55.0 : 65.41, 'triangle', track === 'boss' ? 0.1 : 0.08));
+    stops.push(startOscillator(ctx, filter, track === 'boss' ? 73.42 : 92.5, 'sine', track === 'boss' ? 0.07 : 0.045));
 
-    const bassLine = [49.0, 46.25, 43.65, 51.91, 49.0, 55.0, 46.25, 41.2];
-    const tensionLine = [130.81, 123.47, 138.59, 116.54];
+    const bassLine = track === 'boss'
+      ? [36.71, 41.2, 34.65, 43.65, 36.71, 46.25, 41.2, 32.7]
+      : [49.0, 46.25, 43.65, 51.91, 49.0, 55.0, 46.25, 41.2];
+    const tensionLine = track === 'boss' ? [98.0, 103.83, 92.5, 110] : [130.81, 123.47, 138.59, 116.54];
     let step = 0;
 
     const tick = () => {
       const bass = bassLine[step % bassLine.length];
-      playTone(ctx, filter, bass, 1.15, 0.11, 'triangle');
+      playTone(ctx, filter, bass, track === 'boss' ? 1.35 : 1.15, track === 'boss' ? 0.14 : 0.11, 'triangle');
       if (step % 2 === 1) {
-        playTone(ctx, filter, tensionLine[step % tensionLine.length], 0.78, 0.035, 'sine');
+        playTone(ctx, filter, tensionLine[step % tensionLine.length], 0.78, track === 'boss' ? 0.048 : 0.035, 'sine');
       }
       step += 1;
     };
