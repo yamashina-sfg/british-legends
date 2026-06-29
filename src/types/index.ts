@@ -13,7 +13,7 @@ export interface Stats {
 }
 
 // --- スキル -------------------------------------------------
-export type SkillType = 'attack' | 'heal' | 'buff' | 'debuff';
+export type SkillType = 'attack' | 'heal' | 'revive' | 'buff' | 'debuff' | 'charge' | 'sacrifice';
 export type SkillTarget = 'single' | 'all' | 'self';
 
 export interface Skill {
@@ -50,6 +50,7 @@ export interface Enemy {
   spriteId: string;
   stats: Stats;
   exp: number;
+  gold?: number;
   skillIds: string[];
   dropTable: DropEntry[];
   isBoss?: boolean;
@@ -83,6 +84,13 @@ export interface Character {
   /** レベルごとの伸び */
   growthRate: Stats;
   skillIds: string[];
+  /** 戦闘での役割。UIとスキル設計の目印に使う。 */
+  role?: 'Tank' | 'Attacker' | 'Support' | 'Magic';
+  /** 文学テーマを戦闘ルール化した固有宿命。 */
+  tragicFlaw?: {
+    name: string;
+    description: string;
+  };
   /** 次段階への進化条件（最終段階は null） */
   evolution: EvolutionStep | null;
 }
@@ -159,10 +167,16 @@ export interface World {
   rewardCharacterId: string;
   /** 推奨レベル（UI表示用） */
   recommendedLevel: number;
+  /** 作品ごとの画面テーマ色 */
+  theme: {
+    primary: string;
+    secondary: string;
+    accent: string;
+  };
 }
 
 // --- 図鑑 ---------------------------------------------------
-export type CodexType = 'character' | 'enemy' | 'material' | 'world';
+export type CodexType = 'character' | 'enemy' | 'material' | 'world' | 'story';
 
 export interface CodexEntry {
   id: string;
@@ -201,6 +215,8 @@ export interface SaveData {
   lastSavedAt: number;
   playTimeSec: number;
   progress: SaveProgress;
+  /** 戦闘に出る最大3人の characterId。未設定の旧セーブは先頭3人を使う。 */
+  activePartyIds?: string[];
   party: OwnedCharacter[];
   /** materialId -> 所持数 */
   inventory: Record<string, number>;

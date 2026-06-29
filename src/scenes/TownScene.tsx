@@ -8,12 +8,12 @@ import { checkEvolution } from '@/engine/evolution';
 import bibliothecaCabinInterior from '@/assets/lodge/bibliotheca-cabin-portal-v2.png';
 import bibliothecaCabinMobile from '@/assets/lodge/bibliotheca-cabin-mobile-landscape-v1.png';
 import bibliothecaCabinPortrait from '@/assets/lodge/bibliotheca-cabin-mobile-portrait-v1.png';
-import { Sprite } from '@/components/ui/Sprite';
 
 const HINTS = [
   '司書: 旅で見つけた素材は、机の上で進化の力に変えられます。',
   '司書: 世界を修復するたび、この部屋にも失われた物語の光が戻ります。',
   '司書: 不安になったら、ベッドで休んでから再びポータルへ向かいなさい。',
+  '司書: The Censorは物語の問いを嫌います。問いを持つ仲間ほど、戦闘で強い宿命を持ちます。',
 ];
 
 export function TownScene() {
@@ -48,12 +48,6 @@ export function TownScene() {
         <i className="lodge-room__curtain lodge-room__curtain--right" />
         <i className="lodge-room__rug" />
         <header className="lodge-room__title"><span>BIBLIOTHECA LODGE</span><strong>帰還の間</strong><b>修復した世界 {save.progress.clearedWorldIds.length}</b></header>
-        <div className="lodge-party-figures" aria-label="滞在中の仲間">
-          {save.party.slice(0, 3).map((member) => {
-            const character = getCharacter(member.characterId);
-            return <Sprite key={member.characterId} label={character.name} side="ally" size="md" pose="map" faint={member.currentHp <= 0} />;
-          })}
-        </div>
 
         <button className="lodge-hotspot lodge-hotspot--bed" aria-label="休息のベッド" onClick={() => { healParty(); setMessage(`ベッドで休んだ。${save.party.map((p) => getCharacter(p.characterId).name).join('・') || '仲間'} のHPとMPが全回復した。`); }}><span>休息のベッド</span></button>
         <button className="lodge-hotspot lodge-hotspot--bookshelf" aria-label="図鑑の本棚" onClick={() => openOverlay('codex')}><span>図鑑の本棚</span></button>
@@ -62,6 +56,8 @@ export function TownScene() {
           <i /><span className="lodge-object__label"><b>武具商の棚</b><small>所持 {save.gold} G</small></span>
         </button>
         <button className="lodge-hotspot lodge-hotspot--librarian" aria-label="司書の助言" onClick={() => setMessage(HINTS[(rank + 1) % HINTS.length])} />
+        <button className="lodge-hotspot lodge-hotspot--trophy" aria-label="トロフィールーム" onClick={() => setMessage(`トロフィールーム: 修復した世界 ${save.progress.clearedWorldIds.length}。${save.progress.clearedWorldIds.length >= 3 ? '黒幕Oblivionの影が、棚の奥で揺れている。' : '作品を修復すると、この部屋に戦いの証が増える。'}`)}><span>トロフィールーム</span></button>
+        <button className="lodge-hotspot lodge-hotspot--quest" aria-label="依頼ボード" onClick={() => setMessage(`依頼ボード: ${getObjective(save).detail}`)}><span>依頼ボード</span></button>
         <button className="lodge-hotspot lodge-hotspot--portal" aria-label="ワールドポータル" onClick={goWorldMap}><span>ワールドポータル</span></button>
 
         <div className="lodge-room__objective"><ObjectiveBanner compact /></div>

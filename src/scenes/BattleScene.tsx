@@ -1,15 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { useBattleStore } from '@/store/useBattleStore';
-import { getEnemy, getSkill, STORE_ITEMS } from '@/data';
+import { getCharacter, getEnemy, getSkill, STORE_ITEMS } from '@/data';
 import { Button } from '@/components/ui/Button';
 import { Window } from '@/components/ui/Window';
 import { Gauge } from '@/components/ui/Gauge';
 import { Sprite } from '@/components/ui/Sprite';
+import { playBattleSfx, preloadBattleSfx } from '@/audio/sfx';
 import type { Combatant } from '@/engine/battle';
 import beowulfAttackField from '@/assets/battle/beowulf-attack-field.png';
 import hamletAttackField from '@/assets/battle/hamlet-attack-field.png';
 import macbethAttackField from '@/assets/battle/macbeth-attack-field.png';
+import gulliverBattleField from '@/assets/battle/gulliver-battle-field-v1.png';
+import crusoeBattleField from '@/assets/battle/crusoe-battle-field-v1.png';
+import marinerBattleField from '@/assets/battle/mariner-battle-field-v1.png';
+import frankensteinBattleField from '@/assets/battle/frankenstein-battle-field-v1.png';
+import aliceBattleField from '@/assets/battle/alice-battle-field-v1.png';
+import holmesBattleField from '@/assets/battle/holmes-battle-field-v1.png';
+import draculaBattleField from '@/assets/battle/dracula-battle-field-v1.png';
+import dallowayBattleField from '@/assets/battle/dalloway-battle-field-v1.png';
+import nineteen84BattleField from '@/assets/battle/nineteen84-battle-field-v1.png';
 
 type Mode = 'command' | 'skill' | 'item' | 'target';
 
@@ -17,6 +27,21 @@ const ATTACK_FIELDS: Record<string, string> = {
   Beowulf: beowulfAttackField,
   Hamlet: hamletAttackField,
   Macbeth: macbethAttackField,
+};
+
+const BATTLE_FIELDS_BY_WORLD: Record<string, string> = {
+  beowulf: beowulfAttackField,
+  hamlet: hamletAttackField,
+  macbeth: macbethAttackField,
+  gulliver: gulliverBattleField,
+  crusoe: crusoeBattleField,
+  mariner: marinerBattleField,
+  frankenstein: frankensteinBattleField,
+  alice: aliceBattleField,
+  holmes: holmesBattleField,
+  dracula: draculaBattleField,
+  dalloway: dallowayBattleField,
+  nineteen84: nineteen84BattleField,
 };
 
 export function BattleScene() {
@@ -34,13 +59,17 @@ export function BattleScene() {
   const actionActor = combatants.find((combatant) => combatant.uid === actionPoseUid);
   const actionField = actionActor ? ATTACK_FIELDS[actionActor.name] : undefined;
   const battlefieldWorld = enemies[0] ? getEnemy(enemies[0].sourceId).worldId : 'beowulf';
-  const battlefieldImage = ATTACK_FIELDS[battlefieldWorld === 'beowulf' ? 'Beowulf' : battlefieldWorld === 'hamlet' ? 'Hamlet' : 'Macbeth'];
+  const battlefieldImage = BATTLE_FIELDS_BY_WORLD[battlefieldWorld] ?? beowulfAttackField;
   // actor が切り替わった瞬間は、前の仲間のターゲット選択画面を絶対に引き継がない。
   const visibleMode: Mode = modeActorUid === actor?.uid ? mode : 'command';
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [log]);
+
+  useEffect(() => {
+    preloadBattleSfx();
+  }, []);
 
   useEffect(() => {
     if (phase === 'input') {
@@ -62,6 +91,7 @@ export function BattleScene() {
     if (!actor) return false;
     const accepted = chooseCommand(actor.uid, command);
     if (accepted) {
+      playBattleSfx(command.type);
       setMode('command');
       setPendingSkillId(null);
       setModeActorUid(null);
@@ -105,7 +135,7 @@ export function BattleScene() {
         <div className="battle-allies">
           {allies.map((a) => (
             <div key={a.uid} className={`battle-unit battle-unit--ally ${!a.alive ? 'is-fainted' : ''}`}>
-              <Sprite label={a.name} side="ally" size="lg" pose={!a.alive ? 'hurt' : actionPoseUid === a.uid ? 'attack' : 'idle'} faint={!a.alive} />
+              <Sprite label={a.name} side="ally" size="lg" pose={!a.alive ? 'hurt' : actionPoseUid === a.uid ? 'attack' : 'idle'} facing="right" faint={!a.alive} />
               <span>{a.name}</span>
             </div>
           ))}
@@ -119,7 +149,7 @@ export function BattleScene() {
               onClick={() => onSelectTarget(e)}
               className={`battle-unit battle-unit--enemy ${!e.alive ? 'is-fainted' : ''} ${visibleMode === 'target' && e.alive ? 'is-targetable' : ''}`}
             >
-              <Sprite label={e.name} side="enemy" size="lg" pose={!e.alive ? 'hurt' : 'idle'} faint={!e.alive} />
+              <Sprite label={e.name} side="enemy" size="lg" pose={!e.alive ? 'hurt' : actionPoseUid === e.uid ? 'attack' : 'idle'} facing="left" faint={!e.alive} />
               <span>{e.name}</span>
               {e.alive && <Gauge value={e.hp} max={e.maxHp} type="hp" />}
             </button>
@@ -133,6 +163,16 @@ export function BattleScene() {
             {allies.map((a) => (
               <div key={a.uid} className={`battle-status ${!a.alive ? 'is-fainted' : ''}`}>
                 <div className="row"><strong>{a.name}</strong><span className="spacer" />{actor?.uid === a.uid && phase === 'input' && <span className="cursor">▶</span>}</div>
+                {(() => {
+                  const character = getCharacter(a.sourceId);
+                  return (
+                    <div className="battle-role-line">
+                      <span>{character.role ?? 'Adventurer'}</span>
+                      {character.tragicFlaw && <b>宿命: {character.tragicFlaw.name}</b>}
+                      {a.tragicCharge > 0 && <em>逡巡 {a.tragicCharge}/3</em>}
+                    </div>
+                  );
+                })()}
                 <div className="battle-stat-line"><span>HP {a.hp}/{a.maxHp}</span><Gauge value={a.hp} max={a.maxHp} type="hp" /></div>
                 <div className="battle-stat-line"><span>MP {a.mp}/{a.maxMp}</span><Gauge value={a.mp} max={a.maxMp} type="mp" /></div>
               </div>
@@ -153,7 +193,7 @@ export function BattleScene() {
             <div className="menu-list battle-menu-list">
               {actor.skillIds.filter((id) => id !== 'attack_basic').map(getSkill).map((skill) => (
                 <Button key={skill.id} disabled={actor.mp < skill.mpCost} onClick={() => onPickSkill(skill.id)}>
-                  <span>{skill.name}</span><span className="spacer" /><span className="dim tiny">MP {skill.mpCost}</span>
+                  <span>{skill.name}</span><span className="spacer" /><span className="dim tiny">MP {skill.mpCost} / {skill.description}</span>
                 </Button>
               ))}
               <Button onClick={() => { setMode('command'); setModeActorUid(actor.uid); }}>もどる</Button>
@@ -161,13 +201,22 @@ export function BattleScene() {
           )}
           {phase === 'input' && actor && visibleMode === 'item' && (
             <div className="menu-list battle-menu-list">
-              {Object.values(STORE_ITEMS).filter((item) => item.skillId).map((item) => (
-                <Button key={item.id} disabled={(save?.items[item.id] ?? 0) <= 0} onClick={() => {
-                  if (item.skillId && submitCommand({ type: 'skill', skillId: item.skillId })) consumeItem(item.id);
-                }}>
-                  <span>{item.name} ×{save?.items[item.id] ?? 0}</span><span className="spacer" /><span className="dim tiny">{item.description}</span>
-                </Button>
-              ))}
+              {Object.values(STORE_ITEMS).filter((item) => item.skillId).map((item) => {
+                const faintedAlly = allies.find((ally) => !ally.alive);
+                const count = save?.items[item.id] ?? 0;
+                const disabled = count <= 0 || (item.skillId === 'phoenix_page' && !faintedAlly);
+                return (
+                  <Button key={item.id} disabled={disabled} onClick={() => {
+                    if (!item.skillId) return;
+                    const command = item.skillId === 'phoenix_page'
+                      ? { type: 'skill' as const, skillId: item.skillId, targetUid: faintedAlly?.uid }
+                      : { type: 'skill' as const, skillId: item.skillId };
+                    if (submitCommand(command)) consumeItem(item.id);
+                  }}>
+                    <span>{item.name} ×{count}</span><span className="spacer" /><span className="dim tiny">{item.description}</span>
+                  </Button>
+                );
+              })}
               <Button onClick={() => { setMode('command'); setModeActorUid(actor.uid); }}>もどる</Button>
             </div>
           )}

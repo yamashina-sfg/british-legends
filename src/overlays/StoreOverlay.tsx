@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { EQUIPMENT, STORE_ITEMS } from '@/data';
+import { STORE_ICON_BY_ID } from '@/data/storeIcons';
 import { useGameStore } from '@/store/useGameStore';
 import { Button } from '@/components/ui/Button';
 import { Window } from '@/components/ui/Window';
@@ -33,13 +34,13 @@ export function StoreOverlay() {
       <div className="store-items">
         {tab === 'item' ? Object.values(STORE_ITEMS).map((item) => (
           <article className="store-item" key={item.id}>
-            <div className="store-item__icon store-item__icon--item" />
+            <img className="store-item__icon" src={STORE_ICON_BY_ID[item.id]} alt="" aria-hidden="true" />
             <div><strong>{item.name} <small>×{save.items[item.id] ?? 0}</small></strong><p>{item.description}</p></div>
             <div className="store-item__buy"><b>{item.price}G</b><Button disabled={save.gold < item.price} onClick={() => buyItem(item.id)}>買う</Button></div>
           </article>
         )) : equipment.map((item) => (
           <article className="store-item" key={item.id}>
-            <div className={`store-item__icon store-item__icon--${item.slot}`} />
+            <img className="store-item__icon" src={STORE_ICON_BY_ID[item.id]} alt="" aria-hidden="true" />
             <div><strong>{item.name}</strong><p>{item.description}</p><em>{bonusLabel(item.bonus)}</em></div>
             <div className="store-item__buy"><b>{item.price}G</b><Button disabled={save.gold < item.price} onClick={() => buyEquipment(0, item.id)}>買って装備</Button></div>
           </article>

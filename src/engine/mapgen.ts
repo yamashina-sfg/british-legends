@@ -127,6 +127,293 @@ function shuffle<T>(arr: T[]): T[] {
   return a;
 }
 
+interface FixedEntityTemplate {
+  kind: MapEntity['kind'];
+  enemyIds?: string[];
+  materialId?: string;
+  label?: string;
+  eventText?: string;
+}
+
+const BEOWULF_FIXED_FLOORS: Array<{
+  name: string;
+  rows: string[];
+  markers: Record<string, FixedEntityTemplate>;
+}> = [
+  {
+    name: 'ヘオロットの酒宴場',
+    rows: [
+      '###############',
+      '#.............#',
+      '#.###.....###.#',
+      '#...#..C..#...#',
+      '#...#.....#...#',
+      '#...###.###...#',
+      '#......P......#',
+      '#..G......C...#',
+      '#.....R.......#',
+      '#...#####.....#',
+      '#.........G.S.#',
+      '#.............#',
+      '###############',
+    ],
+    markers: {
+      G: { kind: 'enemy', enemyIds: ['grendel'], label: 'Grendel' },
+      C: { kind: 'chest', materialId: 'grendel_claw', label: 'Grendel Claw' },
+      R: { kind: 'rest', label: '休息碑' },
+      S: { kind: 'stairs', label: '階段' },
+    },
+  },
+  {
+    name: 'グレンデル母の沼',
+    rows: [
+      '###############',
+      '#P............#',
+      '#.##..#..###..#',
+      '#..#.....#....#',
+      '#..#.~~~.#.##.#',
+      '#.....~.....#.#',
+      '#.##..G..C..#.#',
+      '#..#.....#....#',
+      '#..###.###.##.#',
+      '#..M...G....S.#',
+      '#.............#',
+      '#.............#',
+      '###############',
+    ],
+    markers: {
+      G: { kind: 'enemy', enemyIds: ['grendels_mother'], label: "Grendel's Mother" },
+      C: { kind: 'chest', materialId: 'monster_fang', label: 'Monster Fang' },
+      M: { kind: 'memory', label: '記憶の断片', eventText: '水辺に、怪物の母が子を悼む声だけが残っている。' },
+      S: { kind: 'stairs', label: '階段' },
+    },
+  },
+  {
+    name: '竜の塚・灼熱の回廊',
+    rows: [
+      '###############',
+      '#P............#',
+      '#.#####.#####.#',
+      '#.....#.....#.#',
+      '###.#.#.###.#.#',
+      '#...#...#...#.#',
+      '#.###.###.###.#',
+      '#...#.....#...#',
+      '#.#.#####.#.#.#',
+      '#.#...C...#.#.#',
+      '#...R...M...B.#',
+      '#.............#',
+      '###############',
+    ],
+    markers: {
+      C: { kind: 'chest', materialId: 'dragon_scale', label: 'Dragon Scale' },
+      R: { kind: 'rest', label: '休息碑' },
+      M: { kind: 'memory', label: '記憶の断片', eventText: '黄金の杯が、眠れる竜の怒りを呼び覚ました。' },
+      B: { kind: 'boss', enemyIds: ['dragon'], label: 'Dragon' },
+    },
+  },
+];
+
+const HAMLET_FIXED_FLOORS: typeof BEOWULF_FIXED_FLOORS = [
+  {
+    name: 'エルシノア城・城壁',
+    rows: [
+      '###############',
+      '#P....M.......#',
+      '#.#####.#####.#',
+      '#.....#.....#.#',
+      '#..G..#..C..#.#',
+      '#.....#.....#.#',
+      '###.###.###.#.#',
+      '#...#.....#...#',
+      '#.R.#..H..###.#',
+      '#...#.....#...#',
+      '#...#####...S.#',
+      '#.............#',
+      '###############',
+    ],
+    markers: {
+      G: { kind: 'enemy', enemyIds: ['ghost'], label: 'Ghost' },
+      H: { kind: 'enemy', enemyIds: ['ghost', 'royal_guard'], label: 'Ambush' },
+      C: { kind: 'chest', materialId: 'ghost_fragment', label: 'Ghost Fragment' },
+      R: { kind: 'rest', label: '祈りの間' },
+      M: { kind: 'memory', label: '亡霊の囁き', eventText: '「覚えていろ。毒は眠りの姿をして王座へ忍び込む。」' },
+      S: { kind: 'stairs', label: '階段' },
+    },
+  },
+  {
+    name: 'エルシノア城・謁見の間',
+    rows: [
+      '###############',
+      '#P............#',
+      '#.###.###.###.#',
+      '#...#..C..#...#',
+      '#...#.....#...#',
+      '#...###.###...#',
+      '#..R...G......#',
+      '#.#####.#####.#',
+      '#.....#.....#.#',
+      '#..H..#..G..S.#',
+      '#.............#',
+      '#.............#',
+      '###############',
+    ],
+    markers: {
+      G: { kind: 'enemy', enemyIds: ['royal_guard'], label: 'Royal Guard' },
+      H: { kind: 'enemy', enemyIds: ['ghost', 'ghost'], label: 'Ghosts' },
+      C: { kind: 'chest', materialId: 'broken_crown', label: 'Broken Crown' },
+      R: { kind: 'memory', label: '芝居の罠', eventText: '上演された罪は、王の顔から血の気を奪った。' },
+      S: { kind: 'stairs', label: '階段' },
+    },
+  },
+  {
+    name: '玉座の間・毒杯の決闘',
+    rows: [
+      '###############',
+      '#P............#',
+      '#.#####.#####.#',
+      '#.....#.....#.#',
+      '#.M...#...C.#.#',
+      '#.....#.....#.#',
+      '###.###.###.#.#',
+      '#...#..R..#...#',
+      '#...#.....###.#',
+      '#...#####...B.#',
+      '#.............#',
+      '#.............#',
+      '###############',
+    ],
+    markers: {
+      C: { kind: 'chest', materialId: 'memory_of_revenge', label: 'Memory of Revenge' },
+      R: { kind: 'rest', label: '祈りの間' },
+      M: { kind: 'memory', label: '毒杯', eventText: '銀の杯に、祈りでは消せない濁りが沈んでいる。' },
+      B: { kind: 'boss', enemyIds: ['claudius'], label: 'Claudius' },
+    },
+  },
+];
+
+const MACBETH_FIXED_FLOORS: typeof BEOWULF_FIXED_FLOORS = [
+  {
+    name: '荒野の魔女道',
+    rows: [
+      '###############',
+      '#P....M.......#',
+      '#.~~~.###.~~~.#',
+      '#.....#...W...#',
+      '#.###.#.###.#.#',
+      '#...#...#...#.#',
+      '#.W.###.#.C.#.#',
+      '#.......#.....#',
+      '#.###.###.###.#',
+      '#...R.....W.S.#',
+      '#.............#',
+      '#.............#',
+      '###############',
+    ],
+    markers: {
+      W: { kind: 'enemy', enemyIds: ['witch'], label: 'Witch' },
+      C: { kind: 'chest', materialId: 'witch_scroll', label: 'Witch Scroll' },
+      R: { kind: 'rest', label: '焚火跡' },
+      M: { kind: 'memory', label: '予言', eventText: '「いずれ王となるお方」その一言が、剣より深く胸へ刺さる。' },
+      S: { kind: 'stairs', label: '階段' },
+    },
+  },
+  {
+    name: 'ダンシネイン城・血の回廊',
+    rows: [
+      '###############',
+      '#P............#',
+      '#.###.###.###.#',
+      '#...#..S..#...#',
+      '#.B.#.....#..C#',
+      '#...###.###...#',
+      '#.......R.....#',
+      '#.###.#####.#.#',
+      '#...#..G..#...#',
+      '#...#.....#...#',
+      '#.M.......#...#',
+      '#.............#',
+      '###############',
+    ],
+    markers: {
+      S: { kind: 'stairs', label: '階段' },
+      B: { kind: 'enemy', enemyIds: ['banquos_ghost'], label: "Banquo's Ghost" },
+      G: { kind: 'enemy', enemyIds: ['soldier', 'soldier'], label: 'Guards' },
+      C: { kind: 'chest', materialId: 'blood_relic', label: 'Blood Relic' },
+      R: { kind: 'rest', label: '古い礼拝堂' },
+      M: { kind: 'memory', label: '血の染み', eventText: '洗っても、洗っても、血の匂いだけが落ちない。' },
+    },
+  },
+  {
+    name: '運命の間・動く森',
+    rows: [
+      '###############',
+      '#P............#',
+      '#.#####.#####.#',
+      '#.....#.....#.#',
+      '#.M...#..C..#.#',
+      '#.....#.....#.#',
+      '#.###.###.###.#',
+      '#...#..R..#...#',
+      '#...#.....###.#',
+      '#...#####...B.#',
+      '#.............#',
+      '#.............#',
+      '###############',
+    ],
+    markers: {
+      C: { kind: 'chest', materialId: 'cursed_crown', label: 'Cursed Crown' },
+      R: { kind: 'rest', label: '崩れた王座' },
+      M: { kind: 'memory', label: '動く森', eventText: '森が動くはずはない。だが足音は、確かに近づいている。' },
+      B: { kind: 'boss', enemyIds: ['macbeths_fate'], label: "Macbeth's Fate" },
+    },
+  },
+];
+
+function fixedMapFromTemplates(worldId: string, floorIndex: number, templates: typeof BEOWULF_FIXED_FLOORS): DungeonMap {
+  const template = templates[Math.min(floorIndex, templates.length - 1)];
+  const entities: MapEntity[] = [];
+  let player = { x: 1, y: 1 };
+  let counter = 0;
+  const tiles: TileType[][] = template.rows.map((row, y) => {
+    if (row.length !== W) throw new Error(`Invalid fixed Beowulf map row width: ${row}`);
+    return [...row].map((cell, x) => {
+      if (cell === '#') return 'wall';
+      if (cell === '~') return 'water';
+      if (cell === 'P') player = { x, y };
+      const marker = template.markers[cell];
+      if (marker) {
+        entities.push({
+          id: `fixed_${floorIndex}_${counter++}`,
+          kind: marker.kind,
+          x,
+          y,
+          enemyIds: marker.enemyIds,
+          materialId: marker.materialId,
+          opened: marker.kind === 'chest' ? false : undefined,
+          label: marker.label,
+          eventText: marker.eventText,
+        });
+      }
+      return 'floor';
+    });
+  });
+  const visited = Array.from({ length: H }, () => Array(W).fill(false));
+  revealAround(visited, player.x, player.y);
+  return {
+    worldId,
+    floorIndex,
+    floorName: template.name,
+    width: W,
+    height: H,
+    tiles,
+    player,
+    entities,
+    visited,
+    isBossFloor: entities.some((entity) => entity.kind === 'boss'),
+  };
+}
+
 /** ワールドの素材からランダムに1つ */
 function randomMaterialId(worldId: string): string {
   const ids = Object.values(MATERIALS)
@@ -140,6 +427,10 @@ function randomMaterialId(worldId: string): string {
  * フロアのnodes構成から、戦闘グループ数・ボス有無を読み取って敵を配置する。
  */
 export function generateDungeonMap(worldId: string, floorIndex: number): DungeonMap {
+  if (worldId === 'beowulf') return fixedMapFromTemplates('beowulf', floorIndex, BEOWULF_FIXED_FLOORS);
+  if (worldId === 'hamlet') return fixedMapFromTemplates('hamlet', floorIndex, HAMLET_FIXED_FLOORS);
+  if (worldId === 'macbeth') return fixedMapFromTemplates('macbeth', floorIndex, MACBETH_FIXED_FLOORS);
+
   const dungeon = getDungeon(getWorld(worldId).dungeonId);
   const floor = dungeon.floors[floorIndex];
   const battleGroups = floor.nodes.filter((n) => n.type === 'battle').map((n) => n.enemyIds ?? []);

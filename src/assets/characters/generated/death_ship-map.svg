@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <title>death_ship-map</title>
+  <rect x="0" y="0" width="64" height="64" fill="none"/>
+  <rect x="15" y="34" width="37" height="10" fill="#102945" /><rect x="20" y="27" width="28" height="7" fill="#8ec6b4" /><rect x="31" y="13" width="3" height="21" fill="#d9d6b4" /><rect x="34" y="16" width="14" height="15" fill="#8ec6b4" /><rect x="18" y="45" width="31" height="5" fill="#111719" /><rect x="18" y="53" width="31" height="4" fill="rgba(0,0,0,.35)" />
+</svg>

@@ -38,6 +38,30 @@ interface BattleState {
   reset: () => void;
 }
 
+const nextLivingTurnIndex = (turnActorUids: string[], combatants: Combatant[], startIndex: number) =>
+  turnActorUids.findIndex((uid, index) =>
+    index >= startIndex && combatants.some((combatant) => combatant.uid === uid && combatant.alive),
+  );
+
+const ENEMY_TURN_DELAY_MS = 760;
+
+const cloneCombatants = (combatants: Combatant[]) =>
+  combatants.map((combatant) => ({ ...combatant, stats: { ...combatant.stats } }));
+
+const resolveEnemyCounter = (combatants: Combatant[]) => {
+  const enemyAction = orderActions(
+    livingOf(combatants, 'enemy').map((enemy) => decideEnemyAction(enemy, combatants)),
+    combatants,
+  )[0];
+  if (!enemyAction) return null;
+  return { action: enemyAction, log: resolveAction(combatants, enemyAction) };
+};
+
+const scheduleEnemyTurn = (callback: () => void) => {
+  const scheduler = typeof window === 'undefined' ? setTimeout : window.setTimeout;
+  scheduler(callback, ENEMY_TURN_DELAY_MS);
+};
+
 export const useBattleStore = create<BattleState>((set, get) => ({
   active: false,
   isBoss: false,
@@ -84,42 +108,68 @@ export const useBattleStore = create<BattleState>((set, get) => ({
     if (!actor || actor.uid !== requestedActorUid || planned.some((action) => action.actorUid === actor.uid)) return false;
 
     // 行動は入力した瞬間に解決する。これにより、各仲間のダメージが画面とログへ即時反映される。
-    const working = (inputIndex === 0 ? resetRoundFlags(combatants) : combatants)
-      .map((combatant) => ({ ...combatant, stats: { ...combatant.stats } }));
+    const working = inputIndex === 0 ? cloneCombatants(resetRoundFlags(combatants)) : cloneCombatants(combatants);
     const action: BattleAction = { ...a, actorUid: actor.uid };
     const roundLog = resolveAction(working, action);
 
     let phase: BattlePhase = 'input';
-    const nextIndex = inputIndex + 1;
 
     // 敵を倒した場合は、残りの入力を待たずに勝利へ進む。
     if (isBattleOver(working)) {
       phase = allyWon(working) ? 'won' : 'lost';
       roundLog.push({ text: phase === 'won' ? '戦いに勝利した！' : '全滅してしまった……。' });
-    } else if (nextIndex < turnActorUids.length) {
+    } else if (livingOf(working, 'enemy').length > 0) {
+      const logAfterPlayer = [...get().log, ...roundLog, { text: '敵のターン！' }];
+
       set({
         combatants: working,
-        log: [...get().log, ...roundLog],
+        log: logAfterPlayer,
         planned: [],
         lastAction: action,
-        inputIndex: nextIndex,
-        phase,
+        phase: 'resolving',
       });
+
+      scheduleEnemyTurn(() => {
+        const state = get();
+        if (state.phase !== 'resolving') return;
+        const afterEnemy = cloneCombatants(state.combatants);
+        const enemyResult = resolveEnemyCounter(afterEnemy);
+        const enemyLog = enemyResult?.log ?? [{ text: '敵は様子をうかがっている。' }];
+        let nextPhase: BattlePhase = 'input';
+
+        if (isBattleOver(afterEnemy)) {
+          nextPhase = allyWon(afterEnemy) ? 'won' : 'lost';
+          enemyLog.push({ text: nextPhase === 'won' ? '戦いに勝利した！' : '全滅してしまった……。' });
+          set({
+            combatants: afterEnemy,
+            log: [...state.log, ...enemyLog],
+            planned: [],
+            lastAction: enemyResult?.action ?? null,
+            turnActorUids: livingOf(afterEnemy, 'ally').map((ally) => ally.uid),
+            inputIndex: 0,
+            phase: nextPhase,
+          });
+          return;
+        }
+
+        const nextIndexAfterEnemy = nextLivingTurnIndex(turnActorUids, afterEnemy, inputIndex + 1);
+        const refreshedTurnActorUids = livingOf(afterEnemy, 'ally').map((ally) => ally.uid);
+        const nextIndex = nextIndexAfterEnemy >= 0
+          ? nextIndexAfterEnemy
+          : nextLivingTurnIndex(refreshedTurnActorUids, afterEnemy, 0);
+
+        set({
+          combatants: afterEnemy,
+          log: [...state.log, ...enemyLog],
+          planned: [],
+          lastAction: enemyResult?.action ?? null,
+          turnActorUids: nextIndexAfterEnemy >= 0 ? state.turnActorUids : refreshedTurnActorUids,
+          inputIndex: Math.max(0, nextIndex),
+          phase: nextPhase,
+        });
+      });
+
       return true;
-    } else {
-      // 味方全員が行動した後だけ、敵側のターンを解決する。
-      phase = 'resolving';
-      const enemyActions = orderActions(livingOf(working, 'enemy').map((enemy) => decideEnemyAction(enemy, working)), working);
-      for (const enemyAction of enemyActions) {
-        if (isBattleOver(working)) break;
-        roundLog.push(...resolveAction(working, enemyAction));
-      }
-      if (isBattleOver(working)) {
-        phase = allyWon(working) ? 'won' : 'lost';
-        roundLog.push({ text: phase === 'won' ? '戦いに勝利した！' : '全滅してしまった……。' });
-      } else {
-        phase = 'input';
-      }
     }
 
     set({

@@ -1,6 +1,7 @@
 import type { OwnedCharacter, SaveData } from '@/types';
 import { getCharacter, getWorld, WORLD_ORDER } from '@/data';
 import { statsAtLevel } from './leveling';
+import { normalizeActiveParty } from './party';
 
 const STORAGE_PREFIX = 'british-legends:slot:';
 export const SAVE_SLOTS = [1, 2, 3];
@@ -21,6 +22,7 @@ export function createNewSave(slotId: number): SaveData {
       clearedWorldIds: [],
       currentWorldId: null,
     },
+    activePartyIds: [],
     party: [],
     inventory: {},
     items: {},
@@ -34,7 +36,7 @@ export function loadSlot(slotId: number): SaveData | null {
     const raw = localStorage.getItem(slotKey(slotId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as SaveData;
-    return { ...parsed, gold: parsed.gold ?? 36, items: parsed.items ?? {} };
+    return normalizeActiveParty({ ...parsed, gold: parsed.gold ?? 36, items: parsed.items ?? {} });
   } catch {
     return null;
   }

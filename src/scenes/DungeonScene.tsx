@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useGameStore } from '@/store/useGameStore';
-import { getDungeon, getEnemy, getMaterial, getWorld } from '@/data';
+import { checkEvolution } from '@/engine/evolution';
+import { getCharacter, getDungeon, getEnemy, getMaterial, getWorld, STORE_ITEMS } from '@/data';
 import { explorationRate } from '@/engine/mapgen';
 import { Button } from '@/components/ui/Button';
 import { DungeonMap } from '@/components/dungeon/DungeonMap';
@@ -33,7 +34,7 @@ export function DungeonScene() {
     return () => window.removeEventListener('keydown', onKey);
   }, [movePlayer]);
 
-  if (!map || !worldId) return null;
+  if (!map || !worldId || !save) return null;
   const world = getWorld(worldId);
   const dgn = getDungeon(world.dungeonId);
   const rate = explorationRate(map);
@@ -41,6 +42,20 @@ export function DungeonScene() {
 
   // 出現する敵（このフロアのエンティティから）
   const enemyIds = [...new Set(map.entities.flatMap((e) => e.enemyIds ?? []))];
+  const nextEvolutionTarget = save?.party
+    .map((owned) => {
+      const char = getCharacter(owned.characterId);
+      const evo = char.evolution;
+      if (!evo) return null;
+      return { owned, char, evo, check: checkEvolution(owned, char, save.inventory) };
+    })
+    .find(Boolean);
+  const evolutionReadyNames = save.party
+    .map((owned) => {
+      const char = getCharacter(owned.characterId);
+      return checkEvolution(owned, char, save.inventory).canEvolve ? char.name : null;
+    })
+    .filter(Boolean);
 
   return (
     <>
@@ -62,6 +77,26 @@ export function DungeonScene() {
             <div className="dungeon-enemy-list">{enemyIds.length > 0 ? enemyIds.map((id) => <span key={id}>{getEnemy(id).name}</span>) : <span>静寂</span>}</div>
             <span className="dungeon-sidebar__label">TREASURE</span>
             <div className="dungeon-treasure-count">{Object.keys(save?.inventory ?? {}).length} 種類の素材</div>
+            {nextEvolutionTarget && (
+              <>
+                <span className="dungeon-sidebar__label">NEXT EVOLVE</span>
+                <div className="dungeon-evolve-hint">
+                  <strong>{nextEvolutionTarget.char.stageName}</strong>
+                  {nextEvolutionTarget.check.canEvolve && <em>READY - Lodgeの作業台へ</em>}
+                  <span>Lv {nextEvolutionTarget.owned.level}/{nextEvolutionTarget.evo.requiredLevel}</span>
+                  {nextEvolutionTarget.evo.requiredMaterials.map((req) => {
+                    const have = save.inventory[req.materialId] ?? 0;
+                    const shortage = Math.max(0, req.qty - have);
+                    return (
+                      <small key={req.materialId} className={shortage === 0 ? 'is-ready' : ''}>
+                        {getMaterial(req.materialId).name} {have}/{req.qty}
+                        {shortage > 0 ? ` あと${shortage}` : ' OK'}
+                      </small>
+                    );
+                  })}
+                </div>
+              </>
+            )}
           </aside>
         </div>
 
@@ -77,10 +112,23 @@ export function DungeonScene() {
         {/* トースト / 報酬 */}
         {mapToast && <div className="center accent small fade-in">{mapToast}</div>}
         {lastReward && (
-          <div className="center tiny dim">
-            前回：EXP {lastReward.exp}・{lastReward.gold}G
-            {Object.entries(lastReward.drops).length > 0 &&
-              '・' + Object.entries(lastReward.drops).map(([id, q]) => `${getMaterial(id).name}×${q}`).join('・')}
+          <div className="dungeon-reward-panel rpg-window fade-in">
+            <strong>戦利品</strong>
+            <span>EXP {lastReward.exp} / {lastReward.gold}G</span>
+            {Object.entries(lastReward.drops).length > 0 ? (
+              <span>{Object.entries(lastReward.drops).map(([id, q]) => `${getMaterial(id).name}×${q}`).join(' / ')}</span>
+            ) : (
+              <span className="dim">素材ドロップなし</span>
+            )}
+            {Object.entries(lastReward.bonusItems).length > 0 && (
+              <span>{Object.entries(lastReward.bonusItems).map(([id, q]) => `${STORE_ITEMS[id]?.name ?? id}×${q}`).join(' / ')}</span>
+            )}
+            {lastReward.levelUps.map((text) => (
+              <b key={text}>{text}</b>
+            ))}
+            {evolutionReadyNames.map((name) => (
+              <b key={name}>{name} は進化可能。Lodgeの作業台へ戻ろう。</b>
+            ))}
           </div>
         )}
 

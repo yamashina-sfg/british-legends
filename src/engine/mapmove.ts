@@ -20,6 +20,15 @@ const isWalkable = (map: DungeonMap, x: number, y: number) =>
 const entityAt = (map: DungeonMap, x: number, y: number) =>
   map.entities.find((e) => e.x === x && e.y === y && !(e.kind === 'chest' && e.opened));
 
+function shuffle<T>(arr: T[]): T[] {
+  const next = [...arr];
+  for (let index = next.length - 1; index > 0; index--) {
+    const swap = Math.floor(Math.random() * (index + 1));
+    [next[index], next[swap]] = [next[swap], next[index]];
+  }
+  return next;
+}
+
 function cloneMap(map: DungeonMap): DungeonMap {
   return {
     ...map,
@@ -29,47 +38,54 @@ function cloneMap(map: DungeonMap): DungeonMap {
   };
 }
 
-/** 敵（kind==='enemy'）を1歩動かす。boss は動かない（最深部で待つ）。 */
+/** ボス以外の敵だけが1歩動く。階段・宝箱・休息碑などのイベント地点は塞がない。 */
 function stepEnemies(map: DungeonMap): MapEntity | null {
   let collided: MapEntity | null = null;
+  const reserved = (x: number, y: number) =>
+    map.entities.some((entity) => {
+      if (entity.kind === 'enemy') return false;
+      if (entity.kind === 'chest' && entity.opened) return false;
+      return entity.x === x && entity.y === y;
+    });
   const blocked = (x: number, y: number) =>
     !isWalkable(map, x, y) ||
-    map.entities.some((o) => o.x === x && o.y === y && !(o.kind === 'chest' && o.opened));
+    reserved(x, y) ||
+    map.entities.some((entity) => entity.kind === 'enemy' && entity.x === x && entity.y === y);
 
-  for (const e of map.entities) {
-    if (e.kind !== 'enemy') continue;
+  for (const enemy of map.entities) {
+    if (enemy.kind !== 'enemy') continue;
     const px = map.player.x;
     const py = map.player.y;
-    const manhattan = Math.abs(px - e.x) + Math.abs(py - e.y);
-
+    const distance = Math.abs(px - enemy.x) + Math.abs(py - enemy.y);
     let dirs: [number, number][] = [
       [1, 0],
       [-1, 0],
       [0, 1],
       [0, -1],
     ];
-    // 近ければ追跡、遠ければ徘徊
-    if (manhattan <= 6 && Math.random() < 0.6) {
+
+    if (distance <= 5) {
       dirs.sort((a, b) => {
-        const da = Math.abs(px - (e.x + a[0])) + Math.abs(py - (e.y + a[1]));
-        const db = Math.abs(px - (e.x + b[0])) + Math.abs(py - (e.y + b[1]));
+        const da = Math.abs(px - (enemy.x + a[0])) + Math.abs(py - (enemy.y + a[1]));
+        const db = Math.abs(px - (enemy.x + b[0])) + Math.abs(py - (enemy.y + b[1]));
         return da - db;
       });
+    } else if (Math.random() < 0.55) {
+      dirs = shuffle(dirs);
     } else {
-      dirs = dirs.sort(() => Math.random() - 0.5);
+      continue;
     }
 
     for (const [dx, dy] of dirs) {
-      const nx = e.x + dx;
-      const ny = e.y + dy;
-      // プレイヤーに突っ込む＝戦闘開始
+      const nx = enemy.x + dx;
+      const ny = enemy.y + dy;
       if (nx === px && ny === py) {
-        collided = e;
+        collided = enemy;
         break;
       }
       if (!blocked(nx, ny)) {
-        e.x = nx;
-        e.y = ny;
+        enemy.x = nx;
+        enemy.y = ny;
         break;
       }
     }
@@ -113,7 +129,6 @@ export function resolveMove(prev: DungeonMap, dx: number, dy: number): MoveResul
   map.player.y = ty;
   revealAround(map.visited, tx, ty);
 
-  // 敵が動く → プレイヤーに接触したら戦闘
   const collided = stepEnemies(map);
   if (collided) return { map, type: 'encounter', entity: collided };
 

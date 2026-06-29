@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <title>failed_experiment-attack</title>
+  <rect x="0" y="0" width="64" height="64" fill="none"/>
+  <rect x="21" y="26" width="31" height="18" fill="#6e7474" /><rect x="42" y="18" width="15" height="15" fill="#6e7474" /><rect x="47" y="22" width="4" height="4" fill="#345b45" /><rect x="22" y="44" width="6" height="10" fill="#9bff9c" /><rect x="41" y="44" width="6" height="10" fill="#9bff9c" /><rect x="53" y="31" width="8" height="4" fill="#9bff9c" /><rect x="18" y="33" width="8" height="5" fill="#6e7474" /><rect x="22" y="55" width="34" height="4" fill="rgba(0,0,0,.35)" />
+</svg>

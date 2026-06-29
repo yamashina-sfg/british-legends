@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 
 const TABS: { type: CodexType; label: string }[] = [
   { type: 'world', label: '作品' },
+  { type: 'story', label: '断片' },
   { type: 'character', label: '仲間' },
   { type: 'enemy', label: '魔物' },
 ];
@@ -26,6 +27,8 @@ export function CodexOverlay() {
         return save.party.some(
           (p) => getCharacter(p.characterId).worldId === getCharacter(entry.refId).worldId,
         );
+      case 'story':
+        return save.codex.discoveredIds.includes(entry.id);
       default:
         return false;
     }
@@ -33,6 +36,7 @@ export function CodexOverlay() {
 
   const titleOf = (entry: CodexEntry): string => {
     if (entry.type === 'world') return getWorld(entry.refId).title;
+    if (entry.type === 'story') return `物語の断片: ${getWorld(entry.refId).title}`;
     if (entry.type === 'enemy') return getEnemy(entry.refId).name;
     return getCharacter(entry.refId).name;
   };

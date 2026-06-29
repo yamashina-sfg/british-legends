@@ -8,15 +8,18 @@ export interface DamageContext {
   atkBuff?: number;
 }
 
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
 /**
  * DQ風ダメージ計算。
- * 基本 = atk/2 - def/4、最低1、乱数0.875〜1.0、スキル倍率を乗算。
+ * 基本 = 攻撃力 - 防御力/2 + 乱数(-2..3)、最低1、スキル倍率を乗算。
  */
 export function calcDamage(ctx: DamageContext): number {
   const atk = ctx.attackerAtk + (ctx.atkBuff ?? 0);
-  const base = atk / 2 - ctx.defenderDef / 4;
-  const variance = 0.875 + Math.random() * 0.125;
-  const dmg = Math.floor(Math.max(1, base) * variance * ctx.skill.power);
+  const base = atk - ctx.defenderDef / 2 + randomInt(-2, 3);
+  const dmg = Math.floor(Math.max(1, base) * ctx.skill.power);
   return Math.max(1, dmg);
 }
 

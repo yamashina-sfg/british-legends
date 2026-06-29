@@ -1,35 +1,31 @@
+import type { CSSProperties } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { Button } from '@/components/ui/Button';
+import beowulfWorldArt from '@/assets/world/beowulf-overworld-v1.png';
 
 export function TitleScene() {
   const goSaveSelect = useGameStore((s) => s.goSaveSelect);
 
   return (
-    <div className="scene fade-in" style={{ justifyContent: 'center', alignItems: 'center' }}>
-      <div className="center" style={{ marginBottom: 8 }}>
-        <div style={{ fontSize: 13, letterSpacing: 4 }} className="dim">
-          BRITISH LEGENDS
-        </div>
-        <h1 style={{ fontSize: 34, color: 'var(--accent)', letterSpacing: 2, lineHeight: 1.2 }}>
-          ブリティッシュ
-          <br />
-          レジェンズ
+    <div className="title-scene fade-in" style={{ '--title-art': `url(${beowulfWorldArt})` } as CSSProperties}>
+      <div className="title-scene__veil" />
+      <div className="title-scene__content">
+        <div className="title-scene__kicker">BIBLIOTHECA IS BEING ERASED</div>
+        <h1>
+          British Legends
+          <span>ブリティッシュ・レジェンズ</span>
         </h1>
-        <div className="small dim" style={{ marginTop: 10 }}>
-          失われた文学世界 Bibliotheca を
-          <br />
-          修復する旅へ
-        </div>
+        <p>文学は教材ではない。剣で守るべき、失われかけた世界だ。</p>
       </div>
 
-      <div style={{ width: '70%', marginTop: 30 }} className="menu-list">
+      <div className="title-scene__menu menu-list">
         <Button primary center onClick={goSaveSelect}>
-          はじめる
+          物語を修復する
         </Button>
       </div>
 
-      <div className="tiny dim center" style={{ marginTop: 'auto', paddingTop: 24 }}>
-        v0.1.0 — MVP
+      <div className="title-scene__footer">
+        Turn-based dark fantasy RPG / Tragic Flaw System
       </div>
     </div>
   );

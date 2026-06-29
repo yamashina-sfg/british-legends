@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <title>zombie-hurt</title>
+  <rect x="0" y="0" width="64" height="64" fill="none"/>
+  <rect x="19" y="7" width="18" height="13" fill="#4e5b48" /><rect x="15" y="20" width="26" height="29" fill="#4e5b48" /><rect x="13" y="22" width="6" height="21" fill="#6b6f65" /><rect x="39" y="22" width="6" height="21" fill="#6b6f65" /><rect x="21" y="49" width="7" height="9" fill="#202320" /><rect x="32" y="49" width="7" height="9" fill="#202320" /><rect x="23" y="16" width="4" height="4" fill="#d7d0bd" /><rect x="33" y="16" width="4" height="4" fill="#d7d0bd" /><rect x="17" y="59" width="28" height="4" fill="rgba(0,0,0,.35)" />
+</svg>

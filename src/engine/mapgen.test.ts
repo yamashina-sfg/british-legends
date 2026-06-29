@@ -31,6 +31,15 @@ describe('dungeon accessibility', () => {
     }
   });
 
+  it('keeps every Beowulf fixed-floor objective reachable', () => {
+    for (let floor = 0; floor < 3; floor++) {
+      const map = generateDungeonMap('beowulf', floor);
+      for (const entity of map.entities) {
+        expect(canReach(map, entity)).toBe(true);
+      }
+    }
+  });
+
   it('allows the player to step through a rest event instead of blocking a corridor', () => {
     const map: DungeonMap = {
       worldId: 'beowulf', floorIndex: 0, floorName: 'test', width: 5, height: 3,
@@ -48,5 +57,31 @@ describe('dungeon accessibility', () => {
     const result = resolveMove(map, 1, 0);
     expect(result.type).toBe('rest');
     expect(result.map.player).toEqual({ x: 2, y: 1 });
+  });
+
+  it('moves normal enemies into the player but keeps boss encounters stationary', () => {
+    const map: DungeonMap = {
+      worldId: 'beowulf', floorIndex: 0, floorName: 'test', width: 6, height: 5,
+      tiles: [
+        ['wall', 'wall', 'wall', 'wall', 'wall', 'wall'],
+        ['wall', 'floor', 'floor', 'floor', 'floor', 'wall'],
+        ['wall', 'floor', 'floor', 'floor', 'floor', 'wall'],
+        ['wall', 'floor', 'floor', 'floor', 'floor', 'wall'],
+        ['wall', 'wall', 'wall', 'wall', 'wall', 'wall'],
+      ],
+      player: { x: 2, y: 2 },
+      entities: [
+        { id: 'enemy', kind: 'enemy', x: 4, y: 2, enemyIds: ['grendel'], label: 'Grendel' },
+        { id: 'boss', kind: 'boss', x: 4, y: 3, enemyIds: ['dragon'], label: 'Dragon' },
+      ],
+      visited: Array.from({ length: 5 }, () => Array(6).fill(false)),
+      isBossFloor: true,
+    };
+
+    const result = resolveMove(map, 0, -1);
+    const enemy = result.map.entities.find((entity) => entity.id === 'enemy');
+    const boss = result.map.entities.find((entity) => entity.id === 'boss');
+    expect(enemy).toMatchObject({ x: 3, y: 2 });
+    expect(boss).toMatchObject({ x: 4, y: 3 });
   });
 });

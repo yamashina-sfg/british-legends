@@ -1,10 +1,24 @@
 import type { Character, OwnedCharacter, Stats } from '@/types';
 
 /** レベルnに到達するための累積必要経験値（n=1なら0） */
+export function requiredExpForNextLevel(level: number): number {
+  const early: Record<number, number> = {
+    1: 30,
+    2: 70,
+    3: 130,
+    4: 220,
+    5: 350,
+  };
+  return early[level] ?? Math.floor(25 * Math.pow(level, 1.8) + 20);
+}
+
 export function expForLevel(level: number): number {
   if (level <= 1) return 0;
-  // ゆるやかな二次曲線
-  return Math.floor(20 * Math.pow(level - 1, 1.6));
+  let total = 0;
+  for (let lv = 1; lv < level; lv += 1) {
+    total += requiredExpForNextLevel(lv);
+  }
+  return total;
 }
 
 /** 累積経験値から現在レベルを算出 */

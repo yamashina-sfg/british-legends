@@ -1,6 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { TitleScene } from '@/scenes/TitleScene';
+import { OpeningScene } from '@/scenes/OpeningScene';
 import { SaveSelectScene } from '@/scenes/SaveSelectScene';
 import { WorldMapScene } from '@/scenes/WorldMapScene';
 import { WorldSelectScene } from '@/scenes/WorldSelectScene';
@@ -61,6 +62,7 @@ export default function App() {
     <AppErrorBoundary>
       <div className="game-frame">
         {scene === 'title' && <TitleScene />}
+        {scene === 'opening' && <OpeningScene />}
         {scene === 'saveSelect' && <SaveSelectScene />}
         {scene === 'worldMap' && <WorldMapScene />}
         {scene === 'worldSelect' && <WorldSelectScene />}

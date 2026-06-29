@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <title>bat-map</title>
+  <rect x="0" y="0" width="64" height="64" fill="none"/>
+  <rect x="28" y="25" width="13" height="14" fill="#171116" /><rect x="18" y="18" width="15" height="20" fill="#171116" /><rect x="37" y="18" width="15" height="20" fill="#171116" /><rect x="30" y="17" width="4" height="7" fill="#641719" /><rect x="37" y="17" width="4" height="7" fill="#641719" /><rect x="32" y="29" width="3" height="3" fill="#d7d0bd" /><rect x="38" y="29" width="3" height="3" fill="#d7d0bd" /><rect x="22" y="48" width="28" height="4" fill="rgba(0,0,0,.28)" />
+</svg>

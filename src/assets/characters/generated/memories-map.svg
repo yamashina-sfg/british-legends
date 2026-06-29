@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <title>memories-map</title>
+  <rect x="0" y="0" width="64" height="64" fill="none"/>
+  <rect x="24" y="16" width="18" height="12" fill="#d2bd80" /><rect x="19" y="28" width="28" height="22" fill="#d2bd80" /><rect x="17" y="48" width="6" height="8" fill="#d2bd80" /><rect x="28" y="48" width="6" height="8" fill="#d2bd80" /><rect x="39" y="48" width="6" height="8" fill="#d2bd80" /><rect x="24" y="28" width="5" height="5" fill="#111719" /><rect x="37" y="28" width="5" height="5" fill="#111719" /><rect x="17" y="36" width="8" height="4" fill="#747977" /><rect x="43" y="36" width="8" height="4" fill="#747977" /><rect x="23" y="52" width="24" height="4" fill="rgba(0,0,0,.28)" />
+</svg>

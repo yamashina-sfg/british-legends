@@ -3,6 +3,7 @@ import { getCharacter } from '@/data';
 import { statsWithEquipment } from '@/engine/equipment';
 import { Gauge } from '@/components/ui/Gauge';
 import { Sprite } from '@/components/ui/Sprite';
+import { getActiveParty } from '@/engine/party';
 
 export function PartyStatusBar() {
   const save = useGameStore((s) => s.save);
@@ -10,7 +11,7 @@ export function PartyStatusBar() {
 
   return (
     <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
-      {save.party.map((p, i) => {
+      {getActiveParty(save).map((p, i) => {
         const char = getCharacter(p.characterId);
         const stats = statsWithEquipment(char, p);
         const fainted = p.currentHp <= 0;

@@ -11,7 +11,9 @@ export const CHARACTERS: Record<string, Character> = {
     stageName: 'Young Beowulf',
     baseStats: { hp: 80, mp: 12, atk: 20, def: 12, spd: 10 },
     growthRate: { hp: 12, mp: 2, atk: 4, def: 2, spd: 1 },
-    skillIds: ['attack_basic', 'mighty_grip'],
+    skillIds: ['attack_basic', 'mighty_grip', 'shield_oath'],
+    role: 'Tank',
+    tragicFlaw: { name: '英雄', description: 'HP30%以下でHeroic Spiritが発動。攻撃力が上がるが防御が下がる。' },
     evolution: {
       requiredLevel: 5,
       requiredMaterials: [{ materialId: 'grendel_claw', qty: 3 }],
@@ -26,7 +28,9 @@ export const CHARACTERS: Record<string, Character> = {
     stageName: 'Hero Beowulf',
     baseStats: { hp: 140, mp: 24, atk: 32, def: 20, spd: 13 },
     growthRate: { hp: 16, mp: 3, atk: 5, def: 3, spd: 1 },
-    skillIds: ['attack_basic', 'mighty_grip', 'hero_roar'],
+    skillIds: ['attack_basic', 'mighty_grip', 'shield_oath', 'hero_roar'],
+    role: 'Tank',
+    tragicFlaw: { name: '英雄', description: 'HP30%以下でHeroic Spiritが発動。攻撃力が上がるが防御が下がる。' },
     evolution: {
       requiredLevel: 12,
       requiredMaterials: [
@@ -44,7 +48,9 @@ export const CHARACTERS: Record<string, Character> = {
     stageName: 'Dragon Slayer',
     baseStats: { hp: 220, mp: 40, atk: 48, def: 30, spd: 16 },
     growthRate: { hp: 20, mp: 4, atk: 6, def: 4, spd: 2 },
-    skillIds: ['attack_basic', 'mighty_grip', 'hero_roar', 'dragon_slash'],
+    skillIds: ['attack_basic', 'mighty_grip', 'shield_oath', 'hero_roar', 'dragon_slash'],
+    role: 'Tank',
+    tragicFlaw: { name: '英雄', description: 'HP30%以下でHeroic Spiritが発動。攻撃力が上がるが防御が下がる。' },
     evolution: {
       requiredLevel: 20,
       requiredMaterials: [{ materialId: 'dragon_scale', qty: 5 }],
@@ -59,7 +65,9 @@ export const CHARACTERS: Record<string, Character> = {
     stageName: 'Legendary King',
     baseStats: { hp: 340, mp: 60, atk: 66, def: 42, spd: 20 },
     growthRate: { hp: 26, mp: 5, atk: 8, def: 5, spd: 2 },
-    skillIds: ['attack_basic', 'mighty_grip', 'hero_roar', 'dragon_slash'],
+    skillIds: ['attack_basic', 'mighty_grip', 'shield_oath', 'hero_roar', 'dragon_slash'],
+    role: 'Tank',
+    tragicFlaw: { name: '英雄', description: 'HP30%以下でHeroic Spiritが発動。攻撃力が上がるが防御が下がる。' },
     evolution: null,
   },
 
@@ -72,7 +80,9 @@ export const CHARACTERS: Record<string, Character> = {
     stageName: 'Prince Hamlet',
     baseStats: { hp: 70, mp: 24, atk: 18, def: 10, spd: 14 },
     growthRate: { hp: 10, mp: 4, atk: 4, def: 2, spd: 2 },
-    skillIds: ['attack_basic', 'poison_blade'],
+    skillIds: ['attack_basic', 'hesitation', 'poison_blade'],
+    role: 'Attacker',
+    tragicFlaw: { name: '逡巡', description: '攻撃しないターンで逡巡を溜め、次の一撃を強化する。' },
     evolution: {
       requiredLevel: 8,
       requiredMaterials: [{ materialId: 'ghost_fragment', qty: 4 }],
@@ -87,7 +97,9 @@ export const CHARACTERS: Record<string, Character> = {
     stageName: 'Avenger Hamlet',
     baseStats: { hp: 130, mp: 44, atk: 30, def: 18, spd: 19 },
     growthRate: { hp: 14, mp: 5, atk: 5, def: 3, spd: 2 },
-    skillIds: ['attack_basic', 'poison_blade', 'to_be_or_not'],
+    skillIds: ['attack_basic', 'hesitation', 'poison_blade', 'to_be_or_not'],
+    role: 'Attacker',
+    tragicFlaw: { name: '逡巡', description: '攻撃しないターンで逡巡を溜め、次の一撃を強化する。' },
     evolution: {
       requiredLevel: 16,
       requiredMaterials: [
@@ -105,7 +117,9 @@ export const CHARACTERS: Record<string, Character> = {
     stageName: 'Tragic Prince',
     baseStats: { hp: 210, mp: 70, atk: 46, def: 28, spd: 24 },
     growthRate: { hp: 18, mp: 6, atk: 7, def: 4, spd: 3 },
-    skillIds: ['attack_basic', 'poison_blade', 'to_be_or_not'],
+    skillIds: ['attack_basic', 'hesitation', 'poison_blade', 'to_be_or_not'],
+    role: 'Attacker',
+    tragicFlaw: { name: '逡巡', description: '攻撃しないターンで逡巡を溜め、次の一撃を強化する。' },
     evolution: null,
   },
 
@@ -118,7 +132,9 @@ export const CHARACTERS: Record<string, Character> = {
     stageName: 'Thane Macbeth',
     baseStats: { hp: 90, mp: 18, atk: 22, def: 14, spd: 11 },
     growthRate: { hp: 13, mp: 3, atk: 5, def: 3, spd: 1 },
-    skillIds: ['attack_basic', 'bloody_dagger'],
+    skillIds: ['attack_basic', 'bloody_ambition', 'bloody_dagger'],
+    role: 'Attacker',
+    tragicFlaw: { name: '野心', description: 'HPを犠牲に攻撃力を上げる。危険なほど強い短期決戦型。' },
     evolution: {
       requiredLevel: 8,
       requiredMaterials: [{ materialId: 'witch_scroll', qty: 4 }],
@@ -133,7 +149,9 @@ export const CHARACTERS: Record<string, Character> = {
     stageName: 'King Macbeth',
     baseStats: { hp: 160, mp: 36, atk: 36, def: 22, spd: 14 },
     growthRate: { hp: 17, mp: 4, atk: 6, def: 4, spd: 2 },
-    skillIds: ['attack_basic', 'bloody_dagger', 'prophecy'],
+    skillIds: ['attack_basic', 'bloody_ambition', 'bloody_dagger', 'prophecy'],
+    role: 'Magic',
+    tragicFlaw: { name: '野心', description: 'HPを犠牲に攻撃力を上げる。危険なほど強い短期決戦型。' },
     evolution: {
       requiredLevel: 16,
       requiredMaterials: [
@@ -151,7 +169,54 @@ export const CHARACTERS: Record<string, Character> = {
     stageName: 'Cursed Tyrant',
     baseStats: { hp: 250, mp: 56, atk: 54, def: 34, spd: 18 },
     growthRate: { hp: 22, mp: 5, atk: 8, def: 5, spd: 2 },
-    skillIds: ['attack_basic', 'bloody_dagger', 'prophecy'],
+    skillIds: ['attack_basic', 'bloody_ambition', 'bloody_dagger', 'prophecy'],
+    role: 'Magic',
+    tragicFlaw: { name: '野心', description: 'HPを犠牲に攻撃力を上げる。危険なほど強い短期決戦型。' },
     evolution: null,
+  },
+  gulliver_traveler: {
+    id: 'gulliver_traveler', name: 'Gulliver', worldId: 'gulliver', spriteId: 'gulliver_traveler', stageName: 'Ship Surgeon Gulliver',
+    baseStats: { hp: 170, mp: 32, atk: 38, def: 28, spd: 18 }, growthRate: { hp: 15, mp: 4, atk: 5, def: 3, spd: 2 },
+    skillIds: ['attack_basic', 'mighty_grip', 'hero_roar'], evolution: null,
+  },
+  crusoe_castaway: {
+    id: 'crusoe_castaway', name: 'Robinson Crusoe', worldId: 'crusoe', spriteId: 'crusoe_castaway', stageName: 'Castaway Crusoe',
+    baseStats: { hp: 190, mp: 24, atk: 42, def: 32, spd: 16 }, growthRate: { hp: 17, mp: 3, atk: 5, def: 4, spd: 1 },
+    skillIds: ['attack_basic', 'mighty_grip'], evolution: null,
+  },
+  mariner_ancient: {
+    id: 'mariner_ancient', name: 'Ancient Mariner', worldId: 'mariner', spriteId: 'mariner_ancient', stageName: 'Ancient Mariner',
+    baseStats: { hp: 165, mp: 48, atk: 36, def: 27, spd: 20 }, growthRate: { hp: 14, mp: 5, atk: 4, def: 3, spd: 2 },
+    skillIds: ['attack_basic', 'poison_blade', 'prophecy'], evolution: null,
+  },
+  victor_scientist: {
+    id: 'victor_scientist', name: 'Victor Frankenstein', worldId: 'frankenstein', spriteId: 'victor_scientist', stageName: 'Victor Frankenstein',
+    baseStats: { hp: 160, mp: 58, atk: 34, def: 26, spd: 18 }, growthRate: { hp: 13, mp: 6, atk: 4, def: 3, spd: 2 },
+    skillIds: ['attack_basic', 'poison_blade', 'prophecy'], evolution: null,
+  },
+  alice_dreamer: {
+    id: 'alice_dreamer', name: 'Alice', worldId: 'alice', spriteId: 'alice_dreamer', stageName: 'Wonderland Alice',
+    baseStats: { hp: 150, mp: 62, atk: 34, def: 24, spd: 28 }, growthRate: { hp: 12, mp: 6, atk: 4, def: 2, spd: 3 },
+    skillIds: ['attack_basic', 'to_be_or_not', 'prophecy'], evolution: null,
+  },
+  holmes_detective: {
+    id: 'holmes_detective', name: 'Sherlock Holmes', worldId: 'holmes', spriteId: 'holmes_detective', stageName: 'Consulting Detective',
+    baseStats: { hp: 170, mp: 52, atk: 44, def: 28, spd: 26 }, growthRate: { hp: 14, mp: 5, atk: 5, def: 3, spd: 3 },
+    skillIds: ['attack_basic', 'poison_blade', 'to_be_or_not'], evolution: null,
+  },
+  van_helsing: {
+    id: 'van_helsing', name: 'Van Helsing', worldId: 'dracula', spriteId: 'van_helsing', stageName: 'Vampire Hunter',
+    baseStats: { hp: 210, mp: 44, atk: 54, def: 38, spd: 22 }, growthRate: { hp: 18, mp: 4, atk: 6, def: 4, spd: 2 },
+    skillIds: ['attack_basic', 'mighty_grip', 'dragon_slash'], evolution: null,
+  },
+  clarissa_hostess: {
+    id: 'clarissa_hostess', name: 'Clarissa', worldId: 'dalloway', spriteId: 'clarissa_hostess', stageName: 'Clarissa Dalloway',
+    baseStats: { hp: 155, mp: 70, atk: 32, def: 26, spd: 25 }, growthRate: { hp: 12, mp: 7, atk: 3, def: 3, spd: 3 },
+    skillIds: ['attack_basic', 'hero_roar', 'prophecy'], evolution: null,
+  },
+  winston_rebel: {
+    id: 'winston_rebel', name: 'Winston Smith', worldId: 'nineteen84', spriteId: 'winston_rebel', stageName: 'Hidden Rebel',
+    baseStats: { hp: 180, mp: 58, atk: 45, def: 34, spd: 24 }, growthRate: { hp: 15, mp: 5, atk: 5, def: 4, spd: 2 },
+    skillIds: ['attack_basic', 'to_be_or_not', 'prophecy'], evolution: null,
   },
 };

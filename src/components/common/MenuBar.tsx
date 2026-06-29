@@ -1,6 +1,7 @@
-import { useGameStore } from '@/store/useGameStore';
+import { useGameStore, type Overlay } from '@/store/useGameStore';
 
-const ITEMS: { key: 'party' | 'store' | 'materials' | 'codex' | 'settings'; label: string }[] = [
+const ITEMS: { key: 'lodge' | Exclude<Overlay, 'character' | 'evolution' | null>; label: string }[] = [
+  { key: 'lodge', label: 'ロビー' },
   { key: 'party', label: 'パーティ' },
   { key: 'store', label: 'ストア' },
   { key: 'materials', label: '素材' },
@@ -9,11 +10,15 @@ const ITEMS: { key: 'party' | 'store' | 'materials' | 'codex' | 'settings'; labe
 ];
 
 export function MenuBar() {
-  const openOverlay = useGameStore((s) => s.openOverlay);
+  const { openOverlay, openLodge } = useGameStore();
   return (
     <div className="menu-bar">
       {ITEMS.map((it) => (
-        <button key={it.key} className="btn btn-center small" onClick={() => openOverlay(it.key)}>
+        <button
+          key={it.key}
+          className="btn btn-center small"
+          onClick={() => (it.key === 'lodge' ? openLodge() : openOverlay(it.key))}
+        >
           {it.label}
         </button>
       ))}

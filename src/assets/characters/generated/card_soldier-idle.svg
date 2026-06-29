@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" shape-rendering="crispEdges">
+  <title>card_soldier-idle</title>
+  <rect x="0" y="0" width="64" height="64" fill="none"/>
+  <rect x="21" y="12" width="25" height="40" fill="#f3f7f7" /><rect x="21" y="12" width="25" height="4" fill="#b6474d" /><rect x="21" y="48" width="25" height="4" fill="#b6474d" /><rect x="29" y="26" width="8" height="8" fill="#b6474d" /><rect x="16" y="31" width="7" height="5" fill="#15151b" /><rect x="44" y="31" width="7" height="5" fill="#15151b" /><rect x="25" y="54" width="24" height="4" fill="rgba(0,0,0,.35)" />
+</svg>

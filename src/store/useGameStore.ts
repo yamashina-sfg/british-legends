@@ -6,6 +6,7 @@ import { evolve as evolveEngine } from '@/engine/evolution';
 import { generateDungeonMap } from '@/engine/mapgen';
 import { resolveMove, removeEntity } from '@/engine/mapmove';
 import { statsWithEquipment } from '@/engine/equipment';
+import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
 import {
   createNewSave,
   createOwnedCharacter,
@@ -18,6 +19,7 @@ import { useBattleStore } from './useBattleStore';
 
 export type Scene =
   | 'title'
+  | 'opening'
   | 'saveSelect'
   | 'worldMap'
   | 'worldSelect'
@@ -33,6 +35,7 @@ interface RewardSummary {
   exp: number;
   gold: number;
   drops: Record<string, number>;
+  bonusItems: Record<string, number>;
   levelUps: string[];
 }
 
@@ -91,6 +94,7 @@ interface GameState {
   buyEquipment: (partyIndex: number, equipmentId: string) => void;
   buyItem: (itemId: string) => void;
   consumeItem: (itemId: string) => boolean;
+  toggleActiveParty: (partyIndex: number) => void;
 }
 
 function discover(save: SaveData, ids: string[]): string[] {
@@ -125,7 +129,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const save = get().save;
     if (!save) return;
     const party = save.party.length > 0 ? save.party : [createOwnedCharacter(getWorld(worldId).rewardCharacterId)];
-    const nextSave = { ...save, party, progress: { ...save.progress, currentWorldId: worldId } };
+    const nextSave = normalizeActiveParty({ ...save, party, progress: { ...save.progress, currentWorldId: worldId } });
     set({ save: nextSave, worldId, scene: 'town', overlay: null });
     saveSlot(nextSave);
   },
@@ -142,7 +146,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   newGame: (slotId) => {
     const save = createNewSave(slotId);
     saveSlot(save);
-    set({ save, scene: 'worldMap', map: null, encounter: null, lastReward: null });
+    set({ save, scene: 'opening', map: null, encounter: null, lastReward: null });
   },
 
   continueGame: (slotId) => {
@@ -174,11 +178,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       const stats = statsWithEquipment(getCharacter(p.characterId), p);
       return { ...p, currentHp: stats.hp, currentMp: stats.mp };
     });
-    const nextSave: SaveData = {
+    const nextSave: SaveData = normalizeActiveParty({
       ...save,
       party,
       progress: { ...save.progress, currentWorldId: worldId },
-    };
+    });
     set({
       save: nextSave,
       worldId,
@@ -246,7 +250,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           encounter: { entityId: e.id, enemyIds: e.enemyIds ?? [], isBoss: e.kind === 'boss' },
           scene: 'battle',
         });
-        useBattleStore.getState().start(save.party, e.enemyIds ?? [], e.kind === 'boss');
+        useBattleStore.getState().start(getActiveParty(save), e.enemyIds ?? [], e.kind === 'boss');
         return;
       }
     }
@@ -272,7 +276,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     const enemyIds = encounter.enemyIds;
 
     const totalExp = enemyIds.reduce((sum, id) => sum + getEnemy(id).exp, 0);
-    const totalGold = enemyIds.reduce((sum, id) => sum + Math.max(4, Math.floor(getEnemy(id).exp / 3)), 0);
+    const totalGold = enemyIds.reduce((sum, id) => {
+      const enemy = getEnemy(id);
+      return sum + (enemy.gold ?? Math.max(4, Math.floor(enemy.exp / 3)));
+    }, 0);
 
     const drops: Record<string, number> = {};
     for (const id of enemyIds) {
@@ -280,13 +287,26 @@ export const useGameStore = create<GameState>((set, get) => ({
         if (Math.random() < d.rate) drops[d.materialId] = (drops[d.materialId] ?? 0) + 1;
       }
     }
+    const bonusItems: Record<string, number> = {};
+    const awardItem = (id: string, chance: number) => {
+      if (Math.random() < chance) bonusItems[id] = (bonusItems[id] ?? 0) + 1;
+    };
+    if (encounter.isBoss) {
+      awardItem('phoenix_page', 1);
+      awardItem('elixir', 0.6);
+    } else {
+      awardItem('recovery_potion', 0.28);
+      awardItem('field_ration', 0.18);
+      if (enemyIds.length >= 2) awardItem('high_recovery_potion', 0.14);
+    }
 
     const allCombatants = battle.combatants;
     const levelUps: string[] = [];
     const newParty: OwnedCharacter[] = save.party.map((p) => {
       const c = allCombatants.find((cb) => cb.side === 'ally' && cb.sourceId === p.characterId);
-      let owned: OwnedCharacter = c ? { ...p, currentHp: c.hp, currentMp: c.mp } : { ...p, currentHp: 0 };
-      if (owned.currentHp > 0) {
+      if (!c) return p;
+      let owned: OwnedCharacter = { ...p, currentHp: c.hp, currentMp: c.mp };
+      if (c.alive && owned.currentHp > 0) {
         const res = gainExp(owned, getCharacter(owned.characterId), totalExp);
         owned = res.owned;
         if (res.leveledUp) {
@@ -298,6 +318,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const inventory = { ...save.inventory };
     for (const [id, qty] of Object.entries(drops)) inventory[id] = (inventory[id] ?? 0) + qty;
+    const items = { ...save.items };
+    for (const [id, qty] of Object.entries(bonusItems)) items[id] = (items[id] ?? 0) + qty;
     const codexIds = [
       ...enemyIds.map((id) => `codex_enemy_${id}`),
       ...Object.keys(drops).map((id) => `codex_material_${id}`),
@@ -307,6 +329,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       ...save,
       party: newParty,
       inventory,
+      items,
       gold: save.gold + totalGold,
       codex: { discoveredIds: discover(save, codexIds) },
     };
@@ -318,7 +341,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       save: nextSave,
       map: nextMap,
       encounter: null,
-      lastReward: { exp: totalExp, gold: totalGold, drops, levelUps },
+      lastReward: { exp: totalExp, gold: totalGold, drops, bonusItems, levelUps },
     });
     saveSlot(nextSave);
     battle.reset();
@@ -331,8 +354,40 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   onBattleLost: () => {
+    const save = get().save;
+    const worldId = get().worldId ?? save?.progress.currentWorldId ?? save?.progress.unlockedWorldIds[0] ?? null;
     useBattleStore.getState().reset();
-    set({ scene: 'gameOver' });
+    if (!save) {
+      set({ scene: 'gameOver' });
+      return;
+    }
+
+    const lossRate = 0.1 + Math.random() * 0.1;
+    const lostGold = Math.min(save.gold, Math.ceil(save.gold * lossRate));
+    const party = save.party.map((p) => {
+      const stats = statsWithEquipment(getCharacter(p.characterId), p);
+      return {
+        ...p,
+        currentHp: Math.max(1, Math.ceil(stats.hp * 0.5)),
+        currentMp: Math.ceil(stats.mp * 0.5),
+      };
+    });
+    const nextSave: SaveData = {
+      ...save,
+      party,
+      gold: save.gold - lostGold,
+      progress: { ...save.progress, currentWorldId: worldId },
+    };
+    set({
+      save: nextSave,
+      scene: 'town',
+      worldId,
+      map: null,
+      encounter: null,
+      mapToast: `敗北した。拠点へ戻された。${lostGold}Gを失った。`,
+      lastReward: null,
+    });
+    saveSlot(nextSave);
   },
 
   completeWorld: (worldId) => {
@@ -344,7 +399,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     const alreadyHas = party.some((p) => sameTree(p.characterId, world.rewardCharacterId));
     if (!alreadyHas) party = [...party, createOwnedCharacter(world.rewardCharacterId)];
 
-    let nextSave: SaveData = { ...save, party };
+    const activePartyIds = getActivePartyIds(save);
+    const shouldJoinActive = !alreadyHas && activePartyIds.length < 3;
+    let nextSave: SaveData = normalizeActiveParty({
+      ...save,
+      party,
+      activePartyIds: shouldJoinActive ? [...activePartyIds, world.rewardCharacterId] : activePartyIds,
+    });
     nextSave = unlockNextWorld(nextSave, worldId);
     nextSave = {
       ...nextSave,
@@ -352,6 +413,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         discoveredIds: discover(nextSave, [
           `codex_world_${worldId}`,
           `codex_char_${world.rewardCharacterId}`,
+          `codex_story_${worldId}`,
         ]),
       },
     };
@@ -380,9 +442,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!result) return { ok: false, message: '進化条件を満たしていません。' };
 
     const newParty = save.party.map((p, i) => (i === partyIndex ? result.owned : p));
+    const activePartyIds = getActivePartyIds(save).map((id) => (id === owned.characterId ? result.owned.characterId : id));
     const nextSave: SaveData = {
       ...save,
       party: newParty,
+      activePartyIds,
       inventory: result.inventory,
       codex: { discoveredIds: discover(save, [`codex_char_${result.owned.characterId}`]) },
     };
@@ -456,5 +520,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ save: nextSave });
     saveSlot(nextSave);
     return true;
+  },
+
+  toggleActiveParty: (partyIndex) => {
+    const save = get().save;
+    const member = save?.party[partyIndex];
+    if (!save || !member) return;
+    const nextSave = toggleActivePartyMember(save, member.characterId);
+    set({ save: nextSave });
+    saveSlot(nextSave);
   },
 }));

@@ -26,9 +26,14 @@ export interface Combatant {
   skillIds: string[];
   /** hero_roar 等による攻撃力バフ（累積） */
   atkBuff: number;
+  /** Hamlet の逡巡など、次の一撃へ持ち越す文学テーマ由来の蓄積 */
+  tragicCharge: number;
+  /** 戦闘内で何回行動したか。敵の固定パターンに使う。 */
+  actionCount: number;
   /** 防御コマンドによる被ダメ半減（このラウンドのみ） */
   defending: boolean;
   rageTriggered: boolean;
+  passiveTriggered: boolean;
   alive: boolean;
 }
 
@@ -64,8 +69,11 @@ export function combatantFromOwned(owned: OwnedCharacter, partyIndex = 0): Comba
     mp: Math.min(owned.currentMp, stats.mp),
     skillIds: owned.learnedSkillIds,
     atkBuff: 0,
+    tragicCharge: 0,
+    actionCount: 0,
     defending: false,
     rageTriggered: false,
+    passiveTriggered: false,
     alive: owned.currentHp > 0,
   };
 }
@@ -86,8 +94,11 @@ export function combatantFromEnemy(enemyId: string, index: number): Combatant {
     mp: enemy.stats.mp,
     skillIds: enemy.skillIds,
     atkBuff: 0,
+    tragicCharge: 0,
+    actionCount: 0,
     defending: false,
     rageTriggered: false,
+    passiveTriggered: false,
     alive: true,
   };
 }
@@ -117,6 +128,69 @@ export const allyWon = (cs: Combatant[]) => livingOf(cs, 'enemy').length === 0;
 export function decideEnemyAction(actor: Combatant, all: Combatant[]): BattleAction {
   const targets = livingOf(all, 'ally');
   const target = targets[Math.floor(Math.random() * targets.length)];
+  const nextActionNumber = actor.actionCount + 1;
+
+  if (actor.sourceId === 'grendel') {
+    return {
+      actorUid: actor.uid,
+      type: 'skill',
+      skillId: nextActionNumber % 3 === 0 ? 'grendel_crush' : 'enemy_bite',
+      targetUid: target?.uid,
+    };
+  }
+
+  if (actor.sourceId === 'grendels_mother') {
+    const woundedTarget = [...targets].sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+    return {
+      actorUid: actor.uid,
+      type: 'skill',
+      skillId: nextActionNumber % 4 === 0 ? 'mere_drag' : nextActionNumber % 2 === 0 ? 'curse_word' : 'enemy_bite',
+      targetUid: woundedTarget?.uid ?? target?.uid,
+    };
+  }
+
+  if (actor.sourceId === 'dragon') {
+    const specialRoll = Math.random();
+    if (actor.rageTriggered || specialRoll < 0.4) {
+      return {
+        actorUid: actor.uid,
+        type: 'skill',
+        skillId: specialRoll < 0.2 ? 'dragon_tail_smash' : 'dragon_breath',
+        targetUid: target?.uid,
+      };
+    }
+    return {
+      actorUid: actor.uid,
+      type: 'attack',
+      targetUid: target?.uid,
+    };
+  }
+
+  if (actor.sourceId === 'claudius') {
+    const guardCount = all.filter((c) => c.side === 'enemy' && c.alive && c.sourceId === 'royal_guard').length;
+    if (nextActionNumber % 3 === 0 && guardCount < 2) {
+      return { actorUid: actor.uid, type: 'skill', skillId: 'summon_guard', targetUid: target?.uid };
+    }
+    return {
+      actorUid: actor.uid,
+      type: 'skill',
+      skillId: nextActionNumber % 2 === 0 ? 'poisoned_cup' : 'curse_word',
+      targetUid: target?.uid,
+    };
+  }
+
+  if (actor.sourceId === 'macbeths_fate') {
+    if (!actor.rageTriggered && actor.hp <= actor.maxHp / 2) {
+      return { actorUid: actor.uid, type: 'skill', skillId: 'bloody_ambition', targetUid: actor.uid };
+    }
+    return {
+      actorUid: actor.uid,
+      type: 'skill',
+      skillId: nextActionNumber % 3 === 0 ? 'witch_curse' : 'bloody_dagger',
+      targetUid: target?.uid,
+    };
+  }
+
   // MPが足りる特技を3割の確率で使用
   const usable = actor.skillIds
     .map(getSkill)
@@ -147,6 +221,12 @@ function pickAliveTarget(cs: Combatant[], preferUid: string | undefined, side: S
   return livingOf(cs, side)[0];
 }
 
+function pickTarget(cs: Combatant[], preferUid: string | undefined, side: Side): Combatant | undefined {
+  const pref = cs.find((c) => c.uid === preferUid && c.side === side);
+  if (pref) return pref;
+  return cs.find((c) => c.side === side);
+}
+
 function applyDamage(target: Combatant, raw: number): number {
   const dmg = target.defending ? Math.max(1, Math.floor(raw / 2)) : raw;
   target.hp = Math.max(0, target.hp - dmg);
@@ -157,8 +237,23 @@ function applyDamage(target: Combatant, raw: number): number {
 export function resolveAction(working: Combatant[], action: BattleAction): LogEntry[] {
   const actor = working.find((c) => c.uid === action.actorUid);
   if (!actor || !actor.alive) return [];
+  actor.actionCount += 1;
   const logs: LogEntry[] = [];
   const enemySide: Side = actor.side === 'ally' ? 'enemy' : 'ally';
+
+  if (
+    actor.side === 'ally' &&
+    actor.sourceId.startsWith('beowulf') &&
+    !actor.passiveTriggered &&
+    actor.hp > 0 &&
+    actor.hp <= actor.maxHp * 0.3
+  ) {
+    actor.passiveTriggered = true;
+    actor.atkBuff += 14;
+    actor.stats = { ...actor.stats, def: Math.max(1, actor.stats.def - 6) };
+    logs.push({ text: '宿命「英雄」: Beowulfの Heroic Spirit が燃え上がる！' });
+    logs.push({ text: '攻撃力が大きく上がったが、防御が下がった。' });
+  }
 
   if (action.type === 'defend') {
     actor.defending = true;
@@ -180,11 +275,32 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
   }
 
   switch (skill.type) {
+    case 'charge': {
+      actor.tragicCharge = Math.min(3, actor.tragicCharge + 1);
+      logs.push({ text: `宿命「逡巡」: ${actor.name} は決断を遅らせ、次の一撃を研ぎ澄ませた。` });
+      logs.push({ text: `逡巡 ${actor.tragicCharge}/3。次の攻撃威力が上がる。` });
+      break;
+    }
+    case 'sacrifice': {
+      const cost = Math.max(1, Math.floor(actor.maxHp * 0.16));
+      actor.hp = Math.max(1, actor.hp - cost);
+      actor.atkBuff += skill.power;
+      if (actor.sourceId === 'macbeths_fate') actor.rageTriggered = true;
+      logs.push({ text: `宿命「野心」: ${actor.name} はHP${cost}を代償に力を得た！` });
+      logs.push({ text: `${actor.name} の攻撃力が大きく上がった。` });
+      break;
+    }
     case 'attack': {
       const targets =
         skill.target === 'all' ? livingOf(working, enemySide) : [pickAliveTarget(working, action.targetUid, enemySide)].filter(Boolean) as Combatant[];
       for (const t of targets) {
-        const dmg = calcDamage({ attackerAtk: actor.stats.atk, defenderDef: t.stats.def, skill, atkBuff: actor.atkBuff });
+        let dmg = calcDamage({ attackerAtk: actor.stats.atk, defenderDef: t.stats.def, skill, atkBuff: actor.atkBuff });
+        if (actor.tragicCharge > 0) {
+          const multiplier = 1 + actor.tragicCharge * 0.55;
+          dmg = Math.max(1, Math.floor(dmg * multiplier));
+          logs.push({ text: `溜めた逡巡が決断に変わった！ 威力 ${Math.round(multiplier * 100)}%` });
+          actor.tragicCharge = 0;
+        }
         const dealt = applyDamage(t, dmg);
         logs.push({ text: `${t.name} に ${dealt} のダメージ！` });
         if (t.sourceId === 'dragon' && !t.rageTriggered && t.hp > 0 && t.hp <= t.maxHp / 2) {
@@ -198,11 +314,43 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
     }
     case 'heal': {
       const heal = calcHeal(skill);
-      actor.hp = Math.min(actor.maxHp, actor.hp + heal);
-      logs.push({ text: `${actor.name} のHPが ${heal} 回復した。` });
+      const target = skill.target === 'self' ? actor : pickAliveTarget(working, action.targetUid, actor.side);
+      if (!target || !target.alive) {
+        logs.push({ text: 'しかし、効果はなかった。' });
+        break;
+      }
+      const before = target.hp;
+      target.hp = Math.min(target.maxHp, target.hp + heal);
+      logs.push({ text: `${target.name} のHPが ${target.hp - before} 回復した。` });
+      break;
+    }
+    case 'revive': {
+      const target = pickTarget(working, action.targetUid, actor.side);
+      if (!target || target.alive) {
+        logs.push({ text: 'しかし、蘇生できる仲間はいなかった。' });
+        break;
+      }
+      target.alive = true;
+      target.hp = Math.max(1, Math.ceil(target.maxHp * (skill.power / 100)));
+      logs.push({ text: `${target.name} はHP${target.hp}で立ち上がった！` });
       break;
     }
     case 'buff': {
+      if (skill.id === 'summon_guard') {
+        const guard = combatantFromEnemy('royal_guard', working.filter((c) => c.sourceId === 'royal_guard').length);
+        guard.uid = `enemy_royal_guard_summoned_${actor.actionCount}_${Math.floor(Math.random() * 10000)}`;
+        guard.name = 'Royal Guard';
+        working.push(guard);
+        logs.push({ text: 'Claudius は王の護衛を呼び寄せた！' });
+        break;
+      }
+      if (skill.id === 'shield_oath') {
+        actor.defending = true;
+        actor.stats = { ...actor.stats, def: actor.stats.def + skill.power };
+        logs.push({ text: `宿命「英雄」: ${actor.name} は仲間を守る誓いを立てた。` });
+        logs.push({ text: `${actor.name} の防御力が上がり、このターン受けるダメージを抑える。` });
+        break;
+      }
       actor.atkBuff += skill.power;
       logs.push({ text: `${actor.name} の攻撃力が上がった！` });
       break;

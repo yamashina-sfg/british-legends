@@ -25,6 +25,26 @@ export const CODEX: Record<string, CodexEntry> = {
       '『マクベス』は四大悲劇で最も短い作品。将軍マクベスは三人の魔女の予言に唆され、王ダンカンを暗殺して王位に就くが、罪の意識と新たな予言に追い詰められ破滅する。',
   },
 
+  // --- 物語の縦軸 ---
+  codex_story_beowulf: {
+    id: 'codex_story_beowulf',
+    type: 'story',
+    refId: 'beowulf',
+    loreText: '竜の塚に残った黒い余白。Oblivionは怪物ではなく、物語が読まれなくなる瞬間そのものに巣食っている。',
+  },
+  codex_story_hamlet: {
+    id: 'codex_story_hamlet',
+    type: 'story',
+    refId: 'hamlet',
+    loreText: 'エルシノア城の封蝋に刻まれたThe Censorの印。彼らは問いを嫌い、悲劇から迷いと矛盾を削り取ろうとする。',
+  },
+  codex_story_macbeth: {
+    id: 'codex_story_macbeth',
+    type: 'story',
+    refId: 'macbeth',
+    loreText: '燃え残った最終ページ。Oblivionは結末だけでなく、そこへ至る選択と罪の重さを消そうとしている。',
+  },
+
   // --- 敵 ---
   codex_enemy_grendel: {
     id: 'codex_enemy_grendel',
