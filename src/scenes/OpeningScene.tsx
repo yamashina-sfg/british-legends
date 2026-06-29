@@ -36,73 +36,81 @@ const OPENING_BEATS: OpeningBeat[] = [
     text: '——ページをめくる音だけが、闇の底に響いていた。',
   },
   {
-    image: '/opening/opening-bibliotheca.png',
-    title: 'Bibliotheca',
-    speaker: 'narration',
+    image: '/assets/opening/opening-bibliotheca.png',
+    title: 'Scene 1 / Bibliotheca',
+    speaker: 'librarian',
     motion: 'push',
     mood: 'calm',
-    text: 'ここは Bibliotheca。イギリス文学史に刻まれた、すべての物語が眠る図書館。',
+    text: 'ここは Bibliotheca。イギリス文学史に刻まれた物語が眠る図書館。',
   },
   {
-    image: '/opening/opening-legacy-shelf.png',
-    title: 'The Living Shelves',
-    speaker: 'narration',
+    image: '/assets/opening/opening-bibliotheca.png',
+    title: 'Scene 2 / The Living Shelves',
+    speaker: 'librarian',
     motion: 'drift',
     mood: 'calm',
-    text: 'Beowulf。Hamlet。Macbeth。人が物語を語り継ぐかぎり、本は静かに光を灯し続けていた。',
+    text: '人々は何百年もの間、物語を語り継いできた。Beowulf。Hamlet。Macbeth。Frankenstein。Sherlock Holmes。1984。',
   },
   {
-    image: '/opening/opening-censor.png',
-    title: 'The Censor',
+    image: '/assets/opening/opening-censor.png',
+    title: 'Scene 3 / The Censor',
     speaker: 'censor',
     motion: 'close',
     mood: 'dark',
     sfx: 'boom',
-    text: '——忘れられた物語に、価値などない。',
+    text: '忘れられた物語に価値はない。',
   },
   {
-    image: '/opening/opening-vanishing-books.png',
-    title: 'Erasure',
+    image: '/assets/opening/opening-erased-books.png',
+    title: 'Scene 3 / Erasure',
     kind: 'vanish',
     speaker: 'narration',
     motion: 'still',
     mood: 'dark',
     sfx: 'whoosh',
-    text: '黒い霧が棚を這う。ページから文字が一行ずつ剥がれ落ち、灯りがひとつ、またひとつと消えていく。',
+    text: '本のページから文字が消えていく。Beowulf も、Hamlet も、Macbeth も、白紙の沈黙へ沈んでいく。',
   },
   {
-    image: '/opening/opening-reading-gift.png',
-    title: 'Reading Gift',
+    image: '/assets/opening/opening-reading-gift.png',
+    title: 'Scene 4 / Reading Gift',
     kind: 'gift',
     speaker: 'narration',
     motion: 'rise',
     mood: 'hope',
     sfx: 'chime',
-    text: '灯の落ちた書架の床に、一冊だけ本が残されていた。君が触れた瞬間——白紙のページに、消えたはずの名が甦る。',
+    text: '床には一冊だけ本が落ちていた。君が拾う。しかし本は真っ白だ。その瞬間、文字が浮かび上がる——Beowulf。',
   },
   {
-    image: '/opening/opening-reading-gift.png',
+    image: '/assets/opening/opening-reading-gift.png',
     speaker: 'librarian',
     motion: 'rise',
     mood: 'hope',
     text: '……見えるのか。その本はもう、この世界の誰にも読めないはずだ。',
   },
   {
-    image: '/opening/opening-librarian-vow.png',
-    title: 'The Vow',
+    image: '/assets/opening/opening-librarian.png',
+    title: 'Scene 5 / The Vow',
     speaker: 'librarian',
     motion: 'rise',
     mood: 'hope',
-    text: '物語が消えれば、歴史も消える。歴史が消えれば、人は自分が何者だったのかさえ忘れてしまう。——君だけが、この物語を読める。君だけが、Bibliotheca を救える。',
+    text: '物語が消えれば、歴史も消える。歴史が消えれば、人々は、自分たちが何者だったのかさえ忘れてしまう。',
   },
   {
-    image: '/opening/opening-title-book.png',
-    title: 'British Legends',
+    image: '/assets/opening/opening-librarian.png',
+    title: 'Scene 5 / British Legends',
+    speaker: 'librarian',
+    motion: 'push',
+    mood: 'hope',
+    text: '君だけが、この物語を読むことができる。君だけが、Bibliotheca を救える。',
+  },
+  {
+    image: '/assets/opening/opening-lodge.png',
+    title: 'Scene 6 / Into the Book',
     speaker: 'narration',
     motion: 'push',
     mood: 'hope',
     sfx: 'whoosh',
-    text: '司書は一冊の本を君に託した。表紙には、British Legends。失われた物語を取り戻す旅が、いま始まる。',
+    text: '司書は一冊の本を君へ渡す。表紙には British Legends。ページが光り、君は物語の中へ吸い込まれていく。',
   },
 ];
 
@@ -259,6 +267,12 @@ export function OpeningScene() {
 
       <div className="opening-scene__veil" />
       <div className="opening-scene__dust" aria-hidden="true" />
+      {beat.title && (
+        <div className="opening-scene__chapter">
+          <span>{beat.title}</span>
+          <strong>Lost stories are being restored</strong>
+        </div>
+      )}
 
       {beat.kind === 'vanish' && <div className="opening-scene__blackout" aria-hidden="true" />}
       {beat.kind === 'gift' && (

@@ -214,6 +214,7 @@ export interface SaveData {
   slotId: number;
   lastSavedAt: number;
   playTimeSec: number;
+  openingWatched: boolean;
   progress: SaveProgress;
   /** 戦闘に出る最大3人の characterId。未設定の旧セーブは先頭3人を使う。 */
   activePartyIds?: string[];

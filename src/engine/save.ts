@@ -17,6 +17,7 @@ export function createNewSave(slotId: number): SaveData {
     slotId,
     lastSavedAt: Date.now(),
     playTimeSec: 0,
+    openingWatched: false,
     progress: {
       unlockedWorldIds: [firstWorldId],
       clearedWorldIds: [],
@@ -36,7 +37,7 @@ export function loadSlot(slotId: number): SaveData | null {
     const raw = localStorage.getItem(slotKey(slotId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as SaveData;
-    return normalizeActiveParty({ ...parsed, gold: parsed.gold ?? 36, items: parsed.items ?? {} });
+    return normalizeActiveParty({ ...parsed, openingWatched: parsed.openingWatched ?? true, gold: parsed.gold ?? 36, items: parsed.items ?? {} });
   } catch {
     return null;
   }

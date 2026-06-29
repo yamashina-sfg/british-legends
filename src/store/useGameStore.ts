@@ -69,6 +69,7 @@ interface GameState {
   selectWorld: (worldId: string) => void;
   enterTown: (worldId: string) => void;
   openLodge: () => void;
+  replayOpening: (slotId?: number) => void;
   openOverlay: (o: Overlay, charIndex?: number) => void;
   closeOverlay: () => void;
 
@@ -136,8 +137,19 @@ export const useGameStore = create<GameState>((set, get) => ({
   openLodge: () => {
     const save = get().save;
     if (!save) return;
-    const fallbackWorld = save.progress.currentWorldId ?? save.progress.unlockedWorldIds[0];
+    const nextSave = save.openingWatched ? save : { ...save, openingWatched: true };
+    if (!save.openingWatched) {
+      set({ save: nextSave });
+      saveSlot(nextSave);
+    }
+    const fallbackWorld = nextSave.progress.currentWorldId ?? nextSave.progress.unlockedWorldIds[0];
     if (fallbackWorld) get().enterTown(fallbackWorld);
+  },
+  replayOpening: (slotId) => {
+    const save = slotId ? loadSlot(slotId) : get().save;
+    if (save) {
+      set({ save, scene: 'opening', overlay: null, map: null, encounter: null });
+    }
   },
   openOverlay: (o, charIndex) =>
     set({ overlay: o, selectedCharIndex: charIndex ?? get().selectedCharIndex }),

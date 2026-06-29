@@ -5,7 +5,7 @@ import { Window } from '@/components/ui/Window';
 import { listSlots, SAVE_SLOTS } from '@/engine/save';
 
 export function SaveSelectScene() {
-  const { newGame, continueGame, eraseGame, goTitle } = useGameStore();
+  const { newGame, continueGame, eraseGame, goTitle, replayOpening } = useGameStore();
   const [, force] = useState(0);
   const slots = listSlots();
 
@@ -43,6 +43,9 @@ export function SaveSelectScene() {
                       style={{ width: 'auto' }}
                     >
                       消去
+                    </Button>
+                    <Button onClick={() => replayOpening(id)} style={{ width: 'auto' }}>
+                      Opening
                     </Button>
                   </div>
                 </>
