@@ -10,8 +10,10 @@ type TrackName = 'title' | 'opening' | 'lodge' | 'world' | 'dungeon' | 'battle' 
 const STORAGE_KEY = 'british-legends:bgm-enabled';
 
 const FILE_TRACKS: Partial<Record<TrackName, { src: string; volume: number; loop: boolean }>> = {
-  opening: { src: '/audio/opening-suite.wav', volume: 0.42, loop: true },
+  opening: { src: '/audio/opening-suite.wav', volume: 0.72, loop: true },
 };
+
+const fileBufferCache = new Map<string, Promise<AudioBuffer>>();
 
 function trackForScene(scene: Scene): TrackName {
   if (scene === 'opening') return 'opening';
@@ -86,6 +88,46 @@ function playTone(
   gain.connect(destination);
   oscillator.start(now);
   oscillator.stop(now + duration + 0.08);
+}
+
+function loadFileBuffer(ctx: AudioContext, src: string): Promise<AudioBuffer> {
+  const cached = fileBufferCache.get(src);
+  if (cached) return cached;
+  const promise = fetch(src)
+    .then((response) => {
+      if (!response.ok) throw new Error(`Unable to load BGM: ${src}`);
+      return response.arrayBuffer();
+    })
+    .then((buffer) => ctx.decodeAudioData(buffer));
+  fileBufferCache.set(src, promise);
+  return promise;
+}
+
+async function startFileTrack(ctx: AudioContext, track: { src: string; volume: number; loop: boolean }) {
+  const buffer = await loadFileBuffer(ctx, track.src);
+  const source = ctx.createBufferSource();
+  const gain = ctx.createGain();
+  const now = ctx.currentTime;
+
+  source.buffer = buffer;
+  source.loop = track.loop;
+  gain.gain.setValueAtTime(0.0001, now);
+  gain.gain.exponentialRampToValueAtTime(track.volume, now + 1.1);
+  source.connect(gain);
+  gain.connect(ctx.destination);
+  source.start(now);
+
+  return () => {
+    try {
+      const stopAt = ctx.currentTime + 0.5;
+      gain.gain.cancelScheduledValues(ctx.currentTime);
+      gain.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.12);
+      source.stop(stopAt);
+      window.setTimeout(() => gain.disconnect(), 700);
+    } catch {
+      // Already stopped or context was closed.
+    }
+  };
 }
 
 function startTrack(ctx: AudioContext, scene: Scene) {
@@ -178,67 +220,51 @@ export function AudioManager() {
   const scene = useGameStore((state) => state.scene);
   const [enabled, setEnabled] = useState(() => localStorage.getItem(STORAGE_KEY) !== 'off');
   const contextRef = useRef<AudioContext | null>(null);
-  const fileAudioRef = useRef<HTMLAudioElement | null>(null);
+  const activeTrackRef = useRef<TrackName | null>(null);
+  const startIdRef = useRef(0);
   const stopRef = useRef<() => void>(() => {});
 
   const stopCurrent = useCallback(() => {
+    startIdRef.current += 1;
+    activeTrackRef.current = null;
     stopRef.current();
     stopRef.current = () => {};
-    const audio = fileAudioRef.current;
-    if (audio) {
-      const startVolume = audio.volume;
-      const fadeStartedAt = performance.now();
-      const fade = () => {
-        const progress = Math.min(1, (performance.now() - fadeStartedAt) / 420);
-        audio.volume = Math.max(0, startVolume * (1 - progress));
-        if (progress < 1 && !audio.paused) {
-          window.requestAnimationFrame(fade);
-          return;
-        }
-        audio.pause();
-        audio.currentTime = 0;
-      };
-      fade();
-      fileAudioRef.current = null;
-    }
   }, []);
 
-  const startCurrent = useCallback(async () => {
+  const startCurrent = useCallback(async (force = false) => {
     if (!enabled) return;
-    const fileTrack = FILE_TRACKS[trackForScene(scene)];
-    if (fileTrack) {
-      stopCurrent();
-      const audio = new Audio(fileTrack.src);
-      audio.loop = fileTrack.loop;
-      audio.volume = 0;
-      audio.preload = 'auto';
-      fileAudioRef.current = audio;
-      stopRef.current = () => {};
-      await audio.play().catch(() => undefined);
-      const fadeStartedAt = performance.now();
-      const fade = () => {
-        if (fileAudioRef.current !== audio || audio.paused) return;
-        const progress = Math.min(1, (performance.now() - fadeStartedAt) / 900);
-        audio.volume = fileTrack.volume * progress;
-        if (progress < 1) window.requestAnimationFrame(fade);
-      };
-      fade();
-      return;
-    }
+    const track = trackForScene(scene);
+    if (!force && activeTrackRef.current === track) return;
+    const startId = startIdRef.current + 1;
+    startIdRef.current = startId;
     const ctx = contextRef.current ?? createContext();
     if (!ctx) return;
     contextRef.current = ctx;
     if (ctx.state === 'suspended') {
       await ctx.resume().catch(() => undefined);
     }
+    const fileTrack = FILE_TRACKS[trackForScene(scene)];
+    if (fileTrack) {
+      stopCurrent();
+      const stopFile = await startFileTrack(ctx, fileTrack).catch(() => null);
+      if (!stopFile) return;
+      if (startIdRef.current !== startId + 1 || trackForScene(useGameStore.getState().scene) !== track) {
+        stopFile();
+        return;
+      }
+      activeTrackRef.current = track;
+      stopRef.current = stopFile;
+      return;
+    }
     stopCurrent();
+    activeTrackRef.current = track;
     stopRef.current = startTrack(ctx, scene);
   }, [enabled, scene, stopCurrent]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, enabled ? 'on' : 'off');
     if (enabled) {
-      void startCurrent();
+      void startCurrent(true);
     } else {
       stopCurrent();
     }
@@ -251,8 +277,8 @@ export function AudioManager() {
     const unlock = () => {
       void startCurrent();
     };
-    window.addEventListener('pointerdown', unlock, { once: true });
-    window.addEventListener('keydown', unlock, { once: true });
+    window.addEventListener('pointerdown', unlock);
+    window.addEventListener('keydown', unlock);
     return () => {
       window.removeEventListener('pointerdown', unlock);
       window.removeEventListener('keydown', unlock);
