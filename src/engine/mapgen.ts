@@ -1,5 +1,5 @@
-import type { DungeonMap, MapEntity, TileType } from '@/types';
-import { getDungeon, getEnemy, getMaterial, getWorld, MATERIALS } from '@/data';
+import type { DungeonMap, MapEntity, RewardEntry, TileType } from '@/types';
+import { CODEX, EQUIPMENT, getDungeon, getEnemy, getEquipment, getMaterial, getWorld, MATERIALS, STORE_ITEMS } from '@/data';
 
 // ============================================================
 // ダンジョンマップ自動生成（セルオートマトンで洞窟を生成）
@@ -135,6 +135,58 @@ function randomMaterialId(worldId: string): string {
   return ids[Math.floor(Math.random() * ids.length)] ?? Object.keys(MATERIALS)[0];
 }
 
+const WORLD_STORY: Record<string, string[]> = {
+  beowulf: ['heorot-song', 'mere-descent', 'dragon-cup'],
+  hamlet: ['ghost-record', 'players-note', 'poisoned-cup'],
+  macbeth: ['witch-prophecy', 'duncan-blood', 'birnam-branch'],
+};
+
+const RARE_EQUIPMENT: Record<string, string[]> = {
+  beowulf: ['grendel_fang_blade', 'dragon_heart_mail'],
+  hamlet: ['royal_ring', 'glass_rapier'],
+  macbeth: ['cursed_crown', 'witchfire_dagger'],
+};
+
+function randomCodexId(worldId: string): string {
+  const ids = Object.keys(CODEX).filter((id) => CODEX[id].refId.includes(worldId) || id.endsWith(worldId));
+  return ids[Math.floor(Math.random() * ids.length)] ?? `codex_world_${worldId}`;
+}
+
+function makeRewards(worldId: string, depth: number, forced?: RewardEntry): RewardEntry[] {
+  if (forced) return [forced];
+  const roll = Math.random();
+  if (roll < 0.28) {
+    const id = randomMaterialId(worldId);
+    return [{ kind: 'material', id, qty: 1 + (Math.random() < 0.35 ? 1 : 0), label: getMaterial(id).name }];
+  }
+  if (roll < 0.46) {
+    const qty = 10 + depth * 8 + Math.floor(Math.random() * 18);
+    return [{ kind: 'gold', id: 'gold', qty, label: `${qty}G` }];
+  }
+  if (roll < 0.62) {
+    const ids = Object.keys(STORE_ITEMS);
+    const id = ids[Math.floor(Math.random() * ids.length)];
+    return [{ kind: 'item', id, qty: 1, label: STORE_ITEMS[id].name }];
+  }
+  if (roll < 0.76) {
+    const pool = RARE_EQUIPMENT[worldId] ?? Object.keys(EQUIPMENT).filter((id) => EQUIPMENT[id].worldId === worldId);
+    const id = pool[Math.floor(Math.random() * pool.length)];
+    return [{ kind: 'equipment', id, qty: 1, label: getEquipment(id).name, rarity: 'rare' }];
+  }
+  if (roll < 0.88) {
+    const skillByWorld: Record<string, string[]> = {
+      beowulf: ['hero_roar', 'last_stand'],
+      hamlet: ['poison_blade', 'to_be_or_not'],
+      macbeth: ['prophecy', 'bloody_crown'],
+    };
+    const pool = skillByWorld[worldId] ?? ['hero_roar'];
+    return [{ kind: 'skill', id: pool[Math.floor(Math.random() * pool.length)], qty: 1, label: 'スキルブック' }];
+  }
+  if (roll < 0.95) return [{ kind: 'codex', id: randomCodexId(worldId), qty: 1, label: '図鑑ページ' }];
+  const story = WORLD_STORY[worldId] ?? [`${worldId}-fragment`];
+  return [{ kind: 'story', id: story[Math.floor(Math.random() * story.length)], qty: 1, label: 'ストーリー断片', rarity: 'rare' }];
+}
+
 /**
  * 指定ワールド・フロアのマップを生成する。
  * フロアのnodes構成から、戦闘グループ数・ボス有無を読み取って敵を配置する。
@@ -217,8 +269,18 @@ export function generateDungeonMap(worldId: string, floorIndex: number): Dungeon
     });
   }
 
-  // 宝箱（1〜2個）
-  const chestCount = 1 + (Math.random() < 0.5 ? 1 : 0);
+  if (!isBossFloor) {
+    const keyTile = take(2);
+    const doorTile = take(5);
+    if (keyTile && doorTile) {
+      const keyId = `${worldId}-f${floorIndex}-iron-key`;
+      entities.push({ id: `e${counter++}`, kind: 'key', x: keyTile.x, y: keyTile.y, keyId, label: '古い鍵' });
+      entities.push({ id: `e${counter++}`, kind: 'lockedDoor', x: doorTile.x, y: doorTile.y, keyId, locked: true, label: '鍵付き扉' });
+    }
+  }
+
+  // 宝箱（2〜3個）。素材だけでなく装備・Gold・スキルブック・図鑑・回復薬が出る。
+  const chestCount = 2 + (Math.random() < 0.45 ? 1 : 0);
   for (let i = 0; i < chestCount; i++) {
     const tile = take(2);
     if (!tile) break;
@@ -229,18 +291,50 @@ export function generateDungeonMap(worldId: string, floorIndex: number): Dungeon
       x: tile.x,
       y: tile.y,
       materialId: matId,
+      rewards: makeRewards(worldId, floorIndex),
       opened: false,
-      label: getMaterial(matId).name,
+      label: '宝箱',
     });
+  }
+
+  const secretCandidates = shuffle(
+    reachable.flatMap((anchor) =>
+      ([[1, 0], [-1, 0], [0, 1], [0, -1]] as [number, number][])
+        .map(([dx, dy]) => ({ anchor, x: anchor.x + dx, y: anchor.y + dy }))
+        .filter((candidate) => inBounds(candidate.x, candidate.y) && tiles[candidate.y][candidate.x] === 'wall'),
+    ),
+  );
+  const secret = secretCandidates[0];
+  if (secret) {
+      const equipmentId = RARE_EQUIPMENT[worldId]?.[floorIndex % 2] ?? 'hero_sword';
+      entities.push({
+        id: `e${counter++}`,
+        kind: 'secretDoor',
+        x: secret.x,
+        y: secret.y,
+        hidden: true,
+        opened: false,
+        rewards: [
+          { kind: 'equipment', id: equipmentId, qty: 1, label: getEquipment(equipmentId).name, rarity: 'rare' },
+          { kind: 'codex', id: randomCodexId(worldId), qty: 1, label: '図鑑ページ' },
+        ],
+        label: '秘密部屋',
+      });
   }
 
   // 枝道の報酬：休息碑と、作品を匂わせる一文。
   const restTile = take(4);
   if (restTile) entities.push({ id: `e${counter++}`, kind: 'rest', x: restTile.x, y: restTile.y, label: '休息碑' });
-  const memory = floor.nodes.find((node) => node.type === 'event');
+  const eventTexts = [
+    floor.nodes.find((node) => node.type === 'event')?.eventText,
+    '古い本を読む。余白に攻略のヒントが書かれている。',
+    '司書の記録を見つけた。失われた章の位置が少し分かった。',
+    '文学資料のページが舞い、図鑑の空白が埋まっていく。',
+  ].filter(Boolean) as string[];
+  const memory = eventTexts.length ? eventTexts[Math.floor(Math.random() * eventTexts.length)] : null;
   const memoryTile = memory ? take(4) : null;
-  if (memoryTile && memory?.eventText) {
-    entities.push({ id: `e${counter++}`, kind: 'memory', x: memoryTile.x, y: memoryTile.y, label: '記憶の断片', eventText: memory.eventText });
+  if (memoryTile && memory) {
+    entities.push({ id: `e${counter++}`, kind: 'memory', x: memoryTile.x, y: memoryTile.y, label: '記憶の断片', eventText: memory });
   }
 
   // --- 水たまり（装飾。連結性を壊さない範囲で） ---
@@ -259,6 +353,8 @@ export function generateDungeonMap(worldId: string, floorIndex: number): Dungeon
     tiles,
     player: { x: player.x, y: player.y },
     entities,
+    foundKeyIds: [],
+    discoveredSecretIds: [],
     visited,
     isBossFloor,
   };

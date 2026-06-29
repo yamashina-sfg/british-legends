@@ -30,6 +30,8 @@ export function SettingsOverlay() {
       </Button>
       <div className="tiny dim center" style={{ lineHeight: 1.7 }}>
         進行は戦闘・進化のたびに自動セーブされます。
+        <br />
+        BGM: CC0音源（cynicmusic / Katana / RandomMind / CleytonKauffman）
       </div>
       <Button center onClick={closeOverlay}>
         とじる

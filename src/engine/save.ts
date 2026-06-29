@@ -24,6 +24,10 @@ export function createNewSave(slotId: number): SaveData {
     party: [],
     inventory: {},
     items: {},
+    equipmentInventory: [],
+    storyFragments: [],
+    learnedSkillBooks: [],
+    exploration: {},
     gold: 36,
     codex: { discoveredIds: [] },
   };
@@ -34,7 +38,15 @@ export function loadSlot(slotId: number): SaveData | null {
     const raw = localStorage.getItem(slotKey(slotId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as SaveData;
-    return { ...parsed, gold: parsed.gold ?? 36, items: parsed.items ?? {} };
+    return {
+      ...parsed,
+      gold: parsed.gold ?? 36,
+      items: parsed.items ?? {},
+      equipmentInventory: parsed.equipmentInventory ?? [],
+      storyFragments: parsed.storyFragments ?? [],
+      learnedSkillBooks: parsed.learnedSkillBooks ?? [],
+      exploration: parsed.exploration ?? {},
+    };
   } catch {
     return null;
   }

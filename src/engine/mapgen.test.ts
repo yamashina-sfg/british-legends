@@ -41,6 +41,8 @@ describe('dungeon accessibility', () => {
       ],
       player: { x: 1, y: 1 },
       entities: [{ id: 'rest', kind: 'rest', x: 2, y: 1, label: '休息碑' }],
+      foundKeyIds: [],
+      discoveredSecretIds: [],
       visited: Array.from({ length: 3 }, () => Array(5).fill(false)),
       isBossFloor: false,
     };

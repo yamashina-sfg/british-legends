@@ -2,6 +2,7 @@ import { useGameStore } from '@/store/useGameStore';
 import { WORLDS, WORLD_ORDER } from '@/data';
 import { MenuBar } from '@/components/common/MenuBar';
 import { PartyStatusBar } from '@/components/common/PartyStatusBar';
+import { ObjectiveBanner } from '@/components/common/ObjectiveBanner';
 
 const worldClass: Record<string, string> = {
   beowulf: 'journey-world--beowulf',
@@ -52,6 +53,7 @@ export function WorldMapScene() {
           <div className="journey-sidebar__title">BIBLIOTHECA</div>
           <div className="small dim">失われた物語を修復せよ</div>
           <div className="journey-objective"><span>次の目的地</span><strong>{activeWorld.title}</strong><small>{activeWorld.era}</small></div>
+          <ObjectiveBanner compact />
           <PartyStatusBar />
           <div className="journey-sidebar__note">Lodgeを出発し、道の先の物語世界へ向かう。</div>
         </aside>

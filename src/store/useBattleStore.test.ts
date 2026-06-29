@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { combatantFromOwned } from '@/engine/battle';
+import { combatantFromEnemy, combatantFromOwned, resolveAction } from '@/engine/battle';
+import { effectiveStats } from '@/engine/tragicFlaw';
 import { useBattleStore } from './useBattleStore';
 import type { OwnedCharacter } from '@/types';
 
@@ -63,5 +64,38 @@ describe('battle command input', () => {
     expect(messages).toContain('Beowulf の攻撃！');
     expect(messages).toContain('Hamlet の攻撃！');
     expect(messages).toContain('Macbeth の攻撃！');
+  });
+});
+
+describe('tragic flaw system', () => {
+  it('turns Hamlet waiting into Resolve for the next decision', () => {
+    const actor = combatantFromOwned(hamlet);
+    resolveAction([actor], { actorUid: actor.uid, type: 'defend' });
+    expect(actor.tragicFlaw?.state.meter).toBe(50);
+    resolveAction([actor], { actorUid: actor.uid, type: 'defend' });
+    expect(actor.tragicFlaw?.state.meter).toBe(100);
+
+    const enemy = combatantFromEnemy('grendel', 0);
+    const logs = resolveAction([actor, enemy], { actorUid: actor.uid, type: 'attack', targetUid: enemy.uid });
+    expect(actor.tragicFlaw?.state.meter).toBe(0);
+    expect(logs.map((entry) => entry.text).join('\n')).toContain('Resolve解放');
+  });
+
+  it('makes Macbeth pay HP to grow more dangerous', () => {
+    const actor = combatantFromOwned(macbeth);
+    const enemy = combatantFromEnemy('grendel', 0);
+    resolveAction([actor, enemy], { actorUid: actor.uid, type: 'skill', skillId: 'bloody_crown', targetUid: enemy.uid });
+
+    expect(actor.hp).toBe(72);
+    expect(actor.tragicFlaw?.state.hpSpent).toBe(18);
+    expect(effectiveStats(actor.stats, actor.tragicFlaw, actor.hp, actor.maxHp).atk).toBeGreaterThan(actor.stats.atk);
+  });
+
+  it('makes Beowulf stronger and less guarded near defeat', () => {
+    const actor = combatantFromOwned({ ...beowulf, currentHp: 20 });
+    const stats = effectiveStats(actor.stats, actor.tragicFlaw, actor.hp, actor.maxHp);
+
+    expect(stats.atk).toBeGreaterThan(actor.stats.atk);
+    expect(stats.def).toBeLessThan(actor.stats.def);
   });
 });

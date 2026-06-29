@@ -5,7 +5,7 @@ import { revealAround } from './mapgen';
 // マップ上の移動・敵AI（純粋ロジック）
 // ============================================================
 
-export type MoveEventType = 'blocked' | 'moved' | 'encounter' | 'stairs' | 'chest' | 'rest' | 'memory';
+export type MoveEventType = 'blocked' | 'moved' | 'encounter' | 'stairs' | 'chest' | 'rest' | 'memory' | 'key' | 'lockedDoor' | 'secret';
 
 export interface MoveResult {
   map: DungeonMap;
@@ -18,13 +18,15 @@ const isWalkable = (map: DungeonMap, x: number, y: number) =>
   x >= 0 && y >= 0 && x < map.width && y < map.height && map.tiles[y][x] === 'floor';
 
 const entityAt = (map: DungeonMap, x: number, y: number) =>
-  map.entities.find((e) => e.x === x && e.y === y && !(e.kind === 'chest' && e.opened));
+  map.entities.find((e) => e.x === x && e.y === y && !(e.kind === 'chest' && e.opened) && !(e.kind === 'lockedDoor' && e.opened));
 
 function cloneMap(map: DungeonMap): DungeonMap {
   return {
     ...map,
     player: { ...map.player },
-    entities: map.entities.map((e) => ({ ...e })),
+    entities: map.entities.map((e) => ({ ...e, rewards: e.rewards?.map((reward) => ({ ...reward })) })),
+    foundKeyIds: [...(map.foundKeyIds ?? [])],
+    discoveredSecretIds: [...(map.discoveredSecretIds ?? [])],
     visited: map.visited.map((row) => [...row]),
   };
 }
@@ -34,7 +36,7 @@ function stepEnemies(map: DungeonMap): MapEntity | null {
   let collided: MapEntity | null = null;
   const blocked = (x: number, y: number) =>
     !isWalkable(map, x, y) ||
-    map.entities.some((o) => o.x === x && o.y === y && !(o.kind === 'chest' && o.opened));
+    map.entities.some((o) => o.x === x && o.y === y && !(o.kind === 'chest' && o.opened) && !(o.kind === 'lockedDoor' && o.opened));
 
   for (const e of map.entities) {
     if (e.kind !== 'enemy') continue;
@@ -84,6 +86,16 @@ export function resolveMove(prev: DungeonMap, dx: number, dy: number): MoveResul
   const tx = map.player.x + dx;
   const ty = map.player.y + dy;
 
+  const wallTarget = map.entities.find((e) => e.x === tx && e.y === ty && e.kind === 'secretDoor' && !e.opened);
+  if (wallTarget) {
+    wallTarget.opened = true;
+    wallTarget.hidden = false;
+    map.tiles[ty][tx] = 'floor';
+    map.discoveredSecretIds = [...new Set([...(map.discoveredSecretIds ?? []), wallTarget.id])];
+    revealAround(map.visited, tx, ty);
+    return { map, type: 'secret', entity: { ...wallTarget } };
+  }
+
   // 壁・水・範囲外
   if (!isWalkable(map, tx, ty)) {
     return { map: prev, type: 'blocked' };
@@ -93,6 +105,26 @@ export function resolveMove(prev: DungeonMap, dx: number, dy: number): MoveResul
   if (target) {
     if (target.kind === 'stairs') return { map, type: 'stairs', entity: target };
     if (target.kind === 'enemy' || target.kind === 'boss') return { map, type: 'encounter', entity: target };
+    if (target.kind === 'key') {
+      map.player.x = tx;
+      map.player.y = ty;
+      map.entities = map.entities.filter((e) => e.id !== target.id);
+      if (target.keyId) map.foundKeyIds = [...new Set([...(map.foundKeyIds ?? []), target.keyId])];
+      revealAround(map.visited, tx, ty);
+      return { map, type: 'key', entity: target };
+    }
+    if (target.kind === 'lockedDoor') {
+      if (target.keyId && (map.foundKeyIds ?? []).includes(target.keyId)) {
+        map.player.x = tx;
+        map.player.y = ty;
+        const door = map.entities.find((e) => e.id === target.id)!;
+        door.locked = false;
+        door.opened = true;
+        revealAround(map.visited, tx, ty);
+        return { map, type: 'lockedDoor', entity: { ...door } };
+      }
+      return { map, type: 'blocked', entity: target };
+    }
     if (target.kind === 'chest') {
       // 宝箱はその場で開ける（プレイヤーは進入しない）
       const chest = map.entities.find((e) => e.id === target.id)!;

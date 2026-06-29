@@ -29,6 +29,12 @@ export const EQUIPMENT: Record<string, Equipment> = {
   wanderer_charm: { id: 'wanderer_charm', name: '旅人の護符', slot: 'accessory', price: 48, bonus: { hp: 12, mp: 4 }, worldId: 'beowulf', description: '遠い道を歩く者を守る、小さな護符。' },
   wolf_token: { id: 'wolf_token', name: '狼の牙飾り', slot: 'accessory', price: 78, bonus: { hp: 18, atk: 3 }, worldId: 'beowulf', description: '夜の森を越えた者に渡される牙飾り。' },
   king_ring: { id: 'king_ring', name: '王の指輪', slot: 'accessory', price: 160, bonus: { hp: 28, mp: 10, def: 4 }, worldId: 'beowulf', description: '物語を取り戻した王の、静かな加護。' },
+  grendel_fang_blade: { id: 'grendel_fang_blade', name: 'グレンデル牙剣', slot: 'weapon', price: 0, bonus: { atk: 22, spd: 4 }, worldId: 'beowulf', description: '隠し部屋で見つかる怪物牙の刃。通常攻撃が重く速い。' },
+  dragon_heart_mail: { id: 'dragon_heart_mail', name: '竜心の鎧', slot: 'armor', price: 0, bonus: { hp: 42, def: 18, mp: 8 }, worldId: 'beowulf', description: 'Dragon Heartで熱を循環させる伝説の鎧。' },
+  royal_ring: { id: 'royal_ring', name: 'Royal Ring', slot: 'accessory', price: 0, bonus: { mp: 18, def: 5, spd: 3 }, worldId: 'hamlet', description: '毒と謀略を見抜く王家の指輪。Claudiusの希少戦利品。' },
+  glass_rapier: { id: 'glass_rapier', name: '割れた硝子のレイピア', slot: 'weapon', price: 0, bonus: { atk: 16, spd: 8 }, worldId: 'hamlet', description: '割れたステンドグラスの光を宿した細剣。' },
+  cursed_crown: { id: 'cursed_crown', name: 'Cursed Crown', slot: 'accessory', price: 0, bonus: { atk: 8, mp: 16, spd: 4 }, worldId: 'macbeth', description: '野心を力に変える王冠。HPが削れた戦いで真価を発揮する。' },
+  witchfire_dagger: { id: 'witchfire_dagger', name: '魔女火の短剣', slot: 'weapon', price: 0, bonus: { atk: 18, mp: 8, spd: 5 }, worldId: 'macbeth', description: '雷雨の祭壇で燃える青い火を鍛え込んだ短剣。' },
 };
 
 export const getEquipment = (id: string) => EQUIPMENT[id];

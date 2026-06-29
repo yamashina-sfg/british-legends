@@ -27,6 +27,7 @@ interface BattleState {
   /** turnActorUids 内の入力待ち index */
   inputIndex: number;
   planned: BattleAction[];
+  lastAction: BattleAction | null;
 
   start: (party: OwnedCharacter[], enemyIds: string[], isBoss: boolean) => void;
   livingAllies: () => Combatant[];
@@ -47,9 +48,10 @@ export const useBattleStore = create<BattleState>((set, get) => ({
   turnActorUids: [],
   inputIndex: 0,
   planned: [],
+  lastAction: null,
 
   start: (party, enemyIds, isBoss) => {
-    const allies = party.filter((p) => p.currentHp > 0).map(combatantFromOwned);
+    const allies = party.filter((p) => p.currentHp > 0).map((member, index) => combatantFromOwned(member, index, isBoss));
     const enemies = buildEnemyCombatants(enemyIds);
     set({
       active: true,
@@ -61,6 +63,7 @@ export const useBattleStore = create<BattleState>((set, get) => ({
       turnActorUids: allies.map((ally) => ally.uid),
       inputIndex: 0,
       planned: [],
+      lastAction: null,
     });
   },
 
@@ -98,6 +101,7 @@ export const useBattleStore = create<BattleState>((set, get) => ({
         combatants: working,
         log: [...get().log, ...roundLog],
         planned: [],
+        lastAction: action,
         inputIndex: nextIndex,
         phase,
       });
@@ -122,6 +126,7 @@ export const useBattleStore = create<BattleState>((set, get) => ({
       combatants: working,
       log: [...get().log, ...roundLog],
       planned: [],
+      lastAction: action,
       turnActorUids: livingOf(working, 'ally').map((ally) => ally.uid),
       inputIndex: 0,
       phase,
@@ -130,5 +135,5 @@ export const useBattleStore = create<BattleState>((set, get) => ({
   },
 
   reset: () =>
-    set({ active: false, combatants: [], log: [], phase: 'input', turnActorUids: [], inputIndex: 0, planned: [], enemyIds: [], isBoss: false }),
+    set({ active: false, combatants: [], log: [], phase: 'input', turnActorUids: [], inputIndex: 0, planned: [], lastAction: null, enemyIds: [], isBoss: false }),
 }));

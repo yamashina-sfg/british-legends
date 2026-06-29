@@ -22,7 +22,7 @@ export function CharacterDetailOverlay() {
   return (
     <Window title={`${char.name} の詳細`} className="col">
       <div className="row" style={{ gap: 12 }}>
-        <Sprite label={char.name} side="ally" size="lg" />
+        <Sprite label={char.name} side="ally" size="lg" presentation="portrait" />
         <div className="col" style={{ flex: 1, gap: 4 }}>
           <div className="accent">{char.stageName}</div>
           <div className="small">Lv {owned.level}</div>
@@ -43,6 +43,38 @@ export function CharacterDetailOverlay() {
       </div>
       <div className="tiny dim">
         装備: {owned.equippedWeaponId ? getEquipment(owned.equippedWeaponId).name : 'なし'} / {owned.equippedArmorId ? getEquipment(owned.equippedArmorId).name : 'なし'} / {owned.equippedAccessoryId ? getEquipment(owned.equippedAccessoryId).name : 'なし'}
+      </div>
+
+      <div className="tragic-flaw-detail">
+        <div className="row">
+          <span className="tragic-flaw-detail__icon">{char.tragicFlaw.icon}</span>
+          <strong>{char.tragicFlaw.theme}</strong>
+          <span className="spacer" />
+          <span className="tiny dim">Tragic Flaw</span>
+        </div>
+        <div className="small">{char.tragicFlaw.description}</div>
+        <div className="tragic-flaw-detail__grid">
+          <div>
+            <span className="tiny dim">Passive</span>
+            <strong>{char.tragicFlaw.passiveAbility.name}</strong>
+            <p>{char.tragicFlaw.passiveAbility.description}</p>
+          </div>
+          <div>
+            <span className="tiny dim">Active</span>
+            <strong>{char.tragicFlaw.activeSkill.name}</strong>
+            <p>{char.tragicFlaw.activeSkill.description}</p>
+          </div>
+          <div>
+            <span className="tiny dim">Trait</span>
+            <strong>{char.tragicFlaw.battleTrait.name}</strong>
+            <p>{char.tragicFlaw.battleTrait.description}</p>
+          </div>
+          <div>
+            <span className="tiny dim">Awakening</span>
+            <strong>{char.tragicFlaw.awakeningCondition.name}</strong>
+            <p>{char.tragicFlaw.awakeningCondition.description}</p>
+          </div>
+        </div>
       </div>
 
       <div className="window-title" style={{ marginTop: 4 }}>

@@ -10,6 +10,7 @@ import { GameOverScene } from '@/scenes/GameOverScene';
 import { WorldClearScene } from '@/scenes/WorldClearScene';
 import { TownScene } from '@/scenes/TownScene';
 import { OverlayHost } from '@/overlays/OverlayHost';
+import { AudioManager } from '@/components/common/AudioManager';
 
 interface AppErrorBoundaryProps {
   children: ReactNode;
@@ -69,6 +70,7 @@ export default function App() {
       {scene === 'gameOver' && <GameOverScene />}
       {scene === 'worldClear' && <WorldClearScene />}
       <OverlayHost />
+      <AudioManager />
     </div>
     </AppErrorBoundary>
   );

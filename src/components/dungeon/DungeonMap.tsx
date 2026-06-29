@@ -3,11 +3,13 @@ import type { DungeonMap as MapData, MapEntity } from '@/types';
 const TILE = 26; // px
 
 function entityGlyph(e: MapEntity): { glyph: string; cls: string } {
+  // 敵・ボスは代表する敵IDからシンボル用クラスを付与し、世界・種類ごとに見た目を変える
+  const sym = e.enemyIds && e.enemyIds[0] ? ` ent-sym--${e.enemyIds[0]}` : '';
   switch (e.kind) {
     case 'boss':
-      return { glyph: 'B', cls: 'ent-boss' };
+      return { glyph: e.label?.charAt(0).toUpperCase() ?? 'B', cls: `ent-boss${sym}` };
     case 'enemy':
-      return { glyph: e.label?.charAt(0).toUpperCase() ?? 'E', cls: 'ent-enemy' };
+      return { glyph: e.label?.charAt(0).toUpperCase() ?? 'E', cls: `ent-enemy${sym}` };
     case 'chest':
       return { glyph: e.opened ? '·' : '', cls: e.opened ? 'ent-chest-open' : 'ent-chest' };
     case 'stairs':
@@ -16,6 +18,12 @@ function entityGlyph(e: MapEntity): { glyph: string; cls: string } {
       return { glyph: '', cls: 'ent-rest' };
     case 'memory':
       return { glyph: '', cls: 'ent-memory' };
+    case 'key':
+      return { glyph: '◆', cls: 'ent-key' };
+    case 'lockedDoor':
+      return { glyph: e.opened ? '' : '▣', cls: e.opened ? 'ent-door-open' : 'ent-locked-door' };
+    case 'secretDoor':
+      return { glyph: e.opened ? '!' : '', cls: e.opened ? 'ent-secret-open' : 'ent-secret-hidden' };
   }
 }
 
@@ -41,7 +49,7 @@ export function DungeonMap({ map }: Props) {
       )}
 
       {/* エンティティ層（座標で配置＝動かせる） */}
-      {map.entities.map((e) => {
+      {map.entities.filter((entity) => !(entity.kind === 'secretDoor' && entity.hidden && !entity.opened)).map((e) => {
         const { glyph, cls } = entityGlyph(e);
         return (
           <div
