@@ -44,6 +44,15 @@ export const SKILLS: Record<string, Skill> = {
     power: 6,
     description: '守りを固めながら敵の視線を引く。Beowulfを前線の支柱にする。',
   },
+  last_stand: {
+    id: 'last_stand',
+    name: 'Last Stand',
+    type: 'attack',
+    target: 'single',
+    mpCost: 6,
+    power: 2.1,
+    description: '最後の力で叩き込む一撃。HPが少ないほど威力が上がる。',
+  },
   dragon_slash: {
     id: 'dragon_slash',
     name: 'ドラゴンスレイヤー',
@@ -101,6 +110,15 @@ export const SKILLS: Record<string, Skill> = {
     mpCost: 0,
     power: 12,
     description: 'HPを犠牲に攻撃力を大きく上げる。短期決戦向け。',
+  },
+  bloody_crown: {
+    id: 'bloody_crown',
+    name: 'Bloody Crown',
+    type: 'attack',
+    target: 'single',
+    mpCost: 0,
+    power: 2.6,
+    description: '自身のHP20%を代償に、血塗られた王冠の一撃を放つ。',
   },
   prophecy: {
     id: 'prophecy',
@@ -167,6 +185,15 @@ export const SKILLS: Record<string, Skill> = {
     power: 1.45,
     description: '竜の尾で単体を叩き潰す。',
   },
+  wing_attack: {
+    id: 'wing_attack',
+    name: 'Wing Attack',
+    type: 'debuff',
+    target: 'all',
+    mpCost: 0,
+    power: 5,
+    description: '翼で陣形を崩し、行動順を乱す。',
+  },
   curse_word: {
     id: 'curse_word',
     name: '呪詛',
@@ -184,6 +211,15 @@ export const SKILLS: Record<string, Skill> = {
     mpCost: 0,
     power: 8,
     description: '毒杯で単体を弱体化させる。',
+  },
+  royal_execution: {
+    id: 'royal_execution',
+    name: '王の最後の一撃',
+    type: 'attack',
+    target: 'single',
+    mpCost: 0,
+    power: 2.35,
+    description: '追い詰められた簒奪者が放つ強烈な一撃。',
   },
   summon_guard: {
     id: 'summon_guard',

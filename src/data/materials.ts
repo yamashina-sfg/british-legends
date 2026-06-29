@@ -23,6 +23,20 @@ export const MATERIALS: Record<string, Material> = {
     description: '黄金を守る古竜の鱗。鋼鉄より硬い。',
     iconId: 'dragon_scale',
   },
+  grendels_fang: {
+    id: 'grendels_fang',
+    name: "Grendel's Fang",
+    worldId: 'beowulf',
+    description: 'グレンデルの奥牙。怪物の膂力を宿す希少な進化素材。',
+    iconId: 'grendels_fang',
+  },
+  dragon_heart: {
+    id: 'dragon_heart',
+    name: 'Dragon Heart',
+    worldId: 'beowulf',
+    description: '古竜の胸で燃え続けた核。伝説装備の鍛造に使う。',
+    iconId: 'dragon_heart',
+  },
 
   // --- Hamlet ---
   ghost_fragment: {
@@ -45,6 +59,13 @@ export const MATERIALS: Record<string, Material> = {
     worldId: 'hamlet',
     description: '果たされぬ復讐の記憶。手にすると胸が痛む。',
     iconId: 'memory_of_revenge',
+  },
+  royal_ring: {
+    id: 'royal_ring',
+    name: 'Royal Ring',
+    worldId: 'hamlet',
+    description: 'クローディアスが隠し持った王家の指輪。罪深い権威を封じている。',
+    iconId: 'royal_ring',
   },
 
   // --- Macbeth ---

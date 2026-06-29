@@ -1,5 +1,6 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
-import { combatantFromOwned } from '@/engine/battle';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { combatantFromEnemy, combatantFromOwned, decideEnemyAction, resolveAction } from '@/engine/battle';
+import { effectiveStats } from '@/engine/tragicFlaw';
 import { expForLevel, gainExp, requiredExpForNextLevel } from '@/engine/leveling';
 import { getCharacter } from '@/data';
 import { useBattleStore } from './useBattleStore';
@@ -21,8 +22,13 @@ const macbeth: OwnedCharacter = {
 };
 
 describe('battle command input', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.useRealTimers();
     useBattleStore.getState().reset();
   });
 
@@ -35,6 +41,7 @@ describe('battle command input', () => {
     const enemyUid = useBattleStore.getState().livingEnemies()[0].uid;
     const initialEnemyHp = useBattleStore.getState().livingEnemies()[0].hp;
     expect(useBattleStore.getState().chooseCommand(firstActorUid, { type: 'attack', targetUid: enemyUid })).toBe(true);
+    vi.runOnlyPendingTimers();
 
     expect(useBattleStore.getState().phase).toBe('input');
     expect(useBattleStore.getState().currentActor()?.sourceId).toBe('hamlet_prince');
@@ -47,6 +54,7 @@ describe('battle command input', () => {
 
     const secondActorUid = useBattleStore.getState().currentActor()!.uid;
     expect(useBattleStore.getState().chooseCommand(secondActorUid, { type: 'attack', targetUid: enemyUid })).toBe(true);
+    vi.runOnlyPendingTimers();
     expect(useBattleStore.getState().planned).toHaveLength(0);
     expect(useBattleStore.getState().inputIndex).toBe(0);
     expect(useBattleStore.getState().combatants.some((combatant) => combatant.side === 'ally' && combatant.hp < combatant.maxHp)).toBe(true);
@@ -66,6 +74,7 @@ describe('battle command input', () => {
       const actor = useBattleStore.getState().currentActor();
       expect(actor?.sourceId).toBe(characterId);
       expect(useBattleStore.getState().chooseCommand(actor!.uid, { type: 'attack', targetUid: enemyUid })).toBe(true);
+      vi.runOnlyPendingTimers();
     }
 
     const messages = useBattleStore.getState().log.map((entry) => entry.text).join('\n');
@@ -81,11 +90,14 @@ describe('battle command input', () => {
     const enemyUid = useBattleStore.getState().livingEnemies()[0].uid;
 
     expect(useBattleStore.getState().chooseCommand(actorUid, { type: 'defend' })).toBe(true);
+    vi.runOnlyPendingTimers();
     let log = useBattleStore.getState().log.map((entry) => entry.text).join('\n');
     expect(log).toContain('噛みつき');
 
     expect(useBattleStore.getState().chooseCommand(useBattleStore.getState().currentActor()!.uid, { type: 'defend' })).toBe(true);
+    vi.runOnlyPendingTimers();
     expect(useBattleStore.getState().chooseCommand(useBattleStore.getState().currentActor()!.uid, { type: 'defend' })).toBe(true);
+    vi.runOnlyPendingTimers();
     log = useBattleStore.getState().log.map((entry) => entry.text).join('\n');
     expect(log).toContain('怪腕の叩きつけ');
     expect(useBattleStore.getState().livingEnemies()[0].uid).toBe(enemyUid);
@@ -98,6 +110,7 @@ describe('battle command input', () => {
 
     const actor = useBattleStore.getState().currentActor()!;
     expect(useBattleStore.getState().chooseCommand(actor.uid, { type: 'defend' })).toBe(true);
+    vi.runOnlyPendingTimers();
 
     expect(useBattleStore.getState().phase).toBe('lost');
     expect(useBattleStore.getState().livingAllies()).toHaveLength(0);
@@ -123,6 +136,89 @@ describe('battle command input', () => {
     expect(revived.alive).toBe(true);
     expect(revived.hp).toBeGreaterThan(0);
     expect(revived.hp).toBeLessThanOrEqual(Math.ceil(revived.maxHp * 0.5));
+  });
+});
+
+describe('tragic flaw system', () => {
+  it('turns Hamlet waiting into Resolve for the next decision', () => {
+    const actor = combatantFromOwned(hamlet);
+    resolveAction([actor], { actorUid: actor.uid, type: 'defend' });
+    expect(actor.tragicFlaw?.state.meter).toBe(50);
+    resolveAction([actor], { actorUid: actor.uid, type: 'defend' });
+    expect(actor.tragicFlaw?.state.meter).toBe(100);
+
+    const enemy = combatantFromEnemy('grendel', 0);
+    const logs = resolveAction([actor, enemy], { actorUid: actor.uid, type: 'attack', targetUid: enemy.uid });
+    expect(actor.tragicFlaw?.state.meter).toBe(0);
+    expect(logs.map((entry) => entry.text).join('\n')).toContain('Resolve解放');
+  });
+
+  it('makes Macbeth pay HP to grow more dangerous', () => {
+    const actor = combatantFromOwned(macbeth);
+    const enemy = combatantFromEnemy('grendel', 0);
+    resolveAction([actor, enemy], { actorUid: actor.uid, type: 'skill', skillId: 'bloody_crown', targetUid: enemy.uid });
+
+    expect(actor.hp).toBe(72);
+    expect(actor.tragicFlaw?.state.hpSpent).toBe(18);
+    expect(effectiveStats(actor.stats, actor.tragicFlaw, actor.hp, actor.maxHp).atk).toBeGreaterThan(actor.stats.atk);
+  });
+
+  it('makes Beowulf stronger and less guarded near defeat', () => {
+    const actor = combatantFromOwned({ ...beowulf, currentHp: 20 });
+    const stats = effectiveStats(actor.stats, actor.tragicFlaw, actor.hp, actor.maxHp);
+
+    expect(stats.atk).toBeGreaterThan(actor.stats.atk);
+    expect(stats.def).toBeLessThan(actor.stats.def);
+  });
+
+  it('applies Beowulf boss battle traits from character data', () => {
+    const actor = combatantFromOwned(beowulf, 0, true);
+    const stats = effectiveStats(actor.stats, actor.tragicFlaw, actor.hp, actor.maxHp);
+
+    expect(stats.atk).toBeGreaterThan(actor.stats.atk);
+    expect(stats.def).toBeGreaterThan(actor.stats.def);
+  });
+});
+
+describe('boss phase patterns', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('gives Dragon a phase-two wing attack and rage state', () => {
+    vi.spyOn(Math, 'random').mockReturnValueOnce(0).mockReturnValueOnce(0.1).mockReturnValue(0.5);
+    const dragon = combatantFromEnemy('dragon', 0);
+    const hero = combatantFromOwned(beowulf);
+    dragon.hp = Math.floor(dragon.maxHp * 0.7);
+
+    const action = decideEnemyAction(dragon, [dragon, hero]);
+    expect(action.skillId).toBe('wing_attack');
+
+    dragon.hp = Math.floor(dragon.maxHp * 0.5);
+    dragon.rageTriggered = true;
+    const rageAction = decideEnemyAction(dragon, [dragon, hero]);
+    expect(['dragon_breath', 'dragon_tail_smash']).toContain(rageAction.skillId);
+  });
+
+  it('makes Claudius summon a guard before his final strike', () => {
+    const claudius = combatantFromEnemy('claudius', 0);
+    const hero = combatantFromOwned(hamlet);
+    claudius.hp = Math.floor(claudius.maxHp * 0.65);
+
+    expect(decideEnemyAction(claudius, [claudius, hero]).skillId).toBe('summon_guard');
+    claudius.summonedGuard = true;
+    claudius.hp = Math.floor(claudius.maxHp * 0.25);
+    expect(decideEnemyAction(claudius, [claudius, hero]).skillId).toBe('royal_execution');
+  });
+
+  it('makes Macbeth awaken Bloody Ambition and spread the witch curse', () => {
+    const boss = combatantFromEnemy('macbeths_fate', 0);
+    const hero = combatantFromOwned(macbeth);
+    boss.hp = Math.floor(boss.maxHp * 0.7);
+
+    expect(decideEnemyAction(boss, [boss, hero]).skillId).toBe('bloody_ambition');
+    resolveAction([boss, hero], { actorUid: boss.uid, type: 'skill', skillId: 'witch_curse', targetUid: hero.uid });
+    expect(hero.cursed).toBe(3);
   });
 });
 

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import type { DungeonMap, OwnedCharacter, SaveData } from '@/types';
-import { getCharacter, getDungeon, getEnemy, getEquipment, getWorld, STORE_ITEMS } from '@/data';
+import type { DungeonMap, OwnedCharacter, RewardEntry, SaveData } from '@/types';
+import { CODEX, getCharacter, getDungeon, getEnemy, getEquipment, getMaterial, getSkill, getWorld, STORE_ITEMS } from '@/data';
+import { explorationRate } from '@/engine/mapgen';
 import { gainExp } from '@/engine/leveling';
 import { evolve as evolveEngine } from '@/engine/evolution';
 import { generateDungeonMap } from '@/engine/mapgen';
@@ -36,6 +37,7 @@ interface RewardSummary {
   gold: number;
   drops: Record<string, number>;
   bonusItems: Record<string, number>;
+  bonusRewards: RewardEntry[];
   levelUps: string[];
 }
 
@@ -102,6 +104,132 @@ function discover(save: SaveData, ids: string[]): string[] {
   const set = new Set(save.codex.discoveredIds);
   ids.forEach((id) => set.add(id));
   return [...set];
+}
+
+function rewardText(reward: RewardEntry): string {
+  if (reward.kind === 'material') return `${reward.label ?? getMaterial(reward.id).name}×${reward.qty}`;
+  if (reward.kind === 'gold') return `${reward.qty}G`;
+  if (reward.kind === 'equipment') return reward.label ?? getEquipment(reward.id).name;
+  if (reward.kind === 'skill') return `${reward.label ?? 'スキルブック'}:${getSkill(reward.id).name}`;
+  if (reward.kind === 'item') return `${reward.label ?? STORE_ITEMS[reward.id]?.name ?? reward.id}×${reward.qty}`;
+  if (reward.kind === 'codex') return reward.label ?? '図鑑ページ';
+  if (reward.kind === 'story') return reward.label ?? 'ストーリー断片';
+  return reward.label ?? reward.id;
+}
+
+const WORLD_CODEX_REFS: Record<string, string[]> = {
+  beowulf: ['beowulf', 'grendel', 'dragon'],
+  hamlet: ['hamlet', 'ghost', 'claudius', 'royal_guard'],
+  macbeth: ['macbeth', 'witch', 'banquos_ghost', 'macbeths_fate', 'soldier'],
+};
+
+function isWorldCodexEntry(worldId: string, codexId: string): boolean {
+  const entry = CODEX[codexId];
+  if (!entry) return false;
+  return codexId.includes(worldId) || (WORLD_CODEX_REFS[worldId] ?? []).some((ref) => entry.refId.includes(ref));
+}
+
+function applyRewards(save: SaveData, rewards: RewardEntry[]): SaveData {
+  const inventory = { ...save.inventory };
+  const items = { ...save.items };
+  const equipmentInventory = [...(save.equipmentInventory ?? [])];
+  const learnedSkillBooks = [...(save.learnedSkillBooks ?? [])];
+  const storyFragments = [...(save.storyFragments ?? [])];
+  let party = save.party;
+  let gold = save.gold;
+  const codexIds: string[] = [];
+
+  for (const reward of rewards) {
+    if (reward.kind === 'material') {
+      inventory[reward.id] = (inventory[reward.id] ?? 0) + reward.qty;
+      codexIds.push(`codex_material_${reward.id}`);
+    }
+    if (reward.kind === 'gold') gold += reward.qty;
+    if (reward.kind === 'item') items[reward.id] = (items[reward.id] ?? 0) + reward.qty;
+    if (reward.kind === 'equipment' && !equipmentInventory.includes(reward.id)) equipmentInventory.push(reward.id);
+    if (reward.kind === 'skill') {
+      if (!learnedSkillBooks.includes(reward.id)) learnedSkillBooks.push(reward.id);
+      party = party.map((member) =>
+        member.learnedSkillIds.includes(reward.id)
+          ? member
+          : { ...member, learnedSkillIds: [...member.learnedSkillIds, reward.id] },
+      );
+    }
+    if (reward.kind === 'story' && !storyFragments.includes(reward.id)) {
+      storyFragments.push(reward.id);
+      const worldId = save.progress.currentWorldId;
+      if (worldId) codexIds.push(`codex_story_${worldId}`);
+    }
+    if (reward.kind === 'codex') codexIds.push(reward.id);
+  }
+
+  return {
+    ...save,
+    party,
+    inventory,
+    items,
+    equipmentInventory,
+    learnedSkillBooks,
+    storyFragments,
+    gold,
+    codex: { discoveredIds: discover(save, codexIds) },
+  };
+}
+
+function updateExploration(save: SaveData, worldId: string, map: DungeonMap): SaveData {
+  const totalChests = map.entities.filter((e) => e.kind === 'chest').length;
+  const openedChests = map.entities.filter((e) => e.kind === 'chest' && e.opened).map((e) => `${map.floorIndex}:${e.id}`);
+  const totalSecrets = map.entities.filter((e) => e.kind === 'secretDoor').length;
+  const foundSecrets = (map.discoveredSecretIds ?? []).map((id) => `${map.floorIndex}:${id}`);
+  const codexWorldTotal = Object.keys(CODEX).filter((id) => isWorldCodexEntry(worldId, id)).length;
+  const codexWorldFound = save.codex.discoveredIds.filter((id) => isWorldCodexEntry(worldId, id)).length;
+  const previous = save.exploration?.[worldId];
+  return {
+    ...save,
+    exploration: {
+      ...(save.exploration ?? {}),
+      [worldId]: {
+        bestRate: Math.max(previous?.bestRate ?? 0, explorationRate(map)),
+        openedChests: [...new Set([...(previous?.openedChests ?? []), ...openedChests])],
+        totalChests: Math.max(previous?.totalChests ?? 0, totalChests),
+        foundSecrets: [...new Set([...(previous?.foundSecrets ?? []), ...foundSecrets])],
+        totalSecrets: Math.max(previous?.totalSecrets ?? 0, totalSecrets),
+        codexFound: codexWorldFound,
+        codexTotal: codexWorldTotal,
+        shortcutsUnlocked: previous?.shortcutsUnlocked ?? save.progress.clearedWorldIds.includes(worldId),
+      },
+    },
+  };
+}
+
+function battleBonusRewards(worldId: string, enemyIds: string[], isBoss: boolean): RewardEntry[] {
+  const rewards: RewardEntry[] = [];
+  if (Math.random() < (isBoss ? 0.9 : 0.32)) {
+    const qty = (isBoss ? 45 : 8) + Math.floor(Math.random() * (isBoss ? 55 : 18));
+    rewards.push({ kind: 'gold', id: 'gold', qty, label: 'Gold' });
+  }
+  if (Math.random() < (isBoss ? 0.72 : 0.18)) rewards.push({ kind: 'codex', id: `codex_enemy_${enemyIds[0]}`, qty: 1, label: '図鑑ページ' });
+  if (isBoss) {
+    const bossRewards: Record<string, RewardEntry[]> = {
+      dragon: [
+        { kind: 'story', id: 'dragon-funeral', qty: 1, label: 'ストーリー断片' },
+        { kind: 'skill', id: 'dragon_slash', qty: 1, label: 'スキルブック', rarity: 'rare' },
+      ],
+      claudius: [
+        { kind: 'story', id: 'elsinore-confession', qty: 1, label: 'ストーリー断片' },
+        { kind: 'skill', id: 'to_be_or_not', qty: 1, label: 'スキルブック', rarity: 'rare' },
+      ],
+      macbeths_fate: [
+        { kind: 'story', id: 'birnam-comes', qty: 1, label: 'ストーリー断片' },
+        { kind: 'skill', id: 'bloody_ambition', qty: 1, label: 'スキルブック', rarity: 'rare' },
+      ],
+    };
+    rewards.push(...(bossRewards[enemyIds[0]] ?? []));
+  } else if (Math.random() < 0.1) {
+    const skillByWorld: Record<string, string> = { beowulf: 'shield_oath', hamlet: 'hesitation', macbeth: 'prophecy' };
+    rewards.push({ kind: 'skill', id: skillByWorld[worldId] ?? 'hero_roar', qty: 1, label: 'スキルブック', rarity: 'rare' });
+  }
+  return rewards;
 }
 
 /** 同一世界＝同一キャラ（進化段階違い）とみなす */
@@ -215,31 +343,43 @@ export const useGameStore = create<GameState>((set, get) => ({
       case 'blocked':
         return;
       case 'moved':
-        set({ map: result.map, mapToast: null });
+        set({ map: result.map, mapToast: null, save: updateExploration(save, map.worldId, result.map) });
         return;
       case 'stairs':
         set({ map: result.map });
         get().descendFloor();
         return;
       case 'chest': {
-        const matId = result.entity?.materialId;
-        if (matId) {
-          const inventory = { ...save.inventory };
-          inventory[matId] = (inventory[matId] ?? 0) + 1;
-          const nextSave: SaveData = {
-            ...save,
-            inventory,
-            codex: { discoveredIds: discover(save, [`codex_material_${matId}`]) },
-          };
-          set({
-            save: nextSave,
-            map: result.map,
-            mapToast: `宝箱：${result.entity?.label ?? '素材'} を手に入れた！`,
-          });
-          saveSlot(nextSave);
-        } else {
-          set({ map: result.map });
-        }
+        const rewards = result.entity?.rewards ??
+          (result.entity?.materialId ? [{ kind: 'material' as const, id: result.entity.materialId, qty: 1, label: getMaterial(result.entity.materialId).name }] : []);
+        const nextSave = updateExploration(applyRewards(save, rewards), map.worldId, result.map);
+        set({
+          save: nextSave,
+          map: result.map,
+          mapToast: `宝箱：${rewards.map(rewardText).join('・')} を手に入れた！`,
+        });
+        saveSlot(nextSave);
+        return;
+      }
+      case 'key': {
+        set({ map: result.map, mapToast: `${result.entity?.label ?? '鍵'}を見つけた。鍵付き扉を開けられる。` });
+        return;
+      }
+      case 'lockedDoor': {
+        const nextSave = updateExploration(save, map.worldId, result.map);
+        set({ save: nextSave, map: result.map, mapToast: '鍵付き扉が開いた。新しい部屋へ進める！' });
+        saveSlot(nextSave);
+        return;
+      }
+      case 'secret': {
+        const rewards = result.entity?.rewards ?? [];
+        const nextSave = updateExploration(applyRewards(save, rewards), map.worldId, result.map);
+        set({
+          save: nextSave,
+          map: result.map,
+          mapToast: `隠し部屋を発見！${rewards.map(rewardText).join('・')} を手に入れた！`,
+        });
+        saveSlot(nextSave);
         return;
       }
       case 'rest': {
@@ -247,7 +387,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           const stats = statsWithEquipment(getCharacter(p.characterId), p);
           return { ...p, currentHp: Math.min(stats.hp, p.currentHp + Math.ceil(stats.hp * 0.35)), currentMp: Math.min(stats.mp, p.currentMp + Math.ceil(stats.mp * 0.35)) };
         });
-        const nextSave = { ...save, party };
+        const nextSave = updateExploration({ ...save, party }, map.worldId, result.map);
         set({ save: nextSave, map: result.map, mapToast: '休息碑に触れた。HPとMPが少し回復した。' });
         saveSlot(nextSave);
         return;
@@ -336,8 +476,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       ...enemyIds.map((id) => `codex_enemy_${id}`),
       ...Object.keys(drops).map((id) => `codex_material_${id}`),
     ];
+    const bonusRewards = battleBonusRewards(worldId, enemyIds, encounter.isBoss);
 
-    const nextSave: SaveData = {
+    const nextSaveBase: SaveData = {
       ...save,
       party: newParty,
       inventory,
@@ -348,12 +489,16 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     // 倒した敵をマップから除去
     const nextMap = map ? removeEntity(map, encounter.entityId) : null;
+    const nextSave = nextMap
+      ? updateExploration(applyRewards(nextSaveBase, bonusRewards), worldId, nextMap)
+      : applyRewards(nextSaveBase, bonusRewards);
 
     set({
       save: nextSave,
       map: nextMap,
       encounter: null,
-      lastReward: { exp: totalExp, gold: totalGold, drops, bonusItems, levelUps },
+      lastReward: { exp: totalExp, gold: totalGold, drops, bonusItems, bonusRewards, levelUps },
+      mapToast: bonusRewards.length ? `追加報酬：${bonusRewards.map(rewardText).join('・')}` : null,
     });
     saveSlot(nextSave);
     battle.reset();
@@ -421,6 +566,21 @@ export const useGameStore = create<GameState>((set, get) => ({
     nextSave = unlockNextWorld(nextSave, worldId);
     nextSave = {
       ...nextSave,
+      exploration: {
+        ...(nextSave.exploration ?? {}),
+        [worldId]: {
+          ...(nextSave.exploration?.[worldId] ?? {
+            bestRate: 0,
+            openedChests: [],
+            totalChests: 0,
+            foundSecrets: [],
+            totalSecrets: 0,
+            codexFound: 0,
+            codexTotal: 0,
+          }),
+          shortcutsUnlocked: true,
+        },
+      },
       codex: {
         discoveredIds: discover(nextSave, [
           `codex_world_${worldId}`,
@@ -502,14 +662,15 @@ export const useGameStore = create<GameState>((set, get) => ({
         ? owned.equippedArmorId
         : owned.equippedAccessoryId;
     const equippedAlready = equippedId === item.id;
-    if (equippedAlready || save.gold < item.price) return;
+    const ownedLoot = (save.equipmentInventory ?? []).includes(item.id);
+    if (equippedAlready || (!ownedLoot && save.gold < item.price)) return;
     const nextOwned = item.slot === 'weapon'
       ? { ...owned, equippedWeaponId: item.id }
       : item.slot === 'armor'
         ? { ...owned, equippedArmorId: item.id }
         : { ...owned, equippedAccessoryId: item.id };
     const party = save.party.map((p, index) => index === partyIndex ? nextOwned : p);
-    const nextSave = { ...save, party, gold: save.gold - item.price };
+    const nextSave = { ...save, party, gold: ownedLoot ? save.gold : save.gold - item.price };
     set({ save: nextSave, mapToast: `${item.name} を装備した！` });
     saveSlot(nextSave);
   },

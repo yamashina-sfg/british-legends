@@ -11,7 +11,7 @@ export const ENEMIES: Record<string, Enemy> = {
     exp: 16,
     gold: 12,
     skillIds: ['enemy_bite', 'grendel_crush'],
-    dropTable: [{ materialId: 'grendel_claw', rate: 0.6 }, { materialId: 'monster_fang', rate: 0.3 }],
+    dropTable: [{ materialId: 'grendel_claw', rate: 0.6 }, { materialId: 'monster_fang', rate: 0.3 }, { materialId: 'grendels_fang', rate: 0.05 }],
   },
   grendels_mother: {
     id: 'grendels_mother',
@@ -32,8 +32,8 @@ export const ENEMIES: Record<string, Enemy> = {
     stats: { hp: 170, mp: 30, atk: 24, def: 12, spd: 10 },
     exp: 60,
     gold: 58,
-    skillIds: ['dragon_breath', 'dragon_tail_smash', 'enemy_bite'],
-    dropTable: [{ materialId: 'dragon_scale', rate: 1.0 }],
+    skillIds: ['dragon_breath', 'wing_attack', 'dragon_tail_smash', 'enemy_bite'],
+    dropTable: [{ materialId: 'dragon_scale', rate: 1.0 }, { materialId: 'dragon_heart', rate: 0.02 }],
     isBoss: true,
   },
 
@@ -72,6 +72,7 @@ export const ENEMIES: Record<string, Enemy> = {
     dropTable: [
       { materialId: 'broken_crown', rate: 1.0 },
       { materialId: 'memory_of_revenge', rate: 0.5 },
+      { materialId: 'royal_ring', rate: 0.03 },
     ],
     isBoss: true,
   },
@@ -120,8 +121,9 @@ export const ENEMIES: Record<string, Enemy> = {
     gold: 88,
     skillIds: ['bloody_ambition', 'bloody_dagger', 'witch_curse', 'curse_word'],
     dropTable: [
-      { materialId: 'cursed_crown', rate: 1.0 },
-      { materialId: 'blood_relic', rate: 0.6 },
+      { materialId: 'cursed_crown', rate: 0.03 },
+      { materialId: 'blood_relic', rate: 1.0 },
+      { materialId: 'witch_scroll', rate: 0.6 },
     ],
     isBoss: true,
   },

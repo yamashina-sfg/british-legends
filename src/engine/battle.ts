@@ -2,6 +2,16 @@ import type { Enemy, OwnedCharacter, Skill, Stats } from '@/types';
 import { getCharacter, getEnemy, getSkill } from '@/data';
 import { statsWithEquipment } from './equipment';
 import { calcDamage, calcHeal } from './damage';
+import {
+  applyHpCost,
+  createFlawRuntime,
+  damageMultiplier,
+  effectiveStats,
+  flawIsAwakened,
+  onDefend,
+  skillIdsWithTragicFlaw,
+  type FlawRuntime,
+} from './tragicFlaw';
 
 // ============================================================
 // 戦闘エンジン（純粋ロジック・React非依存）
@@ -33,7 +43,13 @@ export interface Combatant {
   /** 防御コマンドによる被ダメ半減（このラウンドのみ） */
   defending: boolean;
   rageTriggered: boolean;
+  phaseTwoTriggered: boolean;
+  finalTriggered: boolean;
+  summonedGuard: boolean;
+  poison: number;
+  cursed: number;
   passiveTriggered: boolean;
+  tragicFlaw?: FlawRuntime;
   alive: boolean;
 }
 
@@ -51,7 +67,7 @@ export interface LogEntry {
 }
 
 // --- コンバタント生成 ----------------------------------------
-export function combatantFromOwned(owned: OwnedCharacter, partyIndex = 0): Combatant {
+export function combatantFromOwned(owned: OwnedCharacter, partyIndex = 0, isBossBattle = false): Combatant {
   const char = getCharacter(owned.characterId);
   const stats = statsWithEquipment(char, owned);
   return {
@@ -67,13 +83,19 @@ export function combatantFromOwned(owned: OwnedCharacter, partyIndex = 0): Comba
     maxMp: stats.mp,
     hp: Math.min(owned.currentHp, stats.hp),
     mp: Math.min(owned.currentMp, stats.mp),
-    skillIds: owned.learnedSkillIds,
+    skillIds: skillIdsWithTragicFlaw(char, owned.learnedSkillIds),
     atkBuff: 0,
     tragicCharge: 0,
     actionCount: 0,
     defending: false,
     rageTriggered: false,
+    phaseTwoTriggered: false,
+    finalTriggered: false,
+    summonedGuard: false,
+    poison: 0,
+    cursed: 0,
     passiveTriggered: false,
+    tragicFlaw: createFlawRuntime(char, isBossBattle),
     alive: owned.currentHp > 0,
   };
 }
@@ -98,6 +120,11 @@ export function combatantFromEnemy(enemyId: string, index: number): Combatant {
     actionCount: 0,
     defending: false,
     rageTriggered: false,
+    phaseTwoTriggered: false,
+    finalTriggered: false,
+    summonedGuard: false,
+    poison: 0,
+    cursed: 0,
     passiveTriggered: false,
     alive: true,
   };
@@ -151,7 +178,10 @@ export function decideEnemyAction(actor: Combatant, all: Combatant[]): BattleAct
 
   if (actor.sourceId === 'dragon') {
     const specialRoll = Math.random();
-    if (actor.rageTriggered || specialRoll < 0.4) {
+    if (actor.hp <= actor.maxHp * 0.72 && specialRoll < 0.34) {
+      return { actorUid: actor.uid, type: 'skill', skillId: 'wing_attack', targetUid: target?.uid };
+    }
+    if (actor.rageTriggered || specialRoll < 0.55) {
       return {
         actorUid: actor.uid,
         type: 'skill',
@@ -168,7 +198,10 @@ export function decideEnemyAction(actor: Combatant, all: Combatant[]): BattleAct
 
   if (actor.sourceId === 'claudius') {
     const guardCount = all.filter((c) => c.side === 'enemy' && c.alive && c.sourceId === 'royal_guard').length;
-    if (nextActionNumber % 3 === 0 && guardCount < 2) {
+    if (actor.hp <= actor.maxHp * 0.28 && !actor.finalTriggered) {
+      return { actorUid: actor.uid, type: 'skill', skillId: 'royal_execution', targetUid: target?.uid };
+    }
+    if (!actor.summonedGuard && actor.hp <= actor.maxHp * 0.68 && guardCount < 2) {
       return { actorUid: actor.uid, type: 'skill', skillId: 'summon_guard', targetUid: target?.uid };
     }
     return {
@@ -180,7 +213,7 @@ export function decideEnemyAction(actor: Combatant, all: Combatant[]): BattleAct
   }
 
   if (actor.sourceId === 'macbeths_fate') {
-    if (!actor.rageTriggered && actor.hp <= actor.maxHp / 2) {
+    if (!actor.phaseTwoTriggered && actor.hp <= actor.maxHp * 0.72) {
       return { actorUid: actor.uid, type: 'skill', skillId: 'bloody_ambition', targetUid: actor.uid };
     }
     return {
@@ -228,10 +261,18 @@ function pickTarget(cs: Combatant[], preferUid: string | undefined, side: Side):
 }
 
 function applyDamage(target: Combatant, raw: number): number {
-  const dmg = target.defending ? Math.max(1, Math.floor(raw / 2)) : raw;
+  const cursedBonus = target.cursed > 0 ? Math.ceil(raw * 0.12) : 0;
+  const dmg = target.defending ? Math.max(1, Math.floor((raw + cursedBonus) / 2)) : raw + cursedBonus;
   target.hp = Math.max(0, target.hp - dmg);
   if (target.hp === 0) target.alive = false;
   return dmg;
+}
+
+function maybeLogAwakening(actor: Combatant, logs: LogEntry[]): void {
+  if (!actor.tragicFlaw || actor.tragicFlaw.state.awakened) return;
+  if (!flawIsAwakened(actor.tragicFlaw, actor.hp, actor.maxHp)) return;
+  actor.tragicFlaw.state.awakened = true;
+  logs.push({ text: `${actor.name} の宿命「${actor.tragicFlaw.flaw.theme}」が目を覚ました！` });
 }
 
 export function resolveAction(working: Combatant[], action: BattleAction): LogEntry[] {
@@ -241,23 +282,18 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
   const logs: LogEntry[] = [];
   const enemySide: Side = actor.side === 'ally' ? 'enemy' : 'ally';
 
-  if (
-    actor.side === 'ally' &&
-    actor.sourceId.startsWith('beowulf') &&
-    !actor.passiveTriggered &&
-    actor.hp > 0 &&
-    actor.hp <= actor.maxHp * 0.3
-  ) {
-    actor.passiveTriggered = true;
-    actor.atkBuff += 14;
-    actor.stats = { ...actor.stats, def: Math.max(1, actor.stats.def - 6) };
-    logs.push({ text: '宿命「英雄」: Beowulfの Heroic Spirit が燃え上がる！' });
-    logs.push({ text: '攻撃力が大きく上がったが、防御が下がった。' });
-  }
-
   if (action.type === 'defend') {
     actor.defending = true;
+    if (actor.poison > 0) actor.poison = Math.max(0, actor.poison - 1);
+    if (actor.cursed > 0) actor.cursed = Math.max(0, actor.cursed - 1);
     logs.push({ text: `${actor.name} は身を守っている。` });
+    if (actor.poison > 0 || actor.cursed > 0) logs.push({ text: '守りを固め、毒と呪いの進行を抑えた。' });
+    const flawLog = onDefend(actor.tragicFlaw);
+    if (flawLog) {
+      actor.tragicCharge = Math.floor((actor.tragicFlaw?.state.meter ?? 0) / 34);
+      logs.push({ text: flawLog });
+    }
+    maybeLogAwakening(actor, logs);
     return logs;
   }
 
@@ -269,6 +305,11 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
       return logs;
     }
     actor.mp -= skill.mpCost;
+    if (skill.id === 'royal_execution') actor.finalTriggered = true;
+    if (skill.id === 'bloody_ambition' && actor.sourceId === 'macbeths_fate') actor.phaseTwoTriggered = true;
+    const hpCost = applyHpCost(actor.tragicFlaw, skill.id, actor.hp, actor.maxHp);
+    actor.hp = hpCost.hp;
+    if (hpCost.text) logs.push({ text: hpCost.text });
     logs.push({ text: `${actor.name} は「${skill.name}」を放った！` });
   } else {
     logs.push({ text: `${actor.name} の攻撃！` });
@@ -276,31 +317,37 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
 
   switch (skill.type) {
     case 'charge': {
-      actor.tragicCharge = Math.min(3, actor.tragicCharge + 1);
-      logs.push({ text: `宿命「逡巡」: ${actor.name} は決断を遅らせ、次の一撃を研ぎ澄ませた。` });
-      logs.push({ text: `逡巡 ${actor.tragicCharge}/3。次の攻撃威力が上がる。` });
+      const flawLog = onDefend(actor.tragicFlaw);
+      actor.tragicCharge = Math.floor((actor.tragicFlaw?.state.meter ?? actor.tragicCharge * 34) / 34);
+      logs.push({ text: `${actor.name} は攻撃せず、思索を深めた。` });
+      if (flawLog) logs.push({ text: flawLog });
+      maybeLogAwakening(actor, logs);
       break;
     }
     case 'sacrifice': {
       const cost = Math.max(1, Math.floor(actor.maxHp * 0.16));
       actor.hp = Math.max(1, actor.hp - cost);
+      if (actor.tragicFlaw) actor.tragicFlaw.state.hpSpent += cost;
       actor.atkBuff += skill.power;
       if (actor.sourceId === 'macbeths_fate') actor.rageTriggered = true;
-      logs.push({ text: `宿命「野心」: ${actor.name} はHP${cost}を代償に力を得た！` });
+      logs.push({ text: `${actor.name} はHP${cost}を代償に力を得た！` });
       logs.push({ text: `${actor.name} の攻撃力が大きく上がった。` });
+      if (actor.sourceId === 'macbeths_fate') logs.push({ text: '三人の魔女の影が戦場を横切り、血の野心が燃え上がる。' });
+      maybeLogAwakening(actor, logs);
       break;
     }
     case 'attack': {
       const targets =
         skill.target === 'all' ? livingOf(working, enemySide) : [pickAliveTarget(working, action.targetUid, enemySide)].filter(Boolean) as Combatant[];
+      const actorStats = effectiveStats(actor.stats, actor.tragicFlaw, actor.hp, actor.maxHp);
+      const flawDamage = damageMultiplier(actor.tragicFlaw, { command: action.type, skillId: skill.id }, actor.hp, actor.maxHp);
+      if (flawDamage.text) logs.push({ text: flawDamage.text });
+      actor.tragicCharge = Math.floor((actor.tragicFlaw?.state.meter ?? 0) / 34);
+      maybeLogAwakening(actor, logs);
       for (const t of targets) {
-        let dmg = calcDamage({ attackerAtk: actor.stats.atk, defenderDef: t.stats.def, skill, atkBuff: actor.atkBuff });
-        if (actor.tragicCharge > 0) {
-          const multiplier = 1 + actor.tragicCharge * 0.55;
-          dmg = Math.max(1, Math.floor(dmg * multiplier));
-          logs.push({ text: `溜めた逡巡が決断に変わった！ 威力 ${Math.round(multiplier * 100)}%` });
-          actor.tragicCharge = 0;
-        }
+        const targetStats = effectiveStats(t.stats, t.tragicFlaw, t.hp, t.maxHp);
+        const baseDmg = calcDamage({ attackerAtk: actorStats.atk, defenderDef: targetStats.def, skill, atkBuff: actor.atkBuff });
+        const dmg = Math.max(1, Math.floor(baseDmg * flawDamage.multiplier));
         const dealt = applyDamage(t, dmg);
         logs.push({ text: `${t.name} に ${dealt} のダメージ！` });
         if (t.sourceId === 'dragon' && !t.rageTriggered && t.hp > 0 && t.hp <= t.maxHp / 2) {
@@ -309,6 +356,7 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
           logs.push({ text: 'Dragonの鱗が砕け、灼熱の怒りが解き放たれた！' });
         }
         if (!t.alive) logs.push({ text: `${t.name} を倒した！` });
+        else maybeLogAwakening(t, logs);
       }
       break;
     }
@@ -337,6 +385,7 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
     }
     case 'buff': {
       if (skill.id === 'summon_guard') {
+        actor.summonedGuard = true;
         const guard = combatantFromEnemy('royal_guard', working.filter((c) => c.sourceId === 'royal_guard').length);
         guard.uid = `enemy_royal_guard_summoned_${actor.actionCount}_${Math.floor(Math.random() * 10000)}`;
         guard.name = 'Royal Guard';
@@ -360,9 +409,30 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
         skill.target === 'all' ? livingOf(working, enemySide) : [pickAliveTarget(working, action.targetUid, enemySide)].filter(Boolean) as Combatant[];
       for (const t of targets) {
         t.stats = { ...t.stats, def: Math.max(0, t.stats.def - skill.power), spd: Math.max(1, t.stats.spd - skill.power) };
-        logs.push({ text: `${t.name} は弱体化した……。` });
+        if (skill.id === 'poisoned_cup') {
+          t.poison = Math.max(t.poison, 3);
+          logs.push({ text: `${t.name} は毒杯を口にした。毒が3ターン続く。` });
+        } else if (skill.id === 'witch_curse') {
+          t.cursed = Math.max(t.cursed, 3);
+          logs.push({ text: `魔女の呪いが${t.name}に絡みつく。受けるダメージが増える。` });
+        } else if (skill.id === 'wing_attack') {
+          logs.push({ text: `Dragonの翼撃で${t.name}の足並みが乱れた。行動順が崩れる。` });
+        } else {
+          logs.push({ text: `${t.name} は弱体化した……。` });
+        }
       }
       break;
+    }
+  }
+  for (const t of working) {
+    if (!t.alive || t.poison <= 0) continue;
+    const poisonDmg = Math.max(1, Math.floor(t.maxHp * 0.05));
+    t.hp = Math.max(0, t.hp - poisonDmg);
+    t.poison -= 1;
+    logs.push({ text: `${t.name} は毒で ${poisonDmg} のダメージを受けた。` });
+    if (t.hp === 0) {
+      t.alive = false;
+      logs.push({ text: `${t.name} は毒に倒れた！` });
     }
   }
   return logs;

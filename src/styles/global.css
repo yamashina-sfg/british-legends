@@ -2178,3 +2178,47 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
   .opening-scene__art, .opening-scene__dust, .opening-scene__blackout, .opening-scene__gift span,
   .opening-scene__bar--top, .opening-scene__bar--bottom { animation-duration: .01ms !important; }
 }
+
+/* Tragic Flaw System */
+.tragic-flaw-chip { display: flex; align-items: center; gap: 5px; min-width: 0; width: fit-content; max-width: 100%; margin: 3px 0; padding: 2px 6px; border: 1px solid #8b7650; background: rgba(47, 37, 30, .86); color: #f0d889; font-size: 10px; line-height: 1.2; }
+.tragic-flaw-chip__icon { display: inline-grid; place-items: center; width: 16px; height: 16px; color: #111717; background: #e4c05c; font-size: 11px; }
+.tragic-flaw-chip__meter { color: #b9dfde; white-space: nowrap; }
+.tragic-flaw-panel { display: grid; gap: 4px; margin-bottom: 8px; padding: 7px 8px; border: 1px solid #75664d; background: rgba(24, 28, 28, .72); }
+.tragic-flaw-panel__icon { display: inline-grid; place-items: center; width: 19px; height: 19px; margin-right: 4px; background: #d9b650; color: #151515; }
+.tragic-skill-mark { margin-left: 6px; padding: 1px 4px; border: 1px solid #92713b; color: #f0d889; font-size: 9px; line-height: 1; white-space: nowrap; }
+.tragic-flaw-inline { display: flex; align-items: center; gap: 5px; min-width: 0; color: #f0d889; font-size: 10px; line-height: 1.25; }
+.tragic-flaw-inline span:last-child { min-width: 0; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tragic-flaw-detail { display: grid; gap: 8px; padding: 10px; border: 2px solid #4f594f; background: rgba(16, 24, 24, .62); }
+.tragic-flaw-detail__icon { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 5px; background: #dfbe62; color: #121515; }
+.tragic-flaw-detail__grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.tragic-flaw-detail__grid div { min-width: 0; padding: 7px; border: 1px solid #3a4a44; background: rgba(32, 43, 40, .58); }
+.tragic-flaw-detail__grid strong { display: block; margin: 2px 0 3px; color: #f1d57f; font-size: 12px; }
+.tragic-flaw-detail__grid p { margin: 0; color: var(--text-dim); font-size: 10px; line-height: 1.5; overflow-wrap: anywhere; }
+@media (max-width: 700px) { .tragic-flaw-detail__grid { grid-template-columns: 1fr; }.tragic-flaw-panel { margin-bottom: 6px; }.tragic-flaw-chip { font-size: 9px; } }
+
+/* A-rank exploration: keys, sealed doors, secret rooms, and world mood. */
+.ent-key { z-index: 7; display: grid; place-items: center; color: #1a1711; font-size: 12px; background: #e0bd54; border: 2px solid #5a4520; box-shadow: 0 0 0 2px #151716, 0 0 12px rgba(224, 189, 84, .55); animation: key-glint 1.8s ease-in-out infinite; }
+.ent-locked-door { z-index: 6; display: grid; place-items: center; color: #e5c86a; font-size: 10px; background: #3a2b2b; border: 3px solid #9a7141; box-shadow: inset 0 0 0 3px #211819, 0 0 0 2px #120f12; }
+.ent-door-open { z-index: 5; width: 20px !important; height: 20px !important; margin: 3px; background: #1b1518; border: 2px solid #6b513a; box-shadow: inset 0 0 0 3px #0d0c10; opacity: .86; }
+.ent-secret-open { z-index: 6; display: grid; place-items: center; color: #f0d986; background: #293b3a; border: 2px solid #87a287; box-shadow: 0 0 0 2px #111717, 0 0 16px rgba(135,162,135,.5); }
+.legend-key { background: #e0bd54; border: 1px solid #5a4520; box-shadow: 0 0 7px rgba(224,189,84,.55); }
+.legend-door { background: #3a2b2b; border: 1px solid #d2a862; }
+@keyframes key-glint { 0%, 100% { filter: brightness(.9); transform: translateY(0); } 50% { filter: brightness(1.25); transform: translateY(-1px); } }
+
+.dungeon-stage .dungeon-map { position: relative; }
+.dungeon-stage .dungeon-map::before,
+.dungeon-stage .dungeon-map::after { content: ''; position: absolute; inset: 0; pointer-events: none; z-index: 9; mix-blend-mode: screen; }
+.dungeon-stage .dungeon-map::before { opacity: .16; background-size: 78px 78px; }
+.dungeon-stage .dungeon-map::after { opacity: .18; }
+.dungeon-map--beowulf::before { background-image: radial-gradient(circle at 18px 42px, #dc7b36 0 3px, transparent 4px), radial-gradient(circle at 55px 15px, #54412d 0 4px, transparent 5px); animation: ember-drift 5s linear infinite; }
+.dungeon-map--beowulf::after { background: radial-gradient(circle at 70% 72%, rgba(239,111,44,.45), transparent 26%), linear-gradient(0deg, rgba(95,48,29,.28), transparent 45%); }
+.dungeon-map--hamlet::before { background-image: linear-gradient(115deg, rgba(193,201,217,.32), transparent 28%, rgba(104,114,145,.2) 45%, transparent 62%); background-size: 120px 54px; animation: fog-slide 8s linear infinite; }
+.dungeon-map--hamlet::after { background: radial-gradient(circle at 82% 18%, rgba(208,214,229,.34), transparent 20%), linear-gradient(90deg, rgba(64,70,95,.28), transparent 40%, rgba(64,70,95,.2)); }
+.dungeon-map--macbeth::before { background-image: linear-gradient(160deg, transparent 0 43%, rgba(224,221,169,.75) 44% 46%, transparent 47% 100%); background-size: 112px 112px; opacity: .11; animation: thunder-pulse 3.2s steps(1) infinite; }
+.dungeon-map--macbeth::after { background: radial-gradient(circle at 22% 78%, rgba(156,34,45,.42), transparent 22%), linear-gradient(180deg, rgba(69,38,48,.16), rgba(24,18,24,.28)); }
+.ent-sym--dragon { border-color: #f0a14f; background: #b84f39; box-shadow: 0 0 0 2px #241723, 0 0 18px rgba(232,93,43,.65); }
+.ent-sym--claudius { border-color: #d8c171; background: #704b78; box-shadow: 0 0 0 2px #241723, 0 0 14px rgba(216,193,113,.45); }
+.ent-sym--macbeths_fate { border-color: #cf6970; background: #6b2636; box-shadow: 0 0 0 2px #241723, 0 0 18px rgba(179,45,61,.6); }
+@keyframes ember-drift { from { background-position: 0 0; } to { background-position: 22px -78px; } }
+@keyframes fog-slide { from { background-position: -120px 0; } to { background-position: 120px 0; } }
+@keyframes thunder-pulse { 0%, 82%, 100% { opacity: .05; } 83%, 86% { opacity: .32; } 87%, 90% { opacity: .08; } 91%, 93% { opacity: .24; } }

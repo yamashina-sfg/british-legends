@@ -62,8 +62,15 @@ export function PartyOverlay() {
                   </div>
                   <div className="tiny dim">{char.stageName}</div>
                   <div className="tiny accent">
-                    {char.role ?? 'Adventurer'}{char.tragicFlaw ? ` / 宿命: ${char.tragicFlaw.name}` : ''}
+                    {char.role ?? 'Adventurer'}{char.tragicFlaw ? ` / 宿命: ${char.tragicFlaw.theme}` : ''}
                   </div>
+                  {char.tragicFlaw && (
+                    <div className="tragic-flaw-inline">
+                      <span>{char.tragicFlaw.icon}</span>
+                      <strong>{char.tragicFlaw.theme}</strong>
+                      <span>{char.tragicFlaw.battleTrait.name}</span>
+                    </div>
+                  )}
                   <Gauge value={p.currentHp} max={stats.hp} type="hp" />
                   <div className="party-member-tags">
                     {isActive && <span>出撃中</span>}

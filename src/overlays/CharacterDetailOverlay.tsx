@@ -45,6 +45,40 @@ export function CharacterDetailOverlay() {
         装備: {owned.equippedWeaponId ? getEquipment(owned.equippedWeaponId).name : 'なし'} / {owned.equippedArmorId ? getEquipment(owned.equippedArmorId).name : 'なし'} / {owned.equippedAccessoryId ? getEquipment(owned.equippedAccessoryId).name : 'なし'}
       </div>
 
+      {char.tragicFlaw && (
+        <div className="tragic-flaw-detail">
+          <div className="row">
+            <span className="tragic-flaw-detail__icon">{char.tragicFlaw.icon}</span>
+            <strong>{char.tragicFlaw.theme}</strong>
+            <span className="spacer" />
+            <span className="tiny dim">Tragic Flaw</span>
+          </div>
+          <div className="small">{char.tragicFlaw.description}</div>
+          <div className="tragic-flaw-detail__grid">
+            <div>
+              <span className="tiny dim">Passive</span>
+              <strong>{char.tragicFlaw.passiveAbility.name}</strong>
+              <p>{char.tragicFlaw.passiveAbility.description}</p>
+            </div>
+            <div>
+              <span className="tiny dim">Active</span>
+              <strong>{char.tragicFlaw.activeSkill.name}</strong>
+              <p>{char.tragicFlaw.activeSkill.description}</p>
+            </div>
+            <div>
+              <span className="tiny dim">Trait</span>
+              <strong>{char.tragicFlaw.battleTrait.name}</strong>
+              <p>{char.tragicFlaw.battleTrait.description}</p>
+            </div>
+            <div>
+              <span className="tiny dim">Awakening</span>
+              <strong>{char.tragicFlaw.awakeningCondition.name}</strong>
+              <p>{char.tragicFlaw.awakeningCondition.description}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="window-title" style={{ marginTop: 4 }}>
         とくぎ
       </div>
