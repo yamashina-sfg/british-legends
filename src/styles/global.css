@@ -2088,3 +2088,93 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* ===== Cinematic opening (v2): letterbox, speakers, mood, special beats ===== */
+.opening-scene { background: #020307; }
+.opening-scene__void { position: absolute; inset: 0; background: radial-gradient(circle at 50% 60%, #0a0c18, #020307 70%); }
+
+/* Letterbox bars slide in for an instant "film" read. */
+.opening-scene__bar { position: absolute; left: 0; right: 0; height: 5.5%; background: #000; z-index: 5; pointer-events: none; box-shadow: 0 0 22px rgba(0,0,0,.9); }
+.opening-scene__bar--top { top: 0; animation: opening-bar-top 1.1s cubic-bezier(.2,.7,.2,1) both; }
+.opening-scene__bar--bottom { bottom: 0; animation: opening-bar-bottom 1.1s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes opening-bar-top { from { transform: translateY(-100%); } to { transform: translateY(0); } }
+@keyframes opening-bar-bottom { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+/* Drifting dust motes for depth. */
+.opening-scene__dust { position: absolute; inset: 0; z-index: 1; pointer-events: none; opacity: .5;
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, rgba(247,224,160,.7), transparent),
+    radial-gradient(1.5px 1.5px at 70% 60%, rgba(180,200,255,.6), transparent),
+    radial-gradient(1px 1px at 40% 80%, rgba(247,224,160,.6), transparent),
+    radial-gradient(1px 1px at 85% 25%, rgba(200,220,255,.55), transparent),
+    radial-gradient(1.5px 1.5px at 55% 15%, rgba(247,224,160,.5), transparent);
+  animation: opening-dust 14s linear infinite; }
+@keyframes opening-dust { from { transform: translate3d(0,0,0); } to { transform: translate3d(-2%, -3%, 0); } }
+
+/* Mood-tinted veils — light touch so the finished art frames stay readable; only the
+   bottom is darkened enough to keep the subtitle legible. */
+.opening-scene--calm .opening-scene__veil { background:
+  radial-gradient(circle at 50% 46%, rgba(40,58,92,.04), rgba(0,0,0,.06) 64%, rgba(0,0,0,.22)),
+  linear-gradient(180deg, rgba(4,6,14,.08), rgba(4,6,14,0) 30%, rgba(4,6,14,.55)); }
+.opening-scene--dark .opening-scene__veil { background:
+  radial-gradient(circle at 50% 44%, rgba(8,6,14,.04), rgba(0,0,0,.2) 60%, rgba(0,0,0,.4)),
+  linear-gradient(180deg, rgba(2,2,6,.18), rgba(2,2,6,0) 32%, rgba(2,2,6,.6)); }
+.opening-scene--dark .opening-scene__art { filter: saturate(.8) brightness(.96) contrast(1.04); }
+.opening-scene--hope .opening-scene__veil { background:
+  radial-gradient(circle at 50% 52%, rgba(247,204,88,.06), rgba(0,0,0,.05) 62%, rgba(2,3,8,.26)),
+  linear-gradient(180deg, rgba(6,7,16,.06), rgba(6,7,16,0) 32%, rgba(6,7,16,.55)); }
+
+/* Cold-open prologue: black with a single line. */
+.opening-scene--prologue .opening-scene__void { background: #000; }
+.opening-scene--prologue .opening-scene__dialogue { background: transparent; border: 0; box-shadow: none; left: 0; right: 0; bottom: clamp(64px, 18vh, 180px); text-align: center; }
+.opening-scene--prologue .opening-scene__dialogue p { margin: 0 auto; color: #d8d2e6; font-size: clamp(18px, 2.4vw, 28px); letter-spacing: 2px; animation: opening-fade-soft 2.4s ease both; }
+
+/* "still" + base entrance for slow drama. */
+.opening-scene__art--still { animation-name: opening-still; }
+@keyframes opening-still { from { opacity: 0; transform: scale(1.08); } 16% { opacity: 1; } to { opacity: 1; transform: scale(1.14); } }
+
+/* Speaker name tag. */
+.opening-scene__name { position: absolute; top: -16px; left: 18px; padding: 4px 14px; font-size: 13px; letter-spacing: 2px;
+  color: #07080c; background: #d6b357; box-shadow: 0 0 0 2px #111017; }
+/* Subtitle box sits clear of the bottom letterbox bar and grows with the text. */
+.opening-scene__dialogue { padding: 26px 28px 16px; bottom: clamp(54px, 11vh, 104px); min-height: 0; background: rgba(14,18,24,.82); }
+.opening-scene__dialogue small { position: static; display: block; margin-top: 8px; text-align: right; }
+
+/* The Censor speaks in cold, desaturated red. */
+.opening-scene__dialogue--censor { background: rgba(20,8,12,.92); border-color: #b65b66; box-shadow: 0 0 0 4px #0a0608, inset 0 0 0 2px #5a2630; }
+.opening-scene__dialogue--censor p { color: #f0c9cf; letter-spacing: 1px; text-shadow: 0 0 12px rgba(180,60,70,.4), 2px 2px #07080a; }
+.opening-scene__dialogue--censor .opening-scene__name { background: #b14651; color: #fff; }
+
+/* Books erasing: a creeping fog from both edges — the art already shows the fade, so this
+   only deepens the gloom, never blacks it out. */
+.opening-scene__blackout { position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background: linear-gradient(90deg, rgba(2,2,8,.85), rgba(0,0,0,0) 38%, rgba(0,0,0,0) 62%, rgba(2,2,8,.85));
+  animation: opening-drain 7s ease-in-out both; }
+@keyframes opening-drain { from { opacity: 0; } 30% { opacity: .25; } to { opacity: .55; } }
+
+/* Reading Gift: the lost title blooms back to life. */
+.opening-scene__gift { position: absolute; inset: 0; z-index: 3; display: grid; place-content: center; pointer-events: none; }
+.opening-scene__gift span { font-size: clamp(40px, 7vw, 92px); letter-spacing: 6px; color: #fff7d8;
+  text-shadow: 0 0 28px rgba(247,204,88,.85), 0 0 60px rgba(247,204,88,.5), 3px 3px #000;
+  animation: opening-bloom 3.4s ease both; }
+@keyframes opening-bloom { 0% { opacity: 0; transform: scale(.7); filter: blur(8px); }
+  40% { opacity: 1; filter: blur(0); } 80% { opacity: 1; transform: scale(1.04); } 100% { opacity: .9; transform: scale(1.06); } }
+
+/* Title reveal: white flash then logo. */
+.opening-scene__flash { position: absolute; inset: 0; background: #fff; animation: opening-flash 1.5s ease-out both; }
+@keyframes opening-flash { 0% { opacity: 0; } 12% { opacity: 1; } 100% { opacity: 0; } }
+.opening-scene__logo span { animation: opening-logo-rise 2s ease both; }
+@keyframes opening-logo-rise { 0% { opacity: 0; transform: translateY(18px) scale(.96); letter-spacing: 14px; }
+  100% { opacity: 1; transform: translateY(0) scale(1); letter-spacing: 5px; } }
+.opening-scene__logo small { animation: opening-fade-soft 2.2s ease .6s both; }
+
+@keyframes opening-fade-soft { from { opacity: 0; } to { opacity: 1; } }
+
+/* Skip button: quieter until hovered. */
+.opening-scene__skip { z-index: 6; opacity: .7; transition: opacity .2s, border-color .2s; }
+.opening-scene__skip:hover { opacity: 1; border-color: #fff2c6; }
+
+@media (prefers-reduced-motion: reduce) {
+  .opening-scene__art, .opening-scene__dust, .opening-scene__blackout, .opening-scene__gift span,
+  .opening-scene__bar--top, .opening-scene__bar--bottom { animation-duration: .01ms !important; }
+}
