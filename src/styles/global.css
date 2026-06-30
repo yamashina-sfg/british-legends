@@ -428,32 +428,6 @@
 .lodge-time-morning::before { background: linear-gradient(115deg, rgba(247, 219, 153, .38), transparent 45%); }
 .lodge-time-evening::before { background: linear-gradient(115deg, rgba(226, 117, 71, .32), transparent 48%); }
 .lodge-time-night::before { background: linear-gradient(115deg, rgba(90, 128, 184, .24), transparent 48%); opacity: .34; }
-.lodge-recovered-books {
-  position: absolute;
-  z-index: 7;
-  right: 11%;
-  top: 18%;
-  display: flex;
-  align-items: end;
-  gap: 5px;
-  padding: 8px 9px 6px;
-  background: rgba(36, 23, 16, .78);
-  border: 3px solid #7e5b36;
-  box-shadow: 0 4px 0 rgba(12, 8, 6, .72);
-}
-.lodge-recovered-books b {
-  display: block;
-  width: 14px;
-  height: 38px;
-  background: #302723;
-  border: 2px solid #17100d;
-  opacity: .42;
-}
-.lodge-recovered-books b.is-restored {
-  background: var(--book-color);
-  opacity: 1;
-  box-shadow: 0 -5px 0 #ebdfad;
-}
 .lodge-reading-desk {
   position: absolute;
   z-index: 7;
@@ -475,38 +449,6 @@
 }
 .lodge-reading-desk span { color: #f3cf6b; font-size: 12px; }
 .lodge-reading-desk small { color: #cfbea0; line-height: 1.35; }
-.lodge-trophy-case {
-  position: absolute;
-  z-index: 7;
-  left: 19%;
-  top: 14%;
-  display: grid;
-  grid-template-columns: repeat(3, 56px);
-  gap: 6px;
-}
-.lodge-trophy-case button {
-  min-height: 58px;
-  display: grid;
-  justify-items: center;
-  gap: 3px;
-  padding: 5px;
-  color: #897b67;
-  background: rgba(24, 16, 12, .78);
-  border: 2px solid #6e5739;
-  font: 8px var(--font);
-  cursor: pointer;
-}
-.lodge-trophy-case button i {
-  width: 22px;
-  height: 22px;
-  background: #3c3129;
-  border: 3px solid #1c1411;
-}
-.lodge-trophy-case button.is-won { color: #f1d383; border-color: #d0aa5f; }
-.lodge-trophy-case button.is-won i {
-  background: #d1ad5f;
-  box-shadow: 0 8px 0 -3px #8d633e, 0 0 12px rgba(240, 203, 105, .45);
-}
 .lodge-memory-panel {
   position: absolute;
   z-index: 7;
@@ -652,9 +594,7 @@
 
 @media (max-width: 700px) {
   .title-scene__tagline { font-size: 14px; }
-  .lodge-recovered-books { right: 5%; top: 13%; transform: scale(.72); transform-origin: top right; }
   .lodge-reading-desk { right: 2%; bottom: 22%; width: 118px; transform: scale(.82); transform-origin: bottom right; }
-  .lodge-trophy-case { left: 12%; top: 13%; grid-template-columns: repeat(3, 44px); transform: scale(.72); transform-origin: top left; }
   .lodge-memory-panel { right: 3%; top: 3%; transform: scale(.72); transform-origin: top right; }
   .codex-collection { width: calc(100vw - 24px); }
   .codex-summary { grid-template-columns: 1fr; }
@@ -1081,23 +1021,9 @@
   color: #e0bf65;
   font-weight: normal;
 }
-.lodge-hotspot--trophy {
-  left: 4%;
-  top: 18%;
-  width: 20%;
-  height: 25%;
-}
-.lodge-hotspot--quest {
-  left: 28%;
-  top: 13%;
-  width: 25%;
-  height: 22%;
-}
 @media (max-width: 700px) {
   .title-scene h1 { font-size: clamp(30px, 10vw, 48px); }
   .title-scene p { font-size: 12px; }
-  .lodge-hotspot--trophy { left: 2%; top: 17%; width: 26%; height: 24%; }
-  .lodge-hotspot--quest { left: 27%; top: 12%; width: 28%; height: 22%; }
 }
 
 * {

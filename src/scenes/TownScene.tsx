@@ -69,27 +69,10 @@ export function TownScene() {
         <i className="lodge-room__rug" />
         <header className="lodge-room__title"><span>BIBLIOTHECA LODGE</span><strong>帰還の間</strong><b>修復した世界 {save.progress.clearedWorldIds.length}</b></header>
 
-        <div className="lodge-recovered-books" aria-label="戻った本">
-          {CORE_WORLD_IDS.map((id) => {
-            const restored = save.progress.clearedWorldIds.includes(id);
-            return <b key={id} className={restored ? 'is-restored' : ''} style={{ '--book-color': CORE_WORLD_META[id].bookColor } as CSSProperties} title={getWorld(id).title} />;
-          })}
-        </div>
         <button className="lodge-reading-desk" aria-label="机の本" onClick={() => setMessage(`机の上: 『${currentWorld.title}』。${currentMeta.shortIntro}`)}>
           <span>{currentWorld.title}</span>
           <small>{currentMeta.theme}</small>
         </button>
-        <div className="lodge-trophy-case" aria-label="トロフィー展示">
-          {CORE_WORLD_IDS.map((id) => {
-            const won = save.progress.clearedWorldIds.includes(id);
-            return (
-              <button key={id} className={won ? 'is-won' : ''} onClick={() => setMessage(won ? `${getWorld(id).title}: ${CORE_WORLD_META[id].trophy} が棚で静かに光っている。` : `${getWorld(id).title}: 作品を修復すると、ここに証が飾られる。`)}>
-                <i />
-                <span>{won ? CORE_WORLD_META[id].trophy : '？？？'}</span>
-              </button>
-            );
-          })}
-        </div>
         <button className="lodge-memory-panel" aria-label="修復進行" onClick={() => setMessage(`Bibliotheca: 主要3作品の修復 ${restoredCoreIds.length}/3。図鑑解放率 Beowulf ${worldUnlockRate('beowulf', save.codex.discoveredIds)}% / Hamlet ${worldUnlockRate('hamlet', save.codex.discoveredIds)}% / Macbeth ${worldUnlockRate('macbeth', save.codex.discoveredIds)}%。`)}>
           <span>RESTORATION</span>
           <b>{restoredCoreIds.length}/3</b>
@@ -102,8 +85,6 @@ export function TownScene() {
           <i /><span className="lodge-object__label"><b>武具商の棚</b><small>所持 {save.gold} G</small></span>
         </button>
         <button className="lodge-hotspot lodge-hotspot--librarian" aria-label="司書の助言" onClick={() => setMessage(HINTS[(rank + 1) % HINTS.length])} />
-        <button className="lodge-hotspot lodge-hotspot--trophy" aria-label="トロフィールーム" onClick={() => setMessage(`トロフィールーム: 修復した世界 ${save.progress.clearedWorldIds.length}。${save.progress.clearedWorldIds.length >= 3 ? '黒幕Oblivionの影が、棚の奥で揺れている。' : '作品を修復すると、この部屋に戦いの証が増える。'}`)}><span>トロフィールーム</span></button>
-        <button className="lodge-hotspot lodge-hotspot--quest" aria-label="依頼ボード" onClick={() => setMessage(`依頼ボード: ${getObjective(save).detail}`)}><span>依頼ボード</span></button>
         <button className="lodge-hotspot lodge-hotspot--portal" aria-label="ワールドポータル" onClick={goWorldMap}><span>ワールドポータル</span></button>
 
         <div className="lodge-room__objective"><ObjectiveBanner compact /></div>
