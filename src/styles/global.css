@@ -382,63 +382,6 @@
 }
 
 /* ===== B-rank immersion pass: title, lodge life, collection codex ===== */
-.title-scene__keyart {
-  position: absolute;
-  z-index: 0;
-  inset: 0;
-  pointer-events: none;
-}
-.title-scene__book,
-.title-scene__blade,
-.title-scene__crown {
-  position: absolute;
-  display: block;
-  image-rendering: pixelated;
-  filter: drop-shadow(6px 8px 0 rgba(4, 5, 5, .72));
-}
-.title-scene__book {
-  left: 9%;
-  bottom: 17%;
-  width: 128px;
-  height: 82px;
-  background: #5f352d;
-  border: 6px solid #201614;
-  box-shadow: inset 0 0 0 6px #c7a15b, inset 58px 0 0 #261c21;
-  transform: rotate(-8deg);
-  animation: title-relic-float 4.5s ease-in-out infinite;
-}
-.title-scene__book::after {
-  content: '';
-  position: absolute;
-  left: 20px;
-  top: 24px;
-  width: 28px;
-  height: 4px;
-  background: #ead58d;
-  box-shadow: 0 13px #ead58d, 50px 0 #ead58d, 50px 13px #ead58d;
-}
-.title-scene__blade {
-  right: 12%;
-  bottom: 14%;
-  width: 26px;
-  height: 168px;
-  background: #cfd0c5;
-  border: 4px solid #23242a;
-  box-shadow: inset 7px 0 #f6edc9, 0 104px 0 11px #7b4b32, 0 126px 0 18px #d3aa59;
-  transform: rotate(16deg);
-  animation: title-relic-float 5.3s ease-in-out infinite reverse;
-}
-.title-scene__crown {
-  right: 23%;
-  top: 17%;
-  width: 86px;
-  height: 44px;
-  background: #b7433f;
-  border: 5px solid #2a1717;
-  box-shadow: inset 0 10px #d3aa59;
-  clip-path: polygon(0 35%, 16% 0, 34% 35%, 50% 0, 68% 35%, 84% 0, 100% 35%, 100% 100%, 0 100%);
-  animation: title-glint 2.8s steps(2, end) infinite;
-}
 .title-scene__tagline {
   color: #f2cf70;
   font-size: 18px;
@@ -460,14 +403,6 @@
   width: 44%;
   background: linear-gradient(90deg, #7fb899, #f0cd6f);
   animation: title-load 3.2s ease-in-out infinite;
-}
-@keyframes title-relic-float {
-  0%, 100% { translate: 0 0; }
-  50% { translate: 0 -8px; }
-}
-@keyframes title-glint {
-  0%, 100% { filter: drop-shadow(6px 8px 0 rgba(4, 5, 5, .72)) brightness(1); }
-  50% { filter: drop-shadow(6px 8px 0 rgba(4, 5, 5, .72)) brightness(1.35); }
 }
 @keyframes title-load {
   0%, 100% { width: 34%; }
@@ -493,43 +428,6 @@
 .lodge-time-morning::before { background: linear-gradient(115deg, rgba(247, 219, 153, .38), transparent 45%); }
 .lodge-time-evening::before { background: linear-gradient(115deg, rgba(226, 117, 71, .32), transparent 48%); }
 .lodge-time-night::before { background: linear-gradient(115deg, rgba(90, 128, 184, .24), transparent 48%); opacity: .34; }
-.lodge-hearth {
-  position: absolute;
-  z-index: 6;
-  left: 7%;
-  top: 42%;
-  width: 92px;
-  height: 74px;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-}
-.lodge-hearth::before {
-  content: '';
-  position: absolute;
-  inset: 8px 6px 0;
-  background: #4f3327;
-  border: 5px solid #201613;
-  box-shadow: inset 0 10px #927050, 0 6px 0 #120c0a;
-}
-.lodge-hearth i {
-  position: absolute;
-  left: 35px;
-  bottom: 11px;
-  width: 20px;
-  height: 31px;
-  background: #dc6837;
-  box-shadow: 0 -8px #f2c65d, 12px 5px #b94335, -12px 7px #e98544;
-  clip-path: polygon(50% 0, 72% 32%, 100% 70%, 62% 100%, 34% 92%, 0 70%, 28% 35%);
-  animation: lodge-fire 520ms steps(2, end) infinite;
-}
-.lodge-hearth i:nth-child(2) { left: 25px; scale: .75; animation-delay: 120ms; }
-.lodge-hearth i:nth-child(3) { left: 48px; scale: .65; animation-delay: 230ms; }
-@keyframes lodge-fire {
-  0%, 100% { translate: 0 0; filter: brightness(1); }
-  50% { translate: 0 -3px; filter: brightness(1.25); }
-}
 .lodge-recovered-books {
   position: absolute;
   z-index: 7;
@@ -577,32 +475,6 @@
 }
 .lodge-reading-desk span { color: #f3cf6b; font-size: 12px; }
 .lodge-reading-desk small { color: #cfbea0; line-height: 1.35; }
-.lodge-plant {
-  position: absolute;
-  z-index: 6;
-  left: 31%;
-  top: 49%;
-  width: 34px;
-  height: 32px;
-  padding: 0;
-  background: #7c573d;
-  border: 4px solid #2c1f19;
-  box-shadow: inset 0 6px #a7774d, 3px 5px 0 rgba(10, 7, 5, .62);
-  cursor: pointer;
-}
-.lodge-plant::before {
-  content: '';
-  position: absolute;
-  left: 6px;
-  bottom: 23px;
-  width: 20px;
-  height: calc(16px + var(--plant-growth, 0px));
-  background: #44653a;
-  clip-path: polygon(50% 0, 67% 28%, 100% 16%, 78% 48%, 100% 70%, 60% 62%, 50% 100%, 38% 64%, 0 76%, 21% 47%, 0 20%, 35% 31%);
-}
-.lodge-plant--1 { --plant-growth: 9px; }
-.lodge-plant--2 { --plant-growth: 20px; }
-.lodge-plant--3 { --plant-growth: 32px; }
 .lodge-trophy-case {
   position: absolute;
   z-index: 7;
@@ -634,57 +506,6 @@
 .lodge-trophy-case button.is-won i {
   background: #d1ad5f;
   box-shadow: 0 8px 0 -3px #8d633e, 0 0 12px rgba(240, 203, 105, .45);
-}
-.lodge-companions {
-  position: absolute;
-  z-index: 7;
-  left: 41%;
-  bottom: 20%;
-  display: flex;
-  align-items: end;
-  gap: 10px;
-}
-.lodge-companion {
-  position: relative;
-  width: 46px;
-  height: 66px;
-  padding: 0;
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-}
-.lodge-companion i {
-  position: absolute;
-  left: 12px;
-  bottom: 7px;
-  width: 22px;
-  height: 32px;
-  background: #6d7f91;
-  border: 3px solid #191614;
-  box-shadow: 0 -9px 0 #deb38c, -6px 24px 0 -2px #263142, 6px 24px 0 -2px #263142;
-}
-.lodge-companion--beowulf i { background: #6f844f; }
-.lodge-companion--hamlet i { background: #4d527e; }
-.lodge-companion--macbeth i { background: #884449; }
-.lodge-companion span {
-  position: absolute;
-  left: 50%;
-  bottom: 62px;
-  width: 128px;
-  padding: 4px 5px;
-  color: #f2dfb1;
-  background: rgba(21, 14, 10, .9);
-  border: 1px solid #b58a4b;
-  font: 8px var(--font);
-  line-height: 1.35;
-  opacity: 0;
-  transform: translateX(-50%) translateY(4px);
-  pointer-events: none;
-}
-.lodge-companion:hover span,
-.lodge-companion:focus-visible span {
-  opacity: 1;
-  transform: translateX(-50%);
 }
 .lodge-memory-panel {
   position: absolute;
@@ -830,16 +651,10 @@
 }
 
 @media (max-width: 700px) {
-  .title-scene__book { left: 4%; bottom: 20%; transform: rotate(-8deg) scale(.72); transform-origin: bottom left; }
-  .title-scene__blade { right: 6%; bottom: 17%; transform: rotate(16deg) scale(.7); transform-origin: bottom right; }
-  .title-scene__crown { right: 14%; top: 16%; transform: scale(.72); transform-origin: top right; }
   .title-scene__tagline { font-size: 14px; }
-  .lodge-hearth { left: 5%; top: 44%; transform: scale(.7); transform-origin: top left; }
   .lodge-recovered-books { right: 5%; top: 13%; transform: scale(.72); transform-origin: top right; }
   .lodge-reading-desk { right: 2%; bottom: 22%; width: 118px; transform: scale(.82); transform-origin: bottom right; }
-  .lodge-plant { left: 28%; top: 49%; transform: scale(.72); }
   .lodge-trophy-case { left: 12%; top: 13%; grid-template-columns: repeat(3, 44px); transform: scale(.72); transform-origin: top left; }
-  .lodge-companions { left: 35%; bottom: 19%; gap: 2px; transform: scale(.78); transform-origin: bottom left; }
   .lodge-memory-panel { right: 3%; top: 3%; transform: scale(.72); transform-origin: top right; }
   .codex-collection { width: calc(100vw - 24px); }
   .codex-summary { grid-template-columns: 1fr; }
@@ -850,9 +665,6 @@
 .title-scene .title-scene__tagline {
   color: #f2cf70;
   font-size: 18px;
-}
-.title-scene__keyart {
-  z-index: 0;
 }
 .title-scene__content,
 .title-scene__menu,

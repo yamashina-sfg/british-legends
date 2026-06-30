@@ -12,11 +12,6 @@ export function TitleScene() {
   return (
     <div className="title-scene fade-in" style={{ '--title-art': `url(${beowulfWorldArt})` } as CSSProperties}>
       <div className="title-scene__veil" />
-      <div className="title-scene__keyart" aria-hidden="true">
-        <i className="title-scene__book" />
-        <i className="title-scene__blade" />
-        <i className="title-scene__crown" />
-      </div>
       <div className="title-scene__content">
         <div className="title-scene__kicker">BIBLIOTHECA IS BEING ERASED</div>
         <h1>

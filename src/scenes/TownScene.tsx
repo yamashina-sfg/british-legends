@@ -48,8 +48,6 @@ export function TownScene() {
     'beowulf') as CoreWorldId;
   const currentWorld = getWorld(currentWorldId);
   const currentMeta = CORE_WORLD_META[currentWorldId];
-  const partyWorldIds = new Set(save.party.map((p) => getCharacter(p.characterId).worldId));
-  const companions = CORE_WORLD_IDS.filter((id) => partyWorldIds.has(id) || save.progress.clearedWorldIds.includes(id));
   const tiles = Array.from({ length: 120 });
 
   return (
@@ -71,9 +69,6 @@ export function TownScene() {
         <i className="lodge-room__rug" />
         <header className="lodge-room__title"><span>BIBLIOTHECA LODGE</span><strong>帰還の間</strong><b>修復した世界 {save.progress.clearedWorldIds.length}</b></header>
 
-        <button className="lodge-hearth" aria-label="暖炉" onClick={() => setMessage('暖炉: パチパチと紙片の灰が燃え、消えた物語の余白を照らしている。')}>
-          <i /><i /><i />
-        </button>
         <div className="lodge-recovered-books" aria-label="戻った本">
           {CORE_WORLD_IDS.map((id) => {
             const restored = save.progress.clearedWorldIds.includes(id);
@@ -84,7 +79,6 @@ export function TownScene() {
           <span>{currentWorld.title}</span>
           <small>{currentMeta.theme}</small>
         </button>
-        <button className={`lodge-plant lodge-plant--${rank}`} aria-label="植物" onClick={() => setMessage(`鉢植え: 修復が進むほど葉が伸びる。いま戻った光は ${restoredCoreIds.length}/3。`)} />
         <div className="lodge-trophy-case" aria-label="トロフィー展示">
           {CORE_WORLD_IDS.map((id) => {
             const won = save.progress.clearedWorldIds.includes(id);
@@ -95,14 +89,6 @@ export function TownScene() {
               </button>
             );
           })}
-        </div>
-        <div className="lodge-companions" aria-label="仲間たち">
-          {companions.map((id) => (
-            <button key={id} className={`lodge-companion lodge-companion--${id}`} onClick={() => setMessage(`${CORE_WORLD_META[id].companion.name}: ${CORE_WORLD_META[id].companion.line}`)}>
-              <i />
-              <span>{CORE_WORLD_META[id].companion.activity}</span>
-            </button>
-          ))}
         </div>
         <button className="lodge-memory-panel" aria-label="修復進行" onClick={() => setMessage(`Bibliotheca: 主要3作品の修復 ${restoredCoreIds.length}/3。図鑑解放率 Beowulf ${worldUnlockRate('beowulf', save.codex.discoveredIds)}% / Hamlet ${worldUnlockRate('hamlet', save.codex.discoveredIds)}% / Macbeth ${worldUnlockRate('macbeth', save.codex.discoveredIds)}%。`)}>
           <span>RESTORATION</span>
