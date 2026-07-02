@@ -7,7 +7,8 @@ import { Window } from '@/components/ui/Window';
 import { Gauge } from '@/components/ui/Gauge';
 import { Sprite } from '@/components/ui/Sprite';
 import { playBattleSfx, preloadBattleSfx } from '@/audio/sfx';
-import type { Combatant } from '@/engine/battle';
+import type { BattleFeedbackKind, Combatant } from '@/engine/battle';
+import { gainExp } from '@/engine/leveling';
 import { meterPercent } from '@/engine/tragicFlaw';
 import beowulfAttackField from '@/assets/battle/beowulf-attack-field.png';
 import hamletAttackField from '@/assets/battle/hamlet-attack-field.png';
@@ -23,6 +24,14 @@ import dallowayBattleField from '@/assets/battle/dalloway-battle-field-v1.png';
 import nineteen84BattleField from '@/assets/battle/nineteen84-battle-field-v1.png';
 
 type Mode = 'command' | 'skill' | 'item' | 'target';
+
+interface FloatingBattleText {
+  id: string;
+  targetUid: string;
+  text: string;
+  kind: BattleFeedbackKind;
+  slot: number;
+}
 
 const ATTACK_FIELDS: Record<string, string> = {
   Beowulf: beowulfAttackField,
@@ -53,7 +62,12 @@ export function BattleScene() {
   const [modeActorUid, setModeActorUid] = useState<string | null>(null);
   const [targetActorUid, setTargetActorUid] = useState<string | null>(null);
   const [actionPoseUid, setActionPoseUid] = useState<string | null>(null);
+  const [floatingTexts, setFloatingTexts] = useState<FloatingBattleText[]>([]);
+  const [battleRewardLines, setBattleRewardLines] = useState<string[]>([]);
   const logRef = useRef<HTMLDivElement>(null);
+  const processedLogCount = useRef(0);
+  const floatingTimeouts = useRef<number[]>([]);
+  const rewardFeedbackShown = useRef(false);
   const enemies = combatants.filter((c) => c.side === 'enemy');
   const allies = combatants.filter((c) => c.side === 'ally');
   const actor = phase === 'input' ? currentActor() : undefined;
@@ -66,7 +80,37 @@ export function BattleScene() {
 
   useEffect(() => {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
+  }, [log, battleRewardLines]);
+
+  useEffect(() => {
+    const nextEntries = log.slice(processedLogCount.current);
+    processedLogCount.current = log.length;
+    const events = nextEntries
+      .map((entry) => entry.feedback)
+      .filter((event): event is NonNullable<typeof event> => Boolean(event?.targetUid));
+    if (events.length === 0) return;
+
+    const nextTexts: FloatingBattleText[] = events
+      .sort((a, b) => (b.priority ?? 0) - (a.priority ?? 0))
+      .slice(0, 8)
+      .map((event, index) => ({
+        id: `${Date.now()}-${index}-${event.targetUid}`,
+        targetUid: event.targetUid!,
+        text: event.text,
+        kind: event.kind,
+        slot: index % 3,
+      }));
+
+    setFloatingTexts((current) => [...current.slice(-10), ...nextTexts]);
+    const timeout = window.setTimeout(() => {
+      setFloatingTexts((current) => current.filter((item) => !nextTexts.some((next) => next.id === item.id)));
+    }, 1150);
+    floatingTimeouts.current.push(timeout);
   }, [log]);
+
+  useEffect(() => () => {
+    floatingTimeouts.current.forEach((timeout) => window.clearTimeout(timeout));
+  }, []);
 
   useEffect(() => {
     preloadBattleSfx();
@@ -74,12 +118,78 @@ export function BattleScene() {
 
   useEffect(() => {
     if (phase === 'input') {
+      rewardFeedbackShown.current = false;
+      setBattleRewardLines([]);
+      setFloatingTexts([]);
       setMode('command');
       setPendingSkillId(null);
       setModeActorUid(actor?.uid ?? null);
       setTargetActorUid(null);
     }
   }, [phase, actor?.uid]);
+
+  useEffect(() => {
+    if (phase !== 'won' || rewardFeedbackShown.current) return;
+    rewardFeedbackShown.current = true;
+
+    const defeatedEnemies = enemies.filter((enemy) => !enemy.alive);
+    if (!save || defeatedEnemies.length === 0 || allies.length === 0) return;
+
+    const totalExp = defeatedEnemies.reduce((sum, enemy) => sum + getEnemy(enemy.sourceId).exp, 0);
+    const totalGold = defeatedEnemies.reduce((sum, enemy) => {
+      const data = getEnemy(enemy.sourceId);
+      return sum + (data.gold ?? Math.max(4, Math.floor(data.exp / 3)));
+    }, 0);
+    const firstAlly = allies.find((ally) => ally.alive) ?? allies[0];
+    const lines: string[] = [];
+    const rewardTexts: FloatingBattleText[] = [];
+    const now = Date.now();
+
+    if (totalExp > 0) {
+      lines.push(`EXP +${totalExp}`);
+      rewardTexts.push({
+        id: `${now}-reward-exp`,
+        targetUid: firstAlly.uid,
+        text: `EXP +${totalExp}`,
+        kind: 'exp',
+        slot: 0,
+      });
+    }
+    if (totalGold > 0) {
+      lines.push(`Gold +${totalGold}`);
+      rewardTexts.push({
+        id: `${now}-reward-gold`,
+        targetUid: firstAlly.uid,
+        text: `Gold +${totalGold}`,
+        kind: 'gold',
+        slot: 1,
+      });
+    }
+
+    allies.forEach((ally, index) => {
+      if (!ally.alive) return;
+      const owned = save.party.find((member) => member.characterId === ally.sourceId);
+      if (!owned) return;
+      const result = gainExp({ ...owned, currentHp: ally.hp, currentMp: ally.mp }, getCharacter(owned.characterId), totalExp);
+      if (!result.leveledUp) return;
+      const message = `${ally.name} Level Up!`;
+      lines.push(message);
+      rewardTexts.push({
+        id: `${now}-reward-level-${ally.uid}`,
+        targetUid: ally.uid,
+        text: 'Level Up!',
+        kind: 'level',
+        slot: (index + 2) % 3,
+      });
+    });
+
+    setBattleRewardLines(lines);
+    setFloatingTexts((current) => [...current.slice(-10), ...rewardTexts]);
+    const timeout = window.setTimeout(() => {
+      setFloatingTexts((current) => current.filter((item) => !rewardTexts.some((next) => next.id === item.id)));
+    }, 1500);
+    floatingTimeouts.current.push(timeout);
+  }, [phase, enemies, allies, save]);
 
   useEffect(() => {
     if (!lastAction) return;
@@ -150,6 +260,7 @@ export function BattleScene() {
           {allies.map((a) => (
             <div key={a.uid} className={`battle-unit battle-unit--ally ${!a.alive ? 'is-fainted' : ''}`}>
               <Sprite label={a.name} side="ally" size="lg" pose={!a.alive ? 'hurt' : actionPoseUid === a.uid ? 'attack' : 'idle'} facing="right" faint={!a.alive} />
+              <BattleFloatingTexts effects={floatingTexts.filter((effect) => effect.targetUid === a.uid)} />
               <span>{a.name}</span>
             </div>
           ))}
@@ -164,6 +275,7 @@ export function BattleScene() {
               className={`battle-unit battle-unit--enemy ${!e.alive ? 'is-fainted' : ''} ${visibleMode === 'target' && e.alive ? 'is-targetable' : ''}`}
             >
               <Sprite label={e.name} side="enemy" size="lg" pose={!e.alive ? 'hurt' : actionPoseUid === e.uid ? 'attack' : 'idle'} facing="left" faint={!e.alive} />
+              <BattleFloatingTexts effects={floatingTexts.filter((effect) => effect.targetUid === e.uid)} />
               <span>{e.name}</span>
               {e.alive && <Gauge value={e.hp} max={e.maxHp} type="hp" />}
             </button>
@@ -260,8 +372,24 @@ export function BattleScene() {
       </div>
 
       <div className="battle-log battle-message-window" ref={logRef}>
-        {log.slice(-3).map((entry, index) => <div key={index}>{entry.text}</div>)}
+        {[...log.map((entry) => entry.text), ...battleRewardLines].slice(-8).map((entry, index) => <div key={`${entry}-${index}`}>{entry}</div>)}
       </div>
+    </div>
+  );
+}
+
+function BattleFloatingTexts({ effects }: { effects: FloatingBattleText[] }) {
+  if (effects.length === 0) return null;
+  return (
+    <div className="battle-floating-texts" aria-hidden="true">
+      {effects.map((effect) => (
+        <span
+          key={effect.id}
+          className={`battle-floating-text battle-floating-text--${effect.kind} battle-floating-text--slot-${effect.slot}`}
+        >
+          {effect.text}
+        </span>
+      ))}
     </div>
   );
 }

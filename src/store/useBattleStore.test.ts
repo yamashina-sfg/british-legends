@@ -103,6 +103,32 @@ describe('battle command input', () => {
     expect(useBattleStore.getState().livingEnemies()[0].uid).toBe(enemyUid);
   });
 
+  it('attaches battle feedback metadata to damage logs', () => {
+    const actor = combatantFromOwned(beowulf);
+    const enemy = combatantFromEnemy('grendel', 0);
+    const logs = resolveAction([actor, enemy], { actorUid: actor.uid, type: 'attack', targetUid: enemy.uid });
+
+    const damageLog = logs.find((entry) => entry.feedback?.kind === 'damage');
+    expect(damageLog?.feedback).toMatchObject({
+      targetUid: enemy.uid,
+      kind: 'damage',
+      priority: 4,
+    });
+    expect(damageLog?.feedback?.text).toMatch(/^\d+$/);
+  });
+
+  it('attaches battle feedback metadata to defensive actions', () => {
+    const actor = combatantFromOwned(beowulf);
+    const logs = resolveAction([actor], { actorUid: actor.uid, type: 'defend' });
+
+    expect(logs.find((entry) => entry.feedback?.kind === 'blocked')?.feedback).toMatchObject({
+      targetUid: actor.uid,
+      text: 'Blocked!',
+      kind: 'blocked',
+      priority: 5,
+    });
+  });
+
   it('can lose when enemy attacks reduce every ally to 0 HP', () => {
     vi.spyOn(Math, 'random').mockReturnValue(0.99);
     const wounded: OwnedCharacter = { ...beowulf, currentHp: 4 };

@@ -64,6 +64,28 @@ export interface BattleAction {
 
 export interface LogEntry {
   text: string;
+  feedback?: BattleFeedbackEvent;
+}
+
+export type BattleFeedbackKind =
+  | 'damage'
+  | 'critical'
+  | 'heal'
+  | 'miss'
+  | 'blocked'
+  | 'evade'
+  | 'exp'
+  | 'gold'
+  | 'level'
+  | 'essence'
+  | 'status'
+  | 'defeat';
+
+export interface BattleFeedbackEvent {
+  targetUid?: string;
+  text: string;
+  kind: BattleFeedbackKind;
+  priority?: number;
 }
 
 // --- コンバタント生成 ----------------------------------------
@@ -272,7 +294,10 @@ function maybeLogAwakening(actor: Combatant, logs: LogEntry[]): void {
   if (!actor.tragicFlaw || actor.tragicFlaw.state.awakened) return;
   if (!flawIsAwakened(actor.tragicFlaw, actor.hp, actor.maxHp)) return;
   actor.tragicFlaw.state.awakened = true;
-  logs.push({ text: `${actor.name} の宿命「${actor.tragicFlaw.flaw.theme}」が目を覚ました！` });
+  logs.push({
+    text: `${actor.name} の宿命「${actor.tragicFlaw.flaw.theme}」が目を覚ました！`,
+    feedback: { targetUid: actor.uid, text: 'Literary Essence', kind: 'essence', priority: 9 },
+  });
 }
 
 export function resolveAction(working: Combatant[], action: BattleAction): LogEntry[] {
@@ -286,7 +311,10 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
     actor.defending = true;
     if (actor.poison > 0) actor.poison = Math.max(0, actor.poison - 1);
     if (actor.cursed > 0) actor.cursed = Math.max(0, actor.cursed - 1);
-    logs.push({ text: `${actor.name} は身を守っている。` });
+    logs.push({
+      text: `${actor.name} は身を守っている。`,
+      feedback: { targetUid: actor.uid, text: 'Blocked!', kind: 'blocked', priority: 5 },
+    });
     if (actor.poison > 0 || actor.cursed > 0) logs.push({ text: '守りを固め、毒と呪いの進行を抑えた。' });
     const flawLog = onDefend(actor.tragicFlaw);
     if (flawLog) {
@@ -349,13 +377,21 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
         const baseDmg = calcDamage({ attackerAtk: actorStats.atk, defenderDef: targetStats.def, skill, atkBuff: actor.atkBuff });
         const dmg = Math.max(1, Math.floor(baseDmg * flawDamage.multiplier));
         const dealt = applyDamage(t, dmg);
-        logs.push({ text: `${t.name} に ${dealt} のダメージ！` });
+        logs.push({
+          text: `${t.name} に ${dealt} のダメージ！`,
+          feedback: { targetUid: t.uid, text: `${dealt}`, kind: 'damage', priority: 4 },
+        });
         if (t.sourceId === 'dragon' && !t.rageTriggered && t.hp > 0 && t.hp <= t.maxHp / 2) {
           t.rageTriggered = true;
           t.atkBuff += 10;
           logs.push({ text: 'Dragonの鱗が砕け、灼熱の怒りが解き放たれた！' });
         }
-        if (!t.alive) logs.push({ text: `${t.name} を倒した！` });
+        if (!t.alive) {
+          logs.push({
+            text: `${t.name} を倒した！`,
+            feedback: { targetUid: t.uid, text: 'Defeated!', kind: 'defeat', priority: 8 },
+          });
+        }
         else maybeLogAwakening(t, logs);
       }
       break;
@@ -369,7 +405,10 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
       }
       const before = target.hp;
       target.hp = Math.min(target.maxHp, target.hp + heal);
-      logs.push({ text: `${target.name} のHPが ${target.hp - before} 回復した。` });
+      logs.push({
+        text: `${target.name} のHPが ${target.hp - before} 回復した。`,
+        feedback: { targetUid: target.uid, text: `HP +${target.hp - before}`, kind: 'heal', priority: 5 },
+      });
       break;
     }
     case 'revive': {
@@ -380,7 +419,10 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
       }
       target.alive = true;
       target.hp = Math.max(1, Math.ceil(target.maxHp * (skill.power / 100)));
-      logs.push({ text: `${target.name} はHP${target.hp}で立ち上がった！` });
+      logs.push({
+        text: `${target.name} はHP${target.hp}で立ち上がった！`,
+        feedback: { targetUid: target.uid, text: `HP +${target.hp}`, kind: 'heal', priority: 7 },
+      });
       break;
     }
     case 'buff': {
@@ -411,14 +453,26 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
         t.stats = { ...t.stats, def: Math.max(0, t.stats.def - skill.power), spd: Math.max(1, t.stats.spd - skill.power) };
         if (skill.id === 'poisoned_cup') {
           t.poison = Math.max(t.poison, 3);
-          logs.push({ text: `${t.name} は毒杯を口にした。毒が3ターン続く。` });
+          logs.push({
+            text: `${t.name} は毒杯を口にした。毒が3ターン続く。`,
+            feedback: { targetUid: t.uid, text: 'Poison!', kind: 'status', priority: 6 },
+          });
         } else if (skill.id === 'witch_curse') {
           t.cursed = Math.max(t.cursed, 3);
-          logs.push({ text: `魔女の呪いが${t.name}に絡みつく。受けるダメージが増える。` });
+          logs.push({
+            text: `魔女の呪いが${t.name}に絡みつく。受けるダメージが増える。`,
+            feedback: { targetUid: t.uid, text: 'Weak!', kind: 'status', priority: 6 },
+          });
         } else if (skill.id === 'wing_attack') {
-          logs.push({ text: `Dragonの翼撃で${t.name}の足並みが乱れた。行動順が崩れる。` });
+          logs.push({
+            text: `Dragonの翼撃で${t.name}の足並みが乱れた。行動順が崩れる。`,
+            feedback: { targetUid: t.uid, text: 'Evade Down!', kind: 'status', priority: 5 },
+          });
         } else {
-          logs.push({ text: `${t.name} は弱体化した……。` });
+          logs.push({
+            text: `${t.name} は弱体化した……。`,
+            feedback: { targetUid: t.uid, text: 'Weak!', kind: 'status', priority: 5 },
+          });
         }
       }
       break;
@@ -429,10 +483,16 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
     const poisonDmg = Math.max(1, Math.floor(t.maxHp * 0.05));
     t.hp = Math.max(0, t.hp - poisonDmg);
     t.poison -= 1;
-    logs.push({ text: `${t.name} は毒で ${poisonDmg} のダメージを受けた。` });
+    logs.push({
+      text: `${t.name} は毒で ${poisonDmg} のダメージを受けた。`,
+      feedback: { targetUid: t.uid, text: `${poisonDmg}`, kind: 'damage', priority: 4 },
+    });
     if (t.hp === 0) {
       t.alive = false;
-      logs.push({ text: `${t.name} は毒に倒れた！` });
+      logs.push({
+        text: `${t.name} は毒に倒れた！`,
+        feedback: { targetUid: t.uid, text: 'Defeated!', kind: 'defeat', priority: 8 },
+      });
     }
   }
   return logs;
