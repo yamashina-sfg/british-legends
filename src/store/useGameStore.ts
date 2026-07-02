@@ -119,71 +119,40 @@ function rewardText(reward: RewardEntry): string {
   return reward.label ?? reward.id;
 }
 
+function rewardRarity(rewards: RewardEntry[], fallback: 'common' | 'rare' | 'epic' | 'legendary' = 'common') {
+  const rank = { common: 0, rare: 1, epic: 2, legendary: 3 } as const;
+  return rewards.reduce((best, reward) => {
+    const rarity = reward.rarity ?? 'common';
+    return rank[rarity] > rank[best] ? rarity : best;
+  }, fallback);
+}
+
+function rewardIcon(rewards: RewardEntry[]) {
+  if (rewards.some((reward) => reward.kind === 'equipment')) return '⚔';
+  if (rewards.some((reward) => reward.kind === 'skill' || reward.kind === 'story' || reward.kind === 'codex')) return '✦';
+  if (rewards.some((reward) => reward.kind === 'item')) return '✚';
+  if (rewards.some((reward) => reward.kind === 'gold')) return 'G';
+  return '◆';
+}
+
 function notifyRewards(rewards: RewardEntry[]) {
-  for (const reward of rewards) {
-    if (reward.kind === 'gold') {
-      emitNotification({ type: 'reward', title: `Gold +${reward.qty}`, icon: 'G', rarity: reward.rarity, dedupeKey: `gold:${reward.qty}` });
-    }
-    if (reward.kind === 'material') {
-      emitNotification({
-        type: 'reward',
-        title: `${reward.label ?? getMaterial(reward.id).name} ×${reward.qty}`,
-        message: '素材を獲得',
-        icon: '◆',
-        rarity: reward.rarity,
-        dedupeKey: `material:${reward.id}:${reward.qty}`,
-      });
-    }
-    if (reward.kind === 'item') {
-      emitNotification({
-        type: 'item',
-        title: `${reward.label ?? STORE_ITEMS[reward.id]?.name ?? reward.id} ×${reward.qty}`,
-        message: 'アイテムを獲得',
-        icon: '✚',
-        rarity: reward.rarity,
-        dedupeKey: `item:${reward.id}:${reward.qty}`,
-      });
-    }
-    if (reward.kind === 'equipment') {
-      emitNotification({
-        type: 'item',
-        title: `${reward.label ?? getEquipment(reward.id).name} を入手！`,
-        icon: '⚔',
-        rarity: reward.rarity ?? 'rare',
-        dedupeKey: `equipment:${reward.id}`,
-      });
-    }
-    if (reward.kind === 'skill') {
-      emitNotification({
-        type: 'story',
-        title: `${reward.label ?? 'スキルブック'} を獲得！`,
-        message: getSkill(reward.id).name,
-        icon: '✦',
-        rarity: reward.rarity ?? 'rare',
-        dedupeKey: `skill:${reward.id}`,
-      });
-    }
-    if (reward.kind === 'codex') {
-      emitNotification({
-        type: 'story',
-        title: 'Literary Page を獲得！',
-        message: reward.label ?? '図鑑ページ',
-        icon: '📖',
-        rarity: reward.rarity ?? 'rare',
-        dedupeKey: `codex:${reward.id}`,
-      });
-    }
-    if (reward.kind === 'story') {
-      emitNotification({
-        type: 'story',
-        title: '物語の断片を獲得',
-        message: reward.label ?? 'Story Fragment',
-        icon: '✧',
-        rarity: reward.rarity ?? 'rare',
-        dedupeKey: `story:${reward.id}`,
-      });
-    }
-  }
+  if (rewards.length === 0) return;
+  const primary = rewards[0];
+  const hasStoryReward = rewards.some((reward) => reward.kind === 'skill' || reward.kind === 'codex' || reward.kind === 'story');
+  const hasItemReward = rewards.some((reward) => reward.kind === 'item' || reward.kind === 'equipment');
+  const title = rewards.length === 1
+    ? `${rewardText(primary)} を獲得！`
+    : `報酬 ${rewards.length}件を獲得！`;
+
+  emitNotification({
+    type: hasStoryReward ? 'story' : hasItemReward ? 'item' : 'reward',
+    title,
+    message: rewards.map(rewardText).join('\n'),
+    icon: rewardIcon(rewards),
+    rarity: rewardRarity(rewards),
+    durationMs: rewards.length >= 3 ? 4200 : 3400,
+    dedupeKey: `rewards:${rewards.map((reward) => `${reward.kind}:${reward.id}:${reward.qty}`).join('|')}:${Date.now()}`,
+  });
 }
 
 function notifyBattleResult(
@@ -197,43 +166,27 @@ function notifyBattleResult(
   isBoss: boolean,
 ) {
   const defeated = enemyIds.map((id) => getEnemy(id).name).join(' / ');
+  const battleRewards: RewardEntry[] = [
+    ...Object.entries(drops).map(([id, qty]) => ({ kind: 'material' as const, id, qty, label: getMaterial(id).name })),
+    ...Object.entries(bonusItems).map(([id, qty]) => ({ kind: 'item' as const, id, qty, label: STORE_ITEMS[id]?.name ?? id })),
+    ...bonusRewards,
+  ];
+  const summaryLines = [
+    totalExp > 0 ? `EXP +${totalExp}` : null,
+    totalGold > 0 ? `Gold +${totalGold}` : null,
+    ...battleRewards.map(rewardText),
+    ...levelUps,
+  ].filter((line): line is string => Boolean(line));
+
   emitNotification({
     type: 'success',
     title: `${defeated} を討伐！`,
+    message: summaryLines.join('\n'),
     icon: '✓',
-    rarity: isBoss ? 'rare' : 'common',
+    rarity: rewardRarity(battleRewards, isBoss || levelUps.length > 0 ? 'rare' : 'common'),
+    durationMs: summaryLines.length >= 4 ? 5200 : 3800,
     dedupeKey: `defeat:${enemyIds.join(',')}:${Date.now()}`,
   });
-  if (totalGold > 0) emitNotification({ type: 'reward', title: `Gold +${totalGold}`, icon: 'G', dedupeKey: `battle-gold:${totalGold}:${Date.now()}` });
-  if (totalExp > 0) emitNotification({ type: 'reward', title: `EXP +${totalExp}`, icon: '★', dedupeKey: `battle-exp:${totalExp}:${Date.now()}` });
-
-  Object.entries(drops).forEach(([id, qty]) => {
-    emitNotification({
-      type: 'reward',
-      title: `${getMaterial(id).name} ×${qty}`,
-      message: '素材を獲得',
-      icon: '◆',
-      dedupeKey: `drop:${id}:${qty}:${Date.now()}`,
-    });
-  });
-  Object.entries(bonusItems).forEach(([id, qty]) => {
-    emitNotification({
-      type: 'item',
-      title: `${STORE_ITEMS[id]?.name ?? id} ×${qty}`,
-      message: 'アイテムを獲得',
-      icon: '✚',
-      dedupeKey: `bonus-item:${id}:${qty}:${Date.now()}`,
-    });
-  });
-  notifyRewards(bonusRewards);
-  levelUps.forEach((text) => emitNotification({
-    type: 'level',
-    title: 'Level Up!',
-    message: text,
-    icon: '★',
-    rarity: 'rare',
-    dedupeKey: `level:${text}`,
-  }));
   if (isBoss) {
     emitNotification({
       type: 'achievement',

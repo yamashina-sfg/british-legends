@@ -689,6 +689,12 @@
   font-size: 12px;
   line-height: 1.35;
 }
+.notification-telop p span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .notification-telop__trail {
   position: absolute;
   left: 50%;

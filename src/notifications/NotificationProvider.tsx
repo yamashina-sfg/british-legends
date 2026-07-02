@@ -99,6 +99,8 @@ function telopLabel(notification: GameNotification) {
 }
 
 function TelopNotification({ notification }: { notification: GameNotification }) {
+  const messageLines = notification.message.split('\n').filter(Boolean);
+
   return (
     <article className={`notification-telop notification-rarity-${notification.rarity} notification-type-${notification.type}`}>
       <i className="notification-telop__flash" />
@@ -108,7 +110,11 @@ function TelopNotification({ notification }: { notification: GameNotification })
       <div className="notification-telop__copy">
         <small>{telopLabel(notification)}</small>
         <strong>{notification.title}</strong>
-        {notification.message && <p>{notification.message}</p>}
+        {messageLines.length > 0 && (
+          <p>
+            {messageLines.map((line) => <span key={line}>{line}</span>)}
+          </p>
+        )}
       </div>
       <b className="notification-telop__trail" />
     </article>
