@@ -152,14 +152,24 @@ export function resolveMove(prev: DungeonMap, dx: number, dy: number): MoveResul
       // 宝箱はその場で開ける（プレイヤーは進入しない）
       const chest = map.entities.find((e) => e.id === target.id)!;
       chest.opened = true;
+      for (const reward of chest.rewards ?? []) {
+        if (reward.kind === 'key') map.foundKeyIds = [...new Set([...(map.foundKeyIds ?? []), reward.id])];
+      }
       return { map, type: 'chest', entity: { ...chest } };
     }
     // 休息碑・記憶は通路を塞ぐ障害物ではない。踏んだうえでイベントを発生させる。
     if (target.kind === 'rest' || target.kind === 'memory') {
+      const eventEntity = map.entities.find((e) => e.id === target.id)!;
+      if (eventEntity.kind === 'memory') {
+        eventEntity.opened = true;
+        for (const reward of eventEntity.rewards ?? []) {
+          if (reward.kind === 'key') map.foundKeyIds = [...new Set([...(map.foundKeyIds ?? []), reward.id])];
+        }
+      }
       map.player.x = tx;
       map.player.y = ty;
       revealAround(map.visited, tx, ty);
-      return { map, type: target.kind, entity: target };
+      return { map, type: target.kind, entity: { ...eventEntity } };
     }
   }
 

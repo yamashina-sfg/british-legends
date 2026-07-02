@@ -114,6 +114,7 @@ function rewardText(reward: RewardEntry): string {
   if (reward.kind === 'item') return `${reward.label ?? STORE_ITEMS[reward.id]?.name ?? reward.id}×${reward.qty}`;
   if (reward.kind === 'codex') return reward.label ?? '図鑑ページ';
   if (reward.kind === 'story') return reward.label ?? 'ストーリー断片';
+  if (reward.kind === 'key') return reward.label ?? '鍵';
   return reward.label ?? reward.id;
 }
 
@@ -366,8 +367,15 @@ export const useGameStore = create<GameState>((set, get) => ({
         return;
       }
       case 'lockedDoor': {
-        const nextSave = updateExploration(save, map.worldId, result.map);
-        set({ save: nextSave, map: result.map, mapToast: '鍵付き扉が開いた。新しい部屋へ進める！' });
+        const rewards = result.entity?.rewards ?? [];
+        const nextSave = updateExploration(applyRewards(save, rewards), map.worldId, result.map);
+        set({
+          save: nextSave,
+          map: result.map,
+          mapToast: rewards.length
+            ? `鍵付き扉が開いた。${rewards.map(rewardText).join('・')} を手に入れた！`
+            : '鍵付き扉が開いた。新しい部屋へ進める！',
+        });
         saveSlot(nextSave);
         return;
       }
@@ -392,9 +400,18 @@ export const useGameStore = create<GameState>((set, get) => ({
         saveSlot(nextSave);
         return;
       }
-      case 'memory':
-        set({ map: result.map, mapToast: result.entity?.eventText ?? '古い記憶が、静かに胸へ流れ込んだ。' });
+      case 'memory': {
+        const rewards = result.entity?.rewards ?? [];
+        const nextSave = updateExploration(applyRewards(save, rewards), map.worldId, result.map);
+        const rewardLine = rewards.length ? ` ${rewards.map(rewardText).join('・')} を見つけた。` : '';
+        set({
+          save: nextSave,
+          map: result.map,
+          mapToast: `${result.entity?.eventText ?? '古い記憶が、静かに胸へ流れ込んだ。'}${rewardLine}`,
+        });
+        saveSlot(nextSave);
         return;
+      }
       case 'encounter': {
         const e = result.entity!;
         set({

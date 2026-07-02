@@ -20,6 +20,12 @@ const WORLD_CODEX_REFS: Record<string, string[]> = {
   macbeth: ['macbeth', 'witch', 'banquos_ghost', 'macbeths_fate', 'soldier'],
 };
 
+const LOST_PAGE_IDS: Record<string, string[]> = {
+  beowulf: ['codex_page_beowulf_hero', 'codex_page_beowulf_heorot', 'codex_page_beowulf_dragon'],
+  hamlet: ['codex_page_hamlet_revenge', 'codex_page_hamlet_elsinore', 'codex_page_hamlet_question'],
+  macbeth: ['codex_page_macbeth_prophecy', 'codex_page_macbeth_blood', 'codex_page_macbeth_birnam'],
+};
+
 function codexTotalForWorld(worldId: string) {
   return Object.values(CODEX).filter((entry) =>
     entry.id.includes(worldId) || (WORLD_CODEX_REFS[worldId] ?? []).some((ref) => entry.refId.includes(ref)),
@@ -64,6 +70,9 @@ export function DungeonScene() {
   const totalSecrets = map.entities.filter((e) => e.kind === 'secretDoor').length;
   const codexFound = progress?.codexFound ?? codexFoundForWorld(worldId, save.codex.discoveredIds);
   const codexTotal = progress?.codexTotal || codexTotalForWorld(worldId);
+  const lostPageIds = LOST_PAGE_IDS[worldId] ?? [];
+  const lostPagesFound = lostPageIds.filter((id) => save.codex.discoveredIds.includes(id)).length;
+  const lostPagesTotal = lostPageIds.length;
   const atmosphere = FLOOR_ATMOSPHERE[worldId]?.[map.floorIndex] ?? map.floorName;
 
   // 出現する敵（このフロアのエンティティから）
@@ -105,6 +114,7 @@ export function DungeonScene() {
             <div className="dungeon-treasure-count">
               宝箱 {openedChests}/{totalChests}<br />
               秘密部屋 {foundSecrets}/{totalSecrets}<br />
+              Lost Page {lostPagesFound}/{lostPagesTotal}<br />
               図鑑 {codexFound}/{codexTotal}<br />
               最高探索率 {Math.max(progress?.bestRate ?? 0, rate)}%
               {progress?.shortcutsUnlocked && <><br />ショートカット解放済み</>}
