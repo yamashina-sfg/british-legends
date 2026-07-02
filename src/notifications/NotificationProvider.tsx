@@ -79,22 +79,38 @@ export function useNotification() {
 function NotificationManager({ toast, achievement }: { toast: GameNotification | null; achievement: GameNotification | null }) {
   return (
     <div className="notification-layer" aria-live="polite" aria-atomic="false">
-      <div className="notification-toast-zone">
-        {toast && <ToastNotification key={toast.id} notification={toast} />}
+      <div className="notification-telop-zone">
+        {toast && <TelopNotification key={toast.id} notification={toast} />}
       </div>
       {achievement && <AchievementNotification key={achievement.id} notification={achievement} />}
     </div>
   );
 }
 
-function ToastNotification({ notification }: { notification: GameNotification }) {
+function telopLabel(notification: GameNotification) {
+  if (notification.title.includes('討伐')) return 'VANQUISHED';
+  if (notification.type === 'level') return 'LEVEL UP';
+  if (notification.type === 'item') return 'ITEM GET';
+  if (notification.type === 'reward') return 'REWARD';
+  if (notification.type === 'story') return 'STORY PIECE';
+  if (notification.type === 'quest') return 'QUEST';
+  if (notification.type === 'success') return 'SUCCESS';
+  return 'NOTICE';
+}
+
+function TelopNotification({ notification }: { notification: GameNotification }) {
   return (
-    <article className={`notification-toast notification-rarity-${notification.rarity} notification-type-${notification.type}`}>
-      <span className="notification-toast__icon">{notification.icon}</span>
-      <div>
+    <article className={`notification-telop notification-rarity-${notification.rarity} notification-type-${notification.type}`}>
+      <i className="notification-telop__flash" />
+      <i className="notification-telop__spark notification-telop__spark--one" />
+      <i className="notification-telop__spark notification-telop__spark--two" />
+      <span className="notification-telop__icon">{notification.icon}</span>
+      <div className="notification-telop__copy">
+        <small>{telopLabel(notification)}</small>
         <strong>{notification.title}</strong>
         {notification.message && <p>{notification.message}</p>}
       </div>
+      <b className="notification-telop__trail" />
     </article>
   );
 }
