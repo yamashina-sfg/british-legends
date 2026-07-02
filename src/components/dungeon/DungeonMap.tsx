@@ -22,7 +22,7 @@ function entityGlyph(e: MapEntity): { glyph: string; cls: string } {
     case 'lockedDoor':
       return { glyph: e.opened ? '' : '▣', cls: e.opened ? 'ent-door-open' : 'ent-locked-door' };
     case 'secretDoor':
-      return { glyph: e.opened ? '!' : '', cls: e.opened ? 'ent-secret-open' : 'ent-secret-hidden' };
+      return { glyph: e.opened ? '!' : ' ', cls: e.opened ? 'ent-secret-open' : 'ent-secret-hidden' };
   }
 }
 
@@ -48,7 +48,7 @@ export function DungeonMap({ map }: Props) {
       )}
 
       {/* エンティティ層（座標で配置＝動かせる） */}
-      {map.entities.filter((entity) => !(entity.kind === 'secretDoor' && entity.hidden && !entity.opened)).map((e) => {
+      {map.entities.map((e) => {
         const { glyph, cls } = entityGlyph(e);
         return (
           <div

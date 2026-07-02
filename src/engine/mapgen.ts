@@ -151,22 +151,50 @@ const STORY_FRAGMENTS: Record<string, string[]> = {
   macbeth: ['witch-prophecy', 'duncan-blood', 'birnam-branch'],
 };
 
+const LITERARY_PAGES: Record<string, string[]> = {
+  beowulf: ['codex_page_beowulf_hero', 'codex_page_beowulf_heorot', 'codex_page_beowulf_dragon'],
+  hamlet: ['codex_page_hamlet_revenge', 'codex_page_hamlet_elsinore', 'codex_page_hamlet_question'],
+  macbeth: ['codex_page_macbeth_prophecy', 'codex_page_macbeth_blood', 'codex_page_macbeth_birnam'],
+};
+
+const EVENT_TEXTS: Record<string, string[]> = {
+  beowulf: [
+    '倒れた騎士の盾に、ヘオロットを守ろうとした傷跡が残っている。',
+    '古い詩句が壁に刻まれている。名誉とは、生き延びることだけではない。',
+    'The Censorの黒い染みが、英雄の名だけを削り取ろうとしている。',
+  ],
+  hamlet: [
+    '割れたステンドグラスの下、誰かが「問いを消すな」と書き残している。',
+    '司書の記録。復讐の物語から迷いを消せば、人間も消えてしまう。',
+    '廊下の霧に王冠の影が揺れる。近づくと、何もなかった。',
+  ],
+  macbeth: [
+    '魔女の壺が泡立つ。予言は未来ではなく、欲望の形を映している。',
+    '焼けた旗の下に血の足跡が続く。戻る勇気もまた、物語の一部だ。',
+    'The Censorの影が王冠を塗り潰す。罪の重さだけは消せなかった。',
+  ],
+};
+
+function literaryPageReward(worldId: string, pageIndex: number): RewardEntry {
+  const pages = LITERARY_PAGES[worldId] ?? [];
+  const id = pages[Math.min(pageIndex, pages.length - 1)] ?? `codex_story_${worldId}`;
+  return { kind: 'codex', id, qty: 1, label: 'Lost Page', rarity: 'rare' };
+}
+
 function chestRewards(worldId: string, floorIndex: number, materialId?: string): RewardEntry[] {
   const rewards: RewardEntry[] = [];
   if (materialId) rewards.push({ kind: 'material', id: materialId, qty: 1, label: getMaterial(materialId).name });
   const roll = Math.random();
-  if (roll < 0.2) {
+  if (roll < 0.28) {
     const gold = 18 + floorIndex * 12 + Math.floor(Math.random() * 18);
     rewards.push({ kind: 'gold', id: 'gold', qty: gold, label: `${gold}G` });
-  } else if (roll < 0.38) {
+  } else if (roll < 0.52) {
     const itemIds = Object.keys(STORE_ITEMS);
     const id = itemIds[Math.floor(Math.random() * itemIds.length)];
     rewards.push({ kind: 'item', id, qty: 1, label: STORE_ITEMS[id].name });
-  } else if (roll < 0.58) {
-    const pool = RARE_EQUIPMENT[worldId] ?? [];
-    const id = pool[floorIndex % Math.max(1, pool.length)];
-    if (id) rewards.push({ kind: 'equipment', id, qty: 1, label: getEquipment(id).name, rarity: 'rare' });
-  } else if (roll < 0.74) {
+  } else if (roll < 0.68) {
+    rewards.push(literaryPageReward(worldId, floorIndex));
+  } else if (roll < 0.82) {
     const skillByWorld: Record<string, string[]> = {
       beowulf: ['hero_roar', 'shield_oath'],
       hamlet: ['hesitation', 'poison_blade'],
@@ -174,11 +202,13 @@ function chestRewards(worldId: string, floorIndex: number, materialId?: string):
     };
     const pool = skillByWorld[worldId] ?? ['hero_roar'];
     rewards.push({ kind: 'skill', id: pool[floorIndex % pool.length], qty: 1, label: 'スキルブック', rarity: 'rare' });
-  } else if (roll < 0.88) {
-    rewards.push({ kind: 'codex', id: `codex_story_${worldId}`, qty: 1, label: '図鑑ページ' });
-  } else {
+  } else if (roll < 0.95) {
     const pool = STORY_FRAGMENTS[worldId] ?? [`${worldId}-fragment`];
     rewards.push({ kind: 'story', id: pool[floorIndex % pool.length], qty: 1, label: 'ストーリー断片', rarity: 'rare' });
+  } else {
+    const pool = RARE_EQUIPMENT[worldId] ?? [];
+    const id = pool[floorIndex % Math.max(1, pool.length)];
+    if (id) rewards.push({ kind: 'equipment', id, qty: 1, label: getEquipment(id).name, rarity: 'rare' });
   }
   return rewards;
 }
@@ -189,6 +219,20 @@ function secretRewards(worldId: string, floorIndex: number): RewardEntry[] {
     ...(equipmentId ? [{ kind: 'equipment' as const, id: equipmentId, qty: 1, label: getEquipment(equipmentId).name, rarity: 'rare' as const }] : []),
     { kind: 'codex', id: `codex_story_${worldId}`, qty: 1, label: '図鑑ページ' },
     { kind: 'gold', id: 'gold', qty: 30 + floorIndex * 15, label: 'Gold' },
+  ];
+}
+
+function lockedRoomRewards(worldId: string): RewardEntry[] {
+  const rewardEquipment: Record<string, string> = {
+    beowulf: 'hero_sword',
+    hamlet: 'royal_ring',
+    macbeth: 'cursed_crown',
+  };
+  const equipmentId = rewardEquipment[worldId];
+  return [
+    { kind: 'gold', id: 'gold', qty: 90, label: '大きなGold', rarity: 'rare' },
+    ...(equipmentId ? [{ kind: 'equipment' as const, id: equipmentId, qty: 1, label: getEquipment(equipmentId).name, rarity: 'rare' as const }] : []),
+    literaryPageReward(worldId, 1),
   ];
 }
 
@@ -462,7 +506,7 @@ function fixedMapFromTemplates(worldId: string, floorIndex: number, templates: t
   const visited = Array.from({ length: H }, () => Array(W).fill(false));
   revealAround(visited, player.x, player.y);
   const isBossFloor = entities.some((entity) => entity.kind === 'boss');
-  enrichFixedExploration(worldId, floorIndex, tiles, player, entities, isBossFloor, counter);
+  enrichFixedExploration(worldId, floorIndex, tiles, player, entities, counter);
   return {
     worldId,
     floorIndex,
@@ -485,59 +529,82 @@ function enrichFixedExploration(
   tiles: TileType[][],
   player: { x: number; y: number },
   entities: MapEntity[],
-  isBossFloor: boolean,
   startCounter: number,
 ) {
   let counter = startCounter;
   const occupied = (x: number, y: number) => entities.some((entity) => entity.x === x && entity.y === y);
-  const floorCells: { x: number; y: number; dist: number }[] = [];
-  for (let y = 1; y < H - 1; y += 1) {
-    for (let x = 1; x < W - 1; x += 1) {
-      if (tiles[y][x] !== 'floor' || occupied(x, y) || (x === player.x && y === player.y)) continue;
-      floorCells.push({ x, y, dist: Math.abs(player.x - x) + Math.abs(player.y - y) });
-    }
-  }
-  floorCells.sort((a, b) => b.dist - a.dist);
 
-  if (!isBossFloor) {
-    const key = floorCells[Math.floor(floorCells.length * 0.45)] ?? floorCells[0];
-    const door = floorCells[0];
-    if (key && door) {
-      const keyId = `${worldId}-f${floorIndex}-archive-key`;
-      entities.push({ id: `fixed_${floorIndex}_${counter++}`, kind: 'key', x: key.x, y: key.y, keyId, label: '書庫の鍵' });
-      entities.push({ id: `fixed_${floorIndex}_${counter++}`, kind: 'lockedDoor', x: door.x, y: door.y, keyId, locked: true, label: '鍵付き扉' });
-      const sideChest = floorCells.find((cell) => Math.abs(cell.x - door.x) + Math.abs(cell.y - door.y) <= 3 && !occupied(cell.x, cell.y));
-      if (sideChest) {
-        entities.push({
-          id: `fixed_${floorIndex}_${counter++}`,
-          kind: 'chest',
-          x: sideChest.x,
-          y: sideChest.y,
-          rewards: chestRewards(worldId, floorIndex),
-          opened: false,
-          label: '封印宝箱',
-        });
-      }
-    }
-  }
-
-  const candidates = floorCells.flatMap((anchor) =>
-    ([[1, 0], [-1, 0], [0, 1], [0, -1]] as [number, number][])
-      .map(([dx, dy]) => ({ x: anchor.x + dx, y: anchor.y + dy }))
-      .filter((cell) => cell.x > 0 && cell.y > 0 && cell.x < W - 1 && cell.y < H - 1 && tiles[cell.y][cell.x] === 'wall' && !occupied(cell.x, cell.y)),
-  );
-  const secret = candidates[Math.floor(candidates.length * 0.35)] ?? candidates[0];
-  if (secret) {
+  const addMemory = (x: number, y: number, label: string, eventText: string, rewards: RewardEntry[] = []) => {
+    if (!isFloor(tiles, x, y) || occupied(x, y) || (x === player.x && y === player.y)) return;
+    entities.push({ id: `fixed_${floorIndex}_${counter++}`, kind: 'memory', x, y, label, eventText, rewards });
+  };
+  const addDoor = (x: number, y: number, keyId: string, label: string, rewards: RewardEntry[]) => {
+    if (!isFloor(tiles, x, y) || occupied(x, y)) return;
+    entities.push({ id: `fixed_${floorIndex}_${counter++}`, kind: 'lockedDoor', x, y, keyId, locked: true, label, rewards });
+  };
+  const addSecret = (x: number, y: number, label: string, eventText: string, rewards: RewardEntry[]) => {
+    if (!inBounds(x, y) || tiles[y][x] !== 'wall' || occupied(x, y)) return;
     entities.push({
       id: `fixed_${floorIndex}_${counter++}`,
       kind: 'secretDoor',
-      x: secret.x,
-      y: secret.y,
+      x,
+      y,
       hidden: true,
       opened: false,
-      rewards: secretRewards(worldId, floorIndex),
-      label: '秘密部屋',
+      rewards,
+      label,
+      eventText,
     });
+  };
+
+  const pageText = EVENT_TEXTS[worldId]?.[floorIndex] ?? '司書の記録が、失われた一節を短く照らしている。';
+  const pageSpots: Record<string, [number, number][]> = {
+    beowulf: [[12, 1], [2, 11], [5, 9]],
+    hamlet: [[11, 1], [12, 11], [3, 4]],
+    macbeth: [[12, 1], [11, 11], [3, 4]],
+  };
+  const [pageX, pageY] = pageSpots[worldId]?.[floorIndex] ?? [2, 2];
+  addMemory(pageX, pageY, 'Lost Page', pageText, [literaryPageReward(worldId, floorIndex)]);
+
+  if (worldId === 'beowulf' && floorIndex === 0) {
+    const keyId = 'beowulf-heorot-archive-key';
+    const keyChest = entities.find((entity) => entity.kind === 'chest' && entity.x === 7 && entity.y === 3);
+    if (keyChest) keyChest.rewards = [...(keyChest.rewards ?? []), { kind: 'key', id: keyId, qty: 1, label: 'ヘオロット書庫の鍵' }];
+    tiles[2][2] = 'floor';
+    tiles[2][3] = 'floor';
+    tiles[2][4] = 'floor';
+    addDoor(2, 1, keyId, '英雄の祭壇への扉', lockedRoomRewards(worldId));
+  }
+
+  if (worldId === 'hamlet' && floorIndex === 1) {
+    const keyId = 'hamlet-royal-study-key';
+    addMemory(2, 6, '司書の記録', '司書の記録。王家の書斎の鍵は、罪を暴く芝居の脚本に挟まれていた。', [
+      { kind: 'key', id: keyId, qty: 1, label: '王家の書斎の鍵' },
+      literaryPageReward(worldId, 1),
+    ]);
+    tiles[2][10] = 'floor';
+    tiles[2][11] = 'floor';
+    tiles[2][12] = 'floor';
+    addDoor(10, 1, keyId, '王家の書斎の扉', lockedRoomRewards(worldId));
+  }
+
+  if (worldId === 'macbeth' && floorIndex === 0) {
+    const keyId = 'macbeth-witch-lab-key';
+    const keyChest = entities.find((entity) => entity.kind === 'chest' && entity.x === 10 && entity.y === 6);
+    if (keyChest) keyChest.rewards = [...(keyChest.rewards ?? []), { kind: 'key', id: keyId, qty: 1, label: '魔女の研究室の鍵' }];
+    tiles[4][2] = 'floor';
+    tiles[5][2] = 'floor';
+    addDoor(1, 4, keyId, '魔女の研究室の扉', lockedRoomRewards(worldId));
+  }
+
+  if (worldId === 'beowulf' && floorIndex === 1) {
+    addSecret(4, 8, '英雄の祭壇', '壁の奥で古い杯が鈍く光る。英雄の名を削った黒い染みが退いていく。', secretRewards(worldId, floorIndex));
+  }
+  if (worldId === 'hamlet' && floorIndex === 0) {
+    addSecret(9, 2, '王家の書斎', '本棚の裏に、毒と祈りについての余白が残されている。', secretRewards(worldId, floorIndex));
+  }
+  if (worldId === 'macbeth' && floorIndex === 2) {
+    addSecret(9, 2, '魔女の研究室', '薬草と灰の匂い。壺の底に、森が動くという一節が沈んでいる。', secretRewards(worldId, floorIndex));
   }
 }
 

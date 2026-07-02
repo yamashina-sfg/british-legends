@@ -45,6 +45,62 @@ export const CODEX: Record<string, CodexEntry> = {
     loreText: '燃え残った最終ページ。Oblivionは結末だけでなく、そこへ至る選択と罪の重さを消そうとしている。',
   },
 
+  // --- Lost Pages ---
+  codex_page_beowulf_hero: {
+    id: 'codex_page_beowulf_hero',
+    type: 'story',
+    refId: 'beowulf_lost_page_hero',
+    loreText: 'Lost Page: 『ベオウルフ』の英雄は、強さだけでなく名誉と責任で語られる。怪物退治は共同体を守る誓いでもあった。',
+  },
+  codex_page_beowulf_heorot: {
+    id: 'codex_page_beowulf_heorot',
+    type: 'story',
+    refId: 'beowulf_lost_page_heorot',
+    loreText: 'Lost Page: ヘオロットは祝宴の広間であり、王と戦士が言葉と贈り物で絆を結ぶ場所。グレンデルはその共同体を襲った。',
+  },
+  codex_page_beowulf_dragon: {
+    id: 'codex_page_beowulf_dragon',
+    type: 'story',
+    refId: 'beowulf_lost_page_dragon',
+    loreText: 'Lost Page: 晩年の竜退治は勝利だけでは終わらない。英雄の死は、物語を次世代へ渡すための代償として描かれる。',
+  },
+  codex_page_hamlet_revenge: {
+    id: 'codex_page_hamlet_revenge',
+    type: 'story',
+    refId: 'hamlet_lost_page_revenge',
+    loreText: 'Lost Page: 『ハムレット』は復讐劇でありながら、すぐに行動できない人間の思考そのものを舞台に上げた悲劇。',
+  },
+  codex_page_hamlet_elsinore: {
+    id: 'codex_page_hamlet_elsinore',
+    type: 'story',
+    refId: 'hamlet_lost_page_elsinore',
+    loreText: 'Lost Page: エルシノア城では、家族・国家・舞台が重なり合う。城の霧は、誰が真実を語るのかを曖昧にする。',
+  },
+  codex_page_hamlet_question: {
+    id: 'codex_page_hamlet_question',
+    type: 'story',
+    refId: 'hamlet_lost_page_question',
+    loreText: 'Lost Page: 「生きるべきか」という問いは弱さではない。答えを急がないことが、人間の複雑さを守っている。',
+  },
+  codex_page_macbeth_prophecy: {
+    id: 'codex_page_macbeth_prophecy',
+    type: 'story',
+    refId: 'macbeth_lost_page_prophecy',
+    loreText: 'Lost Page: 『マクベス』の予言は運命そのものではない。聞いた者の野心が、言葉を破滅への道に変える。',
+  },
+  codex_page_macbeth_blood: {
+    id: 'codex_page_macbeth_blood',
+    type: 'story',
+    refId: 'macbeth_lost_page_blood',
+    loreText: 'Lost Page: 血は罪の記号として繰り返される。洗っても落ちない汚れは、良心がまだ消えていない証でもある。',
+  },
+  codex_page_macbeth_birnam: {
+    id: 'codex_page_macbeth_birnam',
+    type: 'story',
+    refId: 'macbeth_lost_page_birnam',
+    loreText: 'Lost Page: バーナムの森が動くという不可能な予言は、言葉の解釈が権力者の油断を崩す瞬間を示している。',
+  },
+
   // --- 敵 ---
   codex_enemy_grendel: {
     id: 'codex_enemy_grendel',
