@@ -12,6 +12,7 @@ import { WorldClearScene } from '@/scenes/WorldClearScene';
 import { TownScene } from '@/scenes/TownScene';
 import { OverlayHost } from '@/overlays/OverlayHost';
 import { AudioManager } from '@/components/common/AudioManager';
+import { NotificationProvider } from '@/notifications/NotificationProvider';
 
 interface AppErrorBoundaryProps {
   children: ReactNode;
@@ -60,20 +61,22 @@ export default function App() {
 
   return (
     <AppErrorBoundary>
-      <div className="game-frame">
-        {scene === 'title' && <TitleScene />}
-        {scene === 'opening' && <OpeningScene />}
-        {scene === 'saveSelect' && <SaveSelectScene />}
-        {scene === 'worldMap' && <WorldMapScene />}
-        {scene === 'worldSelect' && <WorldSelectScene />}
-        {scene === 'town' && <TownScene />}
-        {scene === 'dungeon' && <DungeonScene />}
-        {scene === 'battle' && <BattleScene />}
-        {scene === 'gameOver' && <GameOverScene />}
-        {scene === 'worldClear' && <WorldClearScene />}
-        <OverlayHost />
-        <AudioManager />
-      </div>
+      <NotificationProvider>
+        <div className="game-frame">
+          {scene === 'title' && <TitleScene />}
+          {scene === 'opening' && <OpeningScene />}
+          {scene === 'saveSelect' && <SaveSelectScene />}
+          {scene === 'worldMap' && <WorldMapScene />}
+          {scene === 'worldSelect' && <WorldSelectScene />}
+          {scene === 'town' && <TownScene />}
+          {scene === 'dungeon' && <DungeonScene />}
+          {scene === 'battle' && <BattleScene />}
+          {scene === 'gameOver' && <GameOverScene />}
+          {scene === 'worldClear' && <WorldClearScene />}
+          <OverlayHost />
+          <AudioManager />
+        </div>
+      </NotificationProvider>
     </AppErrorBoundary>
   );
 }

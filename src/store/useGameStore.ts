@@ -16,6 +16,7 @@ import {
   deleteSlot,
   unlockNextWorld,
 } from '@/engine/save';
+import { emitNotification } from '@/notifications/notificationBus';
 import { useBattleStore } from './useBattleStore';
 
 export type Scene =
@@ -116,6 +117,134 @@ function rewardText(reward: RewardEntry): string {
   if (reward.kind === 'story') return reward.label ?? 'ストーリー断片';
   if (reward.kind === 'key') return reward.label ?? '鍵';
   return reward.label ?? reward.id;
+}
+
+function notifyRewards(rewards: RewardEntry[]) {
+  for (const reward of rewards) {
+    if (reward.kind === 'gold') {
+      emitNotification({ type: 'reward', title: `Gold +${reward.qty}`, icon: 'G', rarity: reward.rarity, dedupeKey: `gold:${reward.qty}` });
+    }
+    if (reward.kind === 'material') {
+      emitNotification({
+        type: 'reward',
+        title: `${reward.label ?? getMaterial(reward.id).name} ×${reward.qty}`,
+        message: '素材を獲得',
+        icon: '◆',
+        rarity: reward.rarity,
+        dedupeKey: `material:${reward.id}:${reward.qty}`,
+      });
+    }
+    if (reward.kind === 'item') {
+      emitNotification({
+        type: 'item',
+        title: `${reward.label ?? STORE_ITEMS[reward.id]?.name ?? reward.id} ×${reward.qty}`,
+        message: 'アイテムを獲得',
+        icon: '✚',
+        rarity: reward.rarity,
+        dedupeKey: `item:${reward.id}:${reward.qty}`,
+      });
+    }
+    if (reward.kind === 'equipment') {
+      emitNotification({
+        type: 'item',
+        title: `${reward.label ?? getEquipment(reward.id).name} を入手！`,
+        icon: '⚔',
+        rarity: reward.rarity ?? 'rare',
+        dedupeKey: `equipment:${reward.id}`,
+      });
+    }
+    if (reward.kind === 'skill') {
+      emitNotification({
+        type: 'story',
+        title: `${reward.label ?? 'スキルブック'} を獲得！`,
+        message: getSkill(reward.id).name,
+        icon: '✦',
+        rarity: reward.rarity ?? 'rare',
+        dedupeKey: `skill:${reward.id}`,
+      });
+    }
+    if (reward.kind === 'codex') {
+      emitNotification({
+        type: 'story',
+        title: 'Literary Page を獲得！',
+        message: reward.label ?? '図鑑ページ',
+        icon: '📖',
+        rarity: reward.rarity ?? 'rare',
+        dedupeKey: `codex:${reward.id}`,
+      });
+    }
+    if (reward.kind === 'story') {
+      emitNotification({
+        type: 'story',
+        title: '物語の断片を獲得',
+        message: reward.label ?? 'Story Fragment',
+        icon: '✧',
+        rarity: reward.rarity ?? 'rare',
+        dedupeKey: `story:${reward.id}`,
+      });
+    }
+  }
+}
+
+function notifyBattleResult(
+  enemyIds: string[],
+  totalExp: number,
+  totalGold: number,
+  drops: Record<string, number>,
+  bonusItems: Record<string, number>,
+  bonusRewards: RewardEntry[],
+  levelUps: string[],
+  isBoss: boolean,
+) {
+  const defeated = enemyIds.map((id) => getEnemy(id).name).join(' / ');
+  emitNotification({
+    type: 'success',
+    title: `${defeated} を討伐！`,
+    icon: '✓',
+    rarity: isBoss ? 'rare' : 'common',
+    dedupeKey: `defeat:${enemyIds.join(',')}:${Date.now()}`,
+  });
+  if (totalGold > 0) emitNotification({ type: 'reward', title: `Gold +${totalGold}`, icon: 'G', dedupeKey: `battle-gold:${totalGold}:${Date.now()}` });
+  if (totalExp > 0) emitNotification({ type: 'reward', title: `EXP +${totalExp}`, icon: '★', dedupeKey: `battle-exp:${totalExp}:${Date.now()}` });
+
+  Object.entries(drops).forEach(([id, qty]) => {
+    emitNotification({
+      type: 'reward',
+      title: `${getMaterial(id).name} ×${qty}`,
+      message: '素材を獲得',
+      icon: '◆',
+      dedupeKey: `drop:${id}:${qty}:${Date.now()}`,
+    });
+  });
+  Object.entries(bonusItems).forEach(([id, qty]) => {
+    emitNotification({
+      type: 'item',
+      title: `${STORE_ITEMS[id]?.name ?? id} ×${qty}`,
+      message: 'アイテムを獲得',
+      icon: '✚',
+      dedupeKey: `bonus-item:${id}:${qty}:${Date.now()}`,
+    });
+  });
+  notifyRewards(bonusRewards);
+  levelUps.forEach((text) => emitNotification({
+    type: 'level',
+    title: 'Level Up!',
+    message: text,
+    icon: '★',
+    rarity: 'rare',
+    dedupeKey: `level:${text}`,
+  }));
+  if (isBoss) {
+    emitNotification({
+      type: 'achievement',
+      channel: 'achievement',
+      title: 'BOSS DEFEATED',
+      message: defeated,
+      icon: '✦',
+      rarity: 'rare',
+      dedupeKey: `boss:${enemyIds.join(',')}`,
+    });
+  }
 }
 
 const WORLD_CODEX_REFS: Record<string, string[]> = {
@@ -354,6 +483,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         const rewards = result.entity?.rewards ??
           (result.entity?.materialId ? [{ kind: 'material' as const, id: result.entity.materialId, qty: 1, label: getMaterial(result.entity.materialId).name }] : []);
         const nextSave = updateExploration(applyRewards(save, rewards), map.worldId, result.map);
+        notifyRewards(rewards);
         set({
           save: nextSave,
           map: result.map,
@@ -382,6 +512,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       case 'secret': {
         const rewards = result.entity?.rewards ?? [];
         const nextSave = updateExploration(applyRewards(save, rewards), map.worldId, result.map);
+        emitNotification({ type: 'success', title: '隠し部屋を発見！', icon: '!', rarity: 'rare', dedupeKey: `secret:${result.entity?.id ?? map.floorIndex}` });
+        notifyRewards(rewards);
         set({
           save: nextSave,
           map: result.map,
@@ -396,6 +528,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           return { ...p, currentHp: Math.min(stats.hp, p.currentHp + Math.ceil(stats.hp * 0.35)), currentMp: Math.min(stats.mp, p.currentMp + Math.ceil(stats.mp * 0.35)) };
         });
         const nextSave = updateExploration({ ...save, party }, map.worldId, result.map);
+        emitNotification({ type: 'success', title: 'HP 回復', message: '休息碑に触れた', icon: '♥', dedupeKey: `rest:${map.floorIndex}:${result.map.player.x}:${result.map.player.y}` });
         set({ save: nextSave, map: result.map, mapToast: '休息碑に触れた。HPとMPが少し回復した。' });
         saveSlot(nextSave);
         return;
@@ -510,6 +643,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       ? updateExploration(applyRewards(nextSaveBase, bonusRewards), worldId, nextMap)
       : applyRewards(nextSaveBase, bonusRewards);
 
+    notifyBattleResult(enemyIds, totalExp, totalGold, drops, bonusItems, bonusRewards, levelUps, encounter.isBoss);
+
     set({
       save: nextSave,
       map: nextMap,
@@ -568,6 +703,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const save = get().save;
     if (!save) return;
     const world = getWorld(worldId);
+    const previouslyUnlocked = new Set(save.progress.unlockedWorldIds);
 
     let party = save.party;
     const alreadyHas = party.some((p) => sameTree(p.characterId, world.rewardCharacterId));
@@ -606,6 +742,9 @@ export const useGameStore = create<GameState>((set, get) => ({
         ]),
       },
     };
+    const unlockedWorlds = nextSave.progress.unlockedWorldIds
+      .filter((id) => !previouslyUnlocked.has(id) && id !== worldId)
+      .map((id) => getWorld(id));
 
     set({
       save: nextSave,
@@ -615,6 +754,44 @@ export const useGameStore = create<GameState>((set, get) => ({
       newlyJoinedCharacterId: alreadyHas ? null : world.rewardCharacterId,
     });
     saveSlot(nextSave);
+    emitNotification({
+      type: 'achievement',
+      channel: 'achievement',
+      title: 'STORY RESTORED',
+      message: world.title,
+      icon: '✧',
+      rarity: 'legendary',
+      dedupeKey: `story-restored:${worldId}`,
+    });
+    emitNotification({
+      type: 'story',
+      title: 'Bibliotheca更新',
+      message: `${world.title} の記録が戻った`,
+      icon: '✧',
+      rarity: 'rare',
+      dedupeKey: `bibliotheca:${worldId}`,
+    });
+    if (!alreadyHas) {
+      const joined = getCharacter(world.rewardCharacterId);
+      emitNotification({
+        type: 'achievement',
+        channel: 'achievement',
+        title: 'NEW ALLY',
+        message: `${joined.name} Joined`,
+        icon: '★',
+        rarity: 'rare',
+        dedupeKey: `ally:${world.rewardCharacterId}`,
+      });
+    }
+    unlockedWorlds.forEach((unlocked) => emitNotification({
+      type: 'achievement',
+      channel: 'achievement',
+      title: 'NEW WORLD',
+      message: `${unlocked.title} Unlocked`,
+      icon: '◇',
+      rarity: 'legendary',
+      dedupeKey: `world-unlocked:${unlocked.id}`,
+    }));
   },
 
   retreatToMap: () => {
@@ -641,6 +818,15 @@ export const useGameStore = create<GameState>((set, get) => ({
     };
     set({ save: nextSave });
     saveSlot(nextSave);
+    emitNotification({
+      type: 'achievement',
+      channel: 'achievement',
+      title: 'LITERARY ESSENCE',
+      message: `${result.toStageName} Awakened`,
+      icon: '✦',
+      rarity: 'rare',
+      dedupeKey: `evolve:${result.owned.characterId}`,
+    });
     return { ok: true, message: `${result.fromStageName} は ${result.toStageName} に進化した！` };
   },
 
@@ -654,6 +840,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const nextSave = { ...save, party };
     set({ save: nextSave });
     saveSlot(nextSave);
+    emitNotification({ type: 'success', title: 'HP 回復', message: 'Lodgeで全回復', icon: '♥', dedupeKey: 'heal:lodge' });
   },
 
   restAtInn: () => {
@@ -666,6 +853,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const nextSave = { ...save, gold: save.gold - 8, party };
     set({ save: nextSave, mapToast: '蜜酒の火で、HPとMPが全回復した。' });
     saveSlot(nextSave);
+    emitNotification({ type: 'success', title: 'HP 回復', message: 'HPとMPが全回復', icon: '♥', dedupeKey: 'heal:inn' });
   },
 
   buyEquipment: (partyIndex, equipmentId) => {
@@ -690,6 +878,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     const nextSave = { ...save, party, gold: ownedLoot ? save.gold : save.gold - item.price };
     set({ save: nextSave, mapToast: `${item.name} を装備した！` });
     saveSlot(nextSave);
+    emitNotification({
+      type: 'item',
+      title: ownedLoot ? `${item.name} を装備` : `${item.name} を購入！`,
+      message: ownedLoot ? '装備を変更' : `Gold -${item.price}`,
+      icon: '⚔',
+      rarity: item.price >= 100 ? 'rare' : 'common',
+      dedupeKey: `buy-equipment:${item.id}:${Date.now()}`,
+    });
   },
 
   buyItem: (itemId) => {
@@ -700,6 +896,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     const nextSave = { ...save, items, gold: save.gold - item.price };
     set({ save: nextSave, mapToast: `${item.name} を購入した。` });
     saveSlot(nextSave);
+    emitNotification({
+      type: 'item',
+      title: `${item.name} を購入！`,
+      message: `Gold -${item.price}`,
+      icon: '✚',
+      dedupeKey: `buy-item:${item.id}:${Date.now()}`,
+    });
   },
 
   consumeItem: (itemId) => {
@@ -709,6 +912,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     const nextSave = { ...save, items };
     set({ save: nextSave });
     saveSlot(nextSave);
+    emitNotification({
+      type: 'success',
+      title: STORE_ITEMS[itemId]?.name ?? 'アイテム使用',
+      message: 'どうぐを使用',
+      icon: itemId.includes('potion') || itemId === 'elixir' ? '♥' : '✚',
+      dedupeKey: `consume:${itemId}:${Date.now()}`,
+    });
     return true;
   },
 
