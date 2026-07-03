@@ -9,6 +9,7 @@ interface Props {
   presentation?: 'sprite' | 'portrait';
   pose?: SpritePose;
   facing?: 'left' | 'right';
+  flipX?: boolean;
 }
 
 const sizeClass = { sm: 'sprite-sm', md: '', lg: 'sprite-lg' };
@@ -98,7 +99,7 @@ function spriteKind(label: string, side?: Props['side']) {
   return side === 'enemy' ? 'grendel' : 'wanderer';
 }
 
-export function Sprite({ label, side, size = 'md', faint, presentation = 'sprite', pose = 'map', facing }: Props) {
+export function Sprite({ label, side, size = 'md', faint, presentation = 'sprite', pose = 'map', facing, flipX }: Props) {
   const kind = spriteKind(label, side);
   const sideClass = side ? `sprite-${side}` : '';
   const playableKind = label.toLowerCase().includes('beowulf') ? 'beowulf' : label.toLowerCase().includes('hamlet') ? 'hamlet' : label.toLowerCase().includes('macbeth') ? 'macbeth' : kind;
@@ -109,7 +110,7 @@ export function Sprite({ label, side, size = 'md', faint, presentation = 'sprite
   return (
     <div
       aria-label={label}
-      className={`sprite pixel-sprite ${sideClass} ${facing ? `sprite-facing-${facing}` : ''} sprite-${kind} ${generatedArt ? `sprite-generated sprite-pose-${pose}` : ''} ${presentation === 'portrait' && generatedArt ? 'sprite-generated-portrait' : ''} ${usesBeowulfPortrait ? 'sprite-beowulf-portrait' : ''} ${sizeClass[size]}`}
+      className={`sprite pixel-sprite ${sideClass} ${facing ? `sprite-facing-${facing}` : ''} ${flipX ? 'sprite-flip-x' : ''} sprite-${kind} ${generatedArt ? `sprite-generated sprite-pose-${pose}` : ''} ${presentation === 'portrait' && generatedArt ? 'sprite-generated-portrait' : ''} ${usesBeowulfPortrait ? 'sprite-beowulf-portrait' : ''} ${sizeClass[size]}`}
       style={faint ? { opacity: 0.25, filter: 'grayscale(1)' } : undefined}
     >
       {generatedArt || usesBeowulfPortrait ? (

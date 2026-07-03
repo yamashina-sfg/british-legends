@@ -1,4 +1,6 @@
 import type { DungeonMap as MapData, MapEntity } from '@/types';
+import { getEnemy } from '@/data';
+import { Sprite } from '@/components/ui/Sprite';
 
 const TILE = 26; // px
 
@@ -50,13 +52,24 @@ export function DungeonMap({ map }: Props) {
       {/* エンティティ層（座標で配置＝動かせる） */}
       {map.entities.map((e) => {
         const { glyph, cls } = entityGlyph(e);
+        const leadEnemyId = e.enemyIds?.[0];
+        const enemyData = (e.kind === 'enemy' || e.kind === 'boss') && leadEnemyId ? getEnemy(leadEnemyId) : null;
         return (
           <div
             key={e.id}
-            className={`map-entity ${cls}`}
+            className={`map-entity ${cls} ${enemyData ? 'map-entity--sprite' : ''}`}
             style={{ transform: `translate(${e.x * TILE}px, ${e.y * TILE}px)`, width: TILE, height: TILE }}
           >
-            {glyph}
+            {enemyData ? (
+              <Sprite
+                label={enemyData.name}
+                side="enemy"
+                size="sm"
+                pose="map"
+                facing={enemyData.facing ?? 'left'}
+                flipX={enemyData.mapFlipX}
+              />
+            ) : glyph}
           </div>
         );
       })}

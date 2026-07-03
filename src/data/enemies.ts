@@ -1,5 +1,11 @@
 import type { Enemy } from '@/types';
 
+const LEFT_FACING_ENEMY = {
+  facing: 'left',
+  battleFlipX: false,
+  mapFlipX: false,
+} satisfies Pick<Enemy, 'facing' | 'battleFlipX' | 'mapFlipX'>;
+
 export const ENEMIES: Record<string, Enemy> = {
   // ===== Beowulf =====
   grendel: {
@@ -7,6 +13,7 @@ export const ENEMIES: Record<string, Enemy> = {
     name: 'Grendel',
     worldId: 'beowulf',
     spriteId: 'grendel',
+    ...LEFT_FACING_ENEMY,
     stats: { hp: 58, mp: 0, atk: 12, def: 5, spd: 7 },
     exp: 16,
     gold: 12,
@@ -18,6 +25,7 @@ export const ENEMIES: Record<string, Enemy> = {
     name: "Grendel's Mother",
     worldId: 'beowulf',
     spriteId: 'grendels_mother',
+    ...LEFT_FACING_ENEMY,
     stats: { hp: 86, mp: 10, atk: 16, def: 7, spd: 9 },
     exp: 26,
     gold: 22,
@@ -29,6 +37,7 @@ export const ENEMIES: Record<string, Enemy> = {
     name: 'Dragon',
     worldId: 'beowulf',
     spriteId: 'dragon',
+    ...LEFT_FACING_ENEMY,
     stats: { hp: 170, mp: 30, atk: 24, def: 12, spd: 10 },
     exp: 60,
     gold: 58,
@@ -43,6 +52,7 @@ export const ENEMIES: Record<string, Enemy> = {
     name: 'Ghost',
     worldId: 'hamlet',
     spriteId: 'ghost',
+    ...LEFT_FACING_ENEMY,
     stats: { hp: 70, mp: 20, atk: 22, def: 10, spd: 14 },
     exp: 34,
     gold: 18,
@@ -54,6 +64,7 @@ export const ENEMIES: Record<string, Enemy> = {
     name: 'Royal Guard',
     worldId: 'hamlet',
     spriteId: 'royal_guard',
+    ...LEFT_FACING_ENEMY,
     stats: { hp: 100, mp: 0, atk: 26, def: 18, spd: 11 },
     exp: 48,
     gold: 24,
@@ -65,6 +76,7 @@ export const ENEMIES: Record<string, Enemy> = {
     name: 'Claudius',
     worldId: 'hamlet',
     spriteId: 'claudius',
+    ...LEFT_FACING_ENEMY,
     stats: { hp: 260, mp: 50, atk: 30, def: 22, spd: 13 },
     exp: 125,
     gold: 76,
@@ -83,6 +95,7 @@ export const ENEMIES: Record<string, Enemy> = {
     name: 'Witch',
     worldId: 'macbeth',
     spriteId: 'witch',
+    ...LEFT_FACING_ENEMY,
     stats: { hp: 80, mp: 40, atk: 20, def: 10, spd: 16 },
     exp: 42,
     gold: 20,
@@ -94,6 +107,7 @@ export const ENEMIES: Record<string, Enemy> = {
     name: "Banquo's Ghost",
     worldId: 'macbeth',
     spriteId: 'banquos_ghost',
+    ...LEFT_FACING_ENEMY,
     stats: { hp: 110, mp: 20, atk: 28, def: 14, spd: 12 },
     exp: 56,
     gold: 26,
@@ -105,6 +119,7 @@ export const ENEMIES: Record<string, Enemy> = {
     name: 'Soldier',
     worldId: 'macbeth',
     spriteId: 'soldier',
+    ...LEFT_FACING_ENEMY,
     stats: { hp: 95, mp: 0, atk: 27, def: 16, spd: 12 },
     exp: 46,
     gold: 22,
@@ -116,6 +131,7 @@ export const ENEMIES: Record<string, Enemy> = {
     name: "Macbeth's Fate",
     worldId: 'macbeth',
     spriteId: 'macbeths_fate',
+    ...LEFT_FACING_ENEMY,
     stats: { hp: 300, mp: 60, atk: 36, def: 24, spd: 15 },
     exp: 150,
     gold: 88,

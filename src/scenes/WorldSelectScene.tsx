@@ -29,7 +29,7 @@ export function WorldSelectScene() {
             const e = getEnemy(id);
             return (
               <div key={id} className="col" style={{ alignItems: 'center', width: 56 }}>
-                <Sprite label={e.name} side="enemy" size="sm" />
+                <Sprite label={e.name} side="enemy" size="sm" facing={e.facing ?? 'left'} flipX={e.battleFlipX} />
                 <span className="tiny dim center" style={{ lineHeight: 1.1 }}>
                   {e.isBoss ? '👑' : ''}
                   {e.name}

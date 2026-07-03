@@ -108,6 +108,8 @@ export interface DropEntry {
   rate: number;
 }
 
+export type SpriteFacing = 'left' | 'right';
+
 export type RewardKind = 'material' | 'gold' | 'equipment' | 'skill' | 'codex' | 'item' | 'story' | 'key';
 
 export interface RewardEntry {
@@ -123,6 +125,12 @@ export interface Enemy {
   name: string;
   worldId: string;
   spriteId: string;
+  /** 素材そのものが向いている方向。敵は通常、戦闘右側から左を向く。 */
+  facing?: SpriteFacing;
+  /** 戦闘表示だけ左右反転したい場合に使う。 */
+  battleFlipX?: boolean;
+  /** ダンジョンマップ表示だけ左右反転したい場合に使う。 */
+  mapFlipX?: boolean;
   stats: Stats;
   exp: number;
   gold?: number;

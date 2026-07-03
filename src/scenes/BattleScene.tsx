@@ -266,20 +266,31 @@ export function BattleScene() {
           ))}
         </div>
         <div className="battle-enemies">
-          {enemies.map((e) => (
-            <button
-              key={e.uid}
-              type="button"
-              disabled={!e.alive || visibleMode !== 'target' || phase !== 'input' || targetActorUid !== actor?.uid}
-              onClick={() => onSelectTarget(e)}
-              className={`battle-unit battle-unit--enemy ${!e.alive ? 'is-fainted' : ''} ${visibleMode === 'target' && e.alive ? 'is-targetable' : ''}`}
-            >
-              <Sprite label={e.name} side="enemy" size="lg" pose={!e.alive ? 'hurt' : actionPoseUid === e.uid ? 'attack' : 'idle'} facing="left" faint={!e.alive} />
-              <BattleFloatingTexts effects={floatingTexts.filter((effect) => effect.targetUid === e.uid)} />
-              <span>{e.name}</span>
-              {e.alive && <Gauge value={e.hp} max={e.maxHp} type="hp" />}
-            </button>
-          ))}
+          {enemies.map((e) => {
+            const enemyData = getEnemy(e.sourceId);
+            return (
+              <button
+                key={e.uid}
+                type="button"
+                disabled={!e.alive || visibleMode !== 'target' || phase !== 'input' || targetActorUid !== actor?.uid}
+                onClick={() => onSelectTarget(e)}
+                className={`battle-unit battle-unit--enemy ${!e.alive ? 'is-fainted' : ''} ${visibleMode === 'target' && e.alive ? 'is-targetable' : ''}`}
+              >
+                <Sprite
+                  label={e.name}
+                  side="enemy"
+                  size="lg"
+                  pose={!e.alive ? 'hurt' : actionPoseUid === e.uid ? 'attack' : 'idle'}
+                  facing={enemyData.facing ?? 'left'}
+                  flipX={enemyData.battleFlipX}
+                  faint={!e.alive}
+                />
+                <BattleFloatingTexts effects={floatingTexts.filter((effect) => effect.targetUid === e.uid)} />
+                <span>{e.name}</span>
+                {e.alive && <Gauge value={e.hp} max={e.maxHp} type="hp" />}
+              </button>
+            );
+          })}
         </div>
       </div>
 
