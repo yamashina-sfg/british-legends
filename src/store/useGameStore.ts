@@ -14,6 +14,7 @@ import {
   loadSlot,
   saveSlot,
   deleteSlot,
+  unlockCharacter,
   unlockNextWorld,
 } from '@/engine/save';
 import { useBattleStore } from './useBattleStore';
@@ -231,11 +232,6 @@ function battleBonusRewards(worldId: string, enemyIds: string[], isBoss: boolean
     rewards.push({ kind: 'skill', id: skillByWorld[worldId] ?? 'hero_roar', qty: 1, label: 'スキルブック', rarity: 'rare' });
   }
   return rewards;
-}
-
-/** 同一世界＝同一キャラ（進化段階違い）とみなす */
-function sameTree(charIdA: string, charIdB: string): boolean {
-  return getCharacter(charIdA).worldId === getCharacter(charIdB).worldId;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
@@ -569,17 +565,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!save) return;
     const world = getWorld(worldId);
 
-    let party = save.party;
-    const alreadyHas = party.some((p) => sameTree(p.characterId, world.rewardCharacterId));
-    if (!alreadyHas) party = [...party, createOwnedCharacter(world.rewardCharacterId)];
-
-    const activePartyIds = getActivePartyIds(save);
-    const shouldJoinActive = !alreadyHas && activePartyIds.length < 3;
-    let nextSave: SaveData = normalizeActiveParty({
-      ...save,
-      party,
-      activePartyIds: shouldJoinActive ? [...activePartyIds, world.rewardCharacterId] : activePartyIds,
-    });
+    const unlockResult = unlockCharacter(save, world.rewardCharacterId);
+    let nextSave: SaveData = unlockResult.data;
     nextSave = unlockNextWorld(nextSave, worldId);
     nextSave = {
       ...nextSave,
@@ -612,7 +599,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       scene: 'worldClear',
       map: null,
       encounter: null,
-      newlyJoinedCharacterId: alreadyHas ? null : world.rewardCharacterId,
+      newlyJoinedCharacterId: unlockResult.joined ? world.rewardCharacterId : null,
     });
     saveSlot(nextSave);
   },

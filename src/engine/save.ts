@@ -1,7 +1,7 @@
 import type { OwnedCharacter, SaveData } from '@/types';
 import { getCharacter, getWorld, WORLD_ORDER } from '@/data';
 import { statsAtLevel } from './leveling';
-import { normalizeActiveParty } from './party';
+import { ACTIVE_PARTY_LIMIT, getActivePartyIds, normalizeActiveParty } from './party';
 
 const STORAGE_PREFIX = 'british-legends:slot:';
 export const SAVE_SLOTS = [1, 2, 3];
@@ -80,6 +80,33 @@ export function createOwnedCharacter(characterId: string): OwnedCharacter {
     currentHp: stats.hp,
     currentMp: stats.mp,
     learnedSkillIds: char.skillIds,
+  };
+}
+
+/** 同一世界＝同一キャラ（進化段階違い）とみなし、重複加入を防ぐ */
+export function ownsCharacterTree(data: SaveData, characterId: string): boolean {
+  const worldId = getCharacter(characterId).worldId;
+  return data.party.some((member) => getCharacter(member.characterId).worldId === worldId);
+}
+
+/** 作品クリア報酬などで仲間を解放する。所有枠は無制限、戦闘枠はACTIVE_PARTY_LIMITまで。 */
+export function unlockCharacter(data: SaveData, characterId: string): { data: SaveData; joined: boolean } {
+  if (ownsCharacterTree(data, characterId)) {
+    return { data: normalizeActiveParty(data), joined: false };
+  }
+
+  const party = [...data.party, createOwnedCharacter(characterId)];
+  const activePartyIds = getActivePartyIds({ ...data, party });
+  const shouldJoinActive = activePartyIds.length < ACTIVE_PARTY_LIMIT;
+  const nextActivePartyIds = shouldJoinActive ? [...activePartyIds, characterId] : activePartyIds;
+
+  return {
+    data: normalizeActiveParty({
+      ...data,
+      party,
+      activePartyIds: nextActivePartyIds,
+    }),
+    joined: true,
   };
 }
 

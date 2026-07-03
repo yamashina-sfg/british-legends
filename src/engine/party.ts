@@ -1,6 +1,6 @@
 import type { OwnedCharacter, SaveData } from '@/types';
 
-export const ACTIVE_PARTY_LIMIT = 3;
+export const ACTIVE_PARTY_LIMIT = 4;
 
 export function getActivePartyIds(save: SaveData): string[] {
   const availableIds = save.party.map((member) => member.characterId);
