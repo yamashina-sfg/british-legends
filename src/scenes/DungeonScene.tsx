@@ -3,7 +3,6 @@ import { useGameStore } from '@/store/useGameStore';
 import { checkEvolution } from '@/engine/evolution';
 import { CODEX, getCharacter, getDungeon, getEnemy, getEquipment, getMaterial, getSkill, getWorld, STORE_ITEMS } from '@/data';
 import { explorationRate } from '@/engine/mapgen';
-import { Button } from '@/components/ui/Button';
 import { DungeonMap } from '@/components/dungeon/DungeonMap';
 import { PartyStatusBar } from '@/components/common/PartyStatusBar';
 import { MenuBar } from '@/components/common/MenuBar';
@@ -96,14 +95,31 @@ export function DungeonScene() {
     <>
       <div className={`scene dungeon-rpg-scene dungeon-world-${worldId} fade-in`} style={{ gap: 10 }}>
         <div className="dungeon-hud rpg-window">
+          <div className="dungeon-hud__floor"><b>{String(map.floorIndex + 1).padStart(2, '0')}</b><small>FLOOR</small></div>
           <div className="dungeon-hud__location"><span>AREA</span><strong>{atmosphere}</strong><small>{dgn.name} / 第{map.floorIndex + 1}層</small></div>
           <div className="dungeon-hud__objective"><span>QUEST</span><strong>{map.isBossFloor ? 'ボスの攻略法を見極めて討て' : '鍵・隠し壁・記録を探し、文学世界を修復せよ'}</strong></div>
           <div className="dungeon-hud__progress"><span>探索率</span><strong>{rate}%</strong><i><b style={{ width: `${rate}%` }} /></i></div>
+          <button className="dungeon-retreat" onClick={retreatToMap}>撤退</button>
         </div>
 
         <div className="dungeon-stage">
           <div className="dungeon-map-frame" aria-label="ダンジョンマップ">
+            <div className="dungeon-map-frame__title"><span>CHAPTER MAP</span><b>{world.title}</b></div>
             <DungeonMap map={map} />
+            <div className="map-legend">
+              <span><i className="legend-player" /> 主人公</span>
+              <span><i className="legend-chest" /> 宝箱</span>
+              <span><i className="legend-enemy" /> 敵</span>
+              <span><i className="legend-stairs" /> 階段</span>
+              <span><i className="legend-boss" /> ボス</span>
+              <span><i className="legend-key" /> 鍵</span>
+              <span><i className="legend-door" /> 扉</span>
+            </div>
+            <div className="dpad" aria-label="移動操作">
+              <div className="dpad-empty" /><button aria-label="上へ移動" onClick={() => movePlayer(0, -1)}>▲</button><div className="dpad-empty" />
+              <button aria-label="左へ移動" onClick={() => movePlayer(-1, 0)}>◀</button><div className="dpad-center">✦</div><button aria-label="右へ移動" onClick={() => movePlayer(1, 0)}>▶</button>
+              <div className="dpad-empty" /><button aria-label="下へ移動" onClick={() => movePlayer(0, 1)}>▼</button><div className="dpad-empty" />
+            </div>
           </div>
           <aside className="dungeon-stage__sidebar rpg-window">
             <span className="dungeon-sidebar__label">PARTY</span>
@@ -142,17 +158,6 @@ export function DungeonScene() {
           </aside>
         </div>
 
-        <div className="map-legend">
-          <span><i className="legend-player" /> 主人公</span>
-          <span><i className="legend-chest" /> 宝箱</span>
-          <span><i className="legend-enemy" /> 敵</span>
-          <span><i className="legend-stairs" /> 階段</span>
-          <span><i className="legend-boss" /> ボス</span>
-          <span><i className="legend-rest" /> 休息碑</span>
-          <span><i className="legend-key" /> 鍵</span>
-          <span><i className="legend-door" /> 扉</span>
-        </div>
-
         {/* トースト / 報酬 */}
         {mapToast && <div className="center accent small fade-in">{mapToast}</div>}
         {lastReward && (
@@ -186,22 +191,6 @@ export function DungeonScene() {
           </div>
         )}
 
-        {/* 方向パッド（タッチ操作用） */}
-        <div className="dpad">
-          <div className="dpad-empty" />
-          <button onClick={() => movePlayer(0, -1)}>↑</button>
-          <div className="dpad-empty" />
-          <button onClick={() => movePlayer(-1, 0)}>←</button>
-          <div className="dpad-empty" />
-          <button onClick={() => movePlayer(1, 0)}>→</button>
-          <div className="dpad-empty" />
-          <button onClick={() => movePlayer(0, 1)}>↓</button>
-          <div className="dpad-empty" />
-        </div>
-
-        <Button center onClick={retreatToMap}>
-          退却する（ワールドマップへ）
-        </Button>
       </div>
       <MenuBar />
     </>
