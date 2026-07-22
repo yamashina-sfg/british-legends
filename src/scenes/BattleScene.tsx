@@ -10,6 +10,7 @@ import { playBattleSfx, preloadBattleSfx } from '@/audio/sfx';
 import { skillBookMultiplier, type BattleFeedbackKind, type Combatant } from '@/engine/battle';
 import { gainExp } from '@/engine/leveling';
 import { meterPercent } from '@/engine/tragicFlaw';
+import { actionGaugeDurationMs, actionGaugePercent } from '@/engine/actionGauge';
 import beowulfAttackField from '@/assets/battle/beowulf-attack-field.png';
 import hamletAttackField from '@/assets/battle/hamlet-attack-field.png';
 import macbethAttackField from '@/assets/battle/macbeth-attack-field.png';
@@ -66,6 +67,8 @@ export function BattleScene() {
   const [floatingTexts, setFloatingTexts] = useState<FloatingBattleText[]>([]);
   const [battleRewardLines, setBattleRewardLines] = useState<string[]>([]);
   const [expandedBuffUids,setExpandedBuffUids]=useState<string[]>([]);
+  const [autoMode,setAutoMode]=useState(false);
+  const [actionGauge,setActionGauge]=useState(0);
   const logRef = useRef<HTMLDivElement>(null);
   const processedLogCount = useRef(0);
   const floatingTimeouts = useRef<number[]>([]);
@@ -215,6 +218,8 @@ export function BattleScene() {
     return accepted;
   };
 
+  useEffect(()=>{if(phase!=='input'||!actor){setActionGauge(0);return;}const started=performance.now(),duration=actionGaugeDurationMs(actor.stats.spd);setActionGauge(autoMode?0:100);if(!autoMode)return;const timer=window.setInterval(()=>{const percent=actionGaugePercent(performance.now()-started,actor.stats.spd);setActionGauge(percent);if(percent>=100){window.clearInterval(timer);const target=useBattleStore.getState().livingEnemies()[0];if(target)submitCommand({type:'attack',targetUid:target.uid});}},50);return()=>window.clearInterval(timer)},[autoMode,phase,actor?.uid,actor?.stats.spd]);
+
   const useBattleItem = (itemId: string) => {
     const item = STORE_ITEMS[itemId];
     if (!item?.skillId || (save?.items[itemId] ?? 0) <= 0) return;
@@ -275,6 +280,7 @@ export function BattleScene() {
 
   return (
     <div className="battle-scene fade-in">
+      <button className={`battle-auto-toggle ${autoMode?'is-on':''}`} onClick={()=>setAutoMode(value=>!value)}>{autoMode?'AUTO ON':'AUTO OFF'}</button>
       {arenaRun&&<div className={`arena-timer ${arenaRemaining<=10?'is-danger':''}`}>WAVE {arenaRun.currentWave}　{arenaRemaining}s</div>}
       <div className={`battle-arena battle-arena--${battlefieldWorld}`} aria-label="battlefield">
         <div className="battle-field-backdrop" style={{ backgroundImage: `url(${battlefieldImage})` }} />
@@ -349,6 +355,7 @@ export function BattleScene() {
                 <div className="battle-stat-line"><span>HP {a.hp}/{a.maxHp}</span><Gauge value={a.hp} max={a.maxHp} type="hp" /></div>
                 {a.barrierHp>0&&<div className="battle-stat-line barrier-line"><span>SHIELD {a.barrierHp}</span><Gauge value={a.barrierHp} max={a.barrierMax} type="mp" /></div>}
                 <div className="battle-stat-line"><span>MP {a.mp}/{a.maxMp}</span><Gauge value={a.mp} max={a.maxMp} type="mp" /></div>
+                {!a.isPet&&<div className="battle-action-gauge"><span>ACTION {actor?.uid===a.uid?Math.round(actionGauge):0}%</span><i><b style={{width:`${actor?.uid===a.uid?actionGauge:0}%`}}/></i></div>}
               </div>
             ))}
           </div>
@@ -366,7 +373,7 @@ export function BattleScene() {
               <div className="tiny dim">{actor.tragicFlaw.flaw.battleTrait.description}</div>
             </div>
           )}
-          {phase === 'input' && actor && visibleMode === 'command' && (
+          {phase === 'input' && actor && visibleMode === 'command' && !autoMode && (
             <>
               <div className="battle-quick-slots" aria-label="クイックスロット">
                 {(save?.quickSlots ?? []).map((itemId, index) => {
