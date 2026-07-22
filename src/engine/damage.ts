@@ -8,6 +8,11 @@ export interface DamageContext {
   atkBuff?: number;
 }
 
+export function criticalChance(attackerLuk=0,defenderLuk=0):number{return Math.max(0,Math.min(1,Math.floor(((attackerLuk-defenderLuk)/1500)*1000)/1000))}
+export function evasionChance(attackerLuk=0,defenderLuk=0):number{return Math.max(0,Math.min(.95,Math.floor(((defenderLuk-attackerLuk)/1500)*1000)/1000))}
+export function resolveLuckHit(attackerLuk=0,defenderLuk=0,unavoidable=false,evadeRoll=Math.random(),criticalRoll=Math.random()):{evaded:boolean;critical:boolean}{const evaded=!unavoidable&&evadeRoll<evasionChance(attackerLuk,defenderLuk);return{evaded,critical:!evaded&&criticalRoll<criticalChance(attackerLuk,defenderLuk)}}
+export function luckDropMultiplier(luk=0):number{return 1+Math.min(3600,Math.max(0,luk))/360}
+
 function randomInt(min: number, max: number): number {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
