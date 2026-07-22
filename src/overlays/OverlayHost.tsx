@@ -13,6 +13,7 @@ import { ArenaReceptionOverlay } from './ArenaReceptionOverlay';
 import { ConstellationsOverlay } from './ConstellationsOverlay';
 import { SkinsOverlay } from './SkinsOverlay';
 import { SkillLoadoutOverlay } from './SkillLoadoutOverlay';
+import { AdventureOverlay } from './AdventureOverlay';
 
 export function OverlayHost() {
   const overlay = useGameStore((s) => s.overlay);
@@ -36,6 +37,7 @@ export function OverlayHost() {
         {overlay === 'constellations' && <ConstellationsOverlay />}
         {overlay === 'skins' && <SkinsOverlay />}
         {overlay === 'skillLoadout' && <SkillLoadoutOverlay />}
+        {overlay === 'adventure' && <AdventureOverlay />}
       </div>
     </div>
   );

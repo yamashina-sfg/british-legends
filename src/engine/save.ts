@@ -49,6 +49,7 @@ export function createNewSave(slotId: number): SaveData {
     ownedBodySkins: [],
     ownedHeadStyles: [1, 2, 3, 4],
     settings: { skipBlessingCinematics: false, blessingCinematicsSeen: false },
+    adventure: { flags: [], openPortals: [], completedEventIds: [], tradeCounts: {} },
   };
 }
 
@@ -78,7 +79,8 @@ export function loadSlot(slotId: number): SaveData | null {
       ownedBodySkins: parsed.ownedBodySkins ?? [...(parsed.progress?.clearedWorldIds ?? [])],
       ownedHeadStyles: parsed.ownedHeadStyles ?? [1,2,3,4],
       settings: { skipBlessingCinematics: parsed.settings?.skipBlessingCinematics ?? false, blessingCinematicsSeen: parsed.settings?.blessingCinematicsSeen ?? false },
-      party: (parsed.party ?? []).map((owned) => {const learned=[...new Set([...owned.learnedSkillIds,'arcane_burst','story_barrier'])];return normalizeEquipmentSlots(normalizeOwnedGrowth({...owned,learnedSkillIds:learned,equippedSkillIds:owned.equippedSkillIds??learned.filter((id)=>id!=='attack_basic').slice(0,3)}))}),
+      adventure: { flags:parsed.adventure?.flags??[], openPortals:parsed.adventure?.openPortals??[], completedEventIds:parsed.adventure?.completedEventIds??[], tradeCounts:parsed.adventure?.tradeCounts??{} },
+      party: (parsed.party ?? []).map((owned) => {const learned=[...new Set([...owned.learnedSkillIds,'arcane_burst','story_barrier'])];return normalizeEquipmentSlots(normalizeOwnedGrowth({...owned,soulLevel:owned.soulLevel??0,learnedSkillIds:learned,equippedSkillIds:owned.equippedSkillIds??learned.filter((id)=>id!=='attack_basic').slice(0,3)}))}),
     });
   } catch {
     return null;
@@ -116,6 +118,7 @@ export function createOwnedCharacter(characterId: string): OwnedCharacter {
     bonusStatusPoints: 0,
     paidStatusPoints: 0,
     blessingCount: 0,
+    soulLevel: 0,
   };
 }
 
