@@ -14,6 +14,7 @@ import { actionGaugeDurationMs, actionGaugePercent } from '@/engine/actionGauge'
 import { threatBand } from '@/engine/threat';
 import { useI18n } from '@/i18n';
 import { normalizeCommerce } from '@/engine/commerce';
+import { arenaTimerTone, formatArenaTime } from '@/engine/arena';
 import beowulfAttackField from '@/assets/battle/beowulf-attack-field.png';
 import hamletAttackField from '@/assets/battle/hamlet-attack-field.png';
 import macbethAttackField from '@/assets/battle/macbeth-attack-field.png';
@@ -286,7 +287,7 @@ export function BattleScene() {
   return (
     <div className="battle-scene fade-in">
       <button className={`battle-auto-toggle ${autoMode?'is-on':''}`} onClick={()=>setAutoMode(value=>!value)}>{autoMode?'AUTO ON':'AUTO OFF'}</button>
-      {arenaRun&&<div className={`arena-timer ${arenaRemaining<=10?'is-danger':''}`}>WAVE {arenaRun.currentWave}　{arenaRemaining}s</div>}
+      {arenaRun&&<div className={`arena-timer is-${arenaTimerTone(arenaRemaining)}`}>WAVE {arenaRun.currentWave}　{formatArenaTime(arenaRemaining)}</div>}
       <div className={`battle-arena battle-arena--${battlefieldWorld}`} aria-label="battlefield">
         <div className="battle-field-backdrop" style={{ backgroundImage: `url(${battlefieldImage})` }} />
         <div className="battle-arena__sky" />
