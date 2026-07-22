@@ -499,6 +499,7 @@ function fixedMapFromTemplates(worldId: string, floorIndex: number, templates: t
           opened: marker.kind === 'chest' ? false : undefined,
           label: marker.label,
           eventText: marker.eventText,
+          ...(marker.kind==='enemy'?{spawnX:x,spawnY:y,spawnRange:5,searchRange:5,attackRange:1,aiState:'idle' as const}:{}),
         });
       }
       return 'floor';
@@ -700,6 +701,7 @@ export function generateDungeonMap(worldId: string, floorIndex: number): Dungeon
       y: tile.y,
       enemyIds: group,
       label: lead ? getEnemy(lead).name : '敵',
+      spawnX:tile.x,spawnY:tile.y,spawnRange:5,searchRange:5,attackRange:1,aiState:'idle',
     });
   }
 

@@ -242,6 +242,14 @@ export interface MapEntity {
   label?: string;
   eventText?: string;
   droppedAt?: number;
+  spawnX?: number;
+  spawnY?: number;
+  spawnRange?: number;
+  searchRange?: number;
+  attackRange?: number;
+  aiState?: 'idle' | 'chase' | 'return';
+  idleWait?: number;
+  invincible?: boolean;
 }
 
 /** 1フロア分の生成済みマップ。tiles と entities は純粋データなので動かせる。 */
