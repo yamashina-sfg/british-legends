@@ -287,6 +287,7 @@ export function BattleScene() {
   return (
     <div className="battle-scene fade-in">
       <button className={`battle-auto-toggle ${autoMode?'is-on':''}`} onClick={()=>setAutoMode(value=>!value)}>{autoMode?'AUTO ON':'AUTO OFF'}</button>
+      {arenaRun&&<button className="arena-exit-button" onClick={()=>{if(confirm('闘技を終了しますか？'))onBattleLost();}}>途中退出</button>}
       {arenaRun&&<div className={`arena-timer is-${arenaTimerTone(arenaRemaining)}`}>WAVE {arenaRun.currentWave}　{formatArenaTime(arenaRemaining)}</div>}
       <div className={`battle-arena battle-arena--${battlefieldWorld}`} aria-label="battlefield">
         <div className="battle-field-backdrop" style={{ backgroundImage: `url(${battlefieldImage})` }} />
