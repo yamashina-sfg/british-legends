@@ -22,7 +22,8 @@ function bonusLabel(bonus: object) {
 
 export function StoreOverlay() {
   const [tab, setTab] = useState<StoreTab>('weapon');
-  const { save, buyEquipment, buyItem, forgeEquipment, closeOverlay } = useGameStore();
+  const [selectedQuickSlot, setSelectedQuickSlot] = useState(0);
+  const { save, buyEquipment, buyItem, forgeEquipment, setQuickSlot, closeOverlay } = useGameStore();
   if (!save) return null;
 
   const equipment = tab === 'item' || tab === 'forge' ? [] : Object.values(EQUIPMENT).filter((item) => item.slot === tab);
@@ -38,6 +39,21 @@ export function StoreOverlay() {
         {(Object.keys(TAB_LABELS) as StoreTab[]).map((key) => <button key={key} className={tab === key ? 'is-active' : ''} onClick={() => setTab(key)}>{TAB_LABELS[key]}</button>)}
       </div>
       <div className="store-items">
+        {tab === 'item' && (
+          <section className="quick-slot-settings" aria-label="クイックスロット設定">
+            <header><strong>クイックスロット設定</strong><span>枠を選び、道具の「登録」を押す</span></header>
+            <div>
+              {save.quickSlots.map((itemId, index) => (
+                <button key={index} className={selectedQuickSlot === index ? 'is-selected' : ''} onClick={() => setSelectedQuickSlot(index)}>
+                  <small>SLOT {index + 1}</small>
+                  <b>{itemId ? STORE_ITEMS[itemId]?.name ?? '不明' : '未登録'}</b>
+                  <span>×{itemId ? save.items[itemId] ?? 0 : 0}</span>
+                </button>
+              ))}
+            </div>
+            <button className="quick-slot-clear" onClick={() => setQuickSlot(selectedQuickSlot, null)}>選択枠を解除</button>
+          </section>
+        )}
         {tab === 'forge' && ownedEquipment.length === 0 && (
           <div className="store-empty">鍛造できる装備がない。武器・防具・装飾品を購入するか、探索で発見しよう。</div>
         )}
@@ -59,7 +75,7 @@ export function StoreOverlay() {
           <article className="store-item" key={item.id}>
             <img className="store-item__icon" src={STORE_ICON_BY_ID[item.id]} alt="" aria-hidden="true" />
             <div><strong>{item.name} <small>×{save.items[item.id] ?? 0}</small></strong><p>{item.description}</p></div>
-            <div className="store-item__buy"><b>{item.price}G</b><Button disabled={save.gold < item.price} onClick={() => buyItem(item.id)}>買う</Button></div>
+            <div className="store-item__buy"><b>{item.price}G</b><Button onClick={() => setQuickSlot(selectedQuickSlot, item.id)}>登録</Button><Button disabled={save.gold < item.price} onClick={() => buyItem(item.id)}>買う</Button></div>
           </article>
         )) : equipment.map((item) => (
           <article className="store-item" key={item.id}>

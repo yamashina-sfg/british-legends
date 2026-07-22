@@ -10,6 +10,7 @@ import { statsWithEquipment } from '@/engine/equipment';
 import { addDefeats, crossedResearchLevels, enemyResearchBenefit } from '@/engine/research';
 import { manuscriptStats } from '@/data/manuscripts';
 import { forgeCost, MAX_EQUIPMENT_LEVEL } from '@/engine/forging';
+import { assignQuickSlot } from '@/engine/quickSlots';
 import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
 import {
   createNewSave,
@@ -102,6 +103,7 @@ interface GameState {
   forgeEquipment: (equipmentId: string) => void;
   buyItem: (itemId: string) => void;
   consumeItem: (itemId: string) => boolean;
+  setQuickSlot: (slotIndex: number, itemId: string | null) => void;
   toggleActiveParty: (partyIndex: number) => void;
 }
 
@@ -926,6 +928,22 @@ export const useGameStore = create<GameState>((set, get) => ({
       dedupeKey: `consume:${itemId}:${Date.now()}`,
     });
     return true;
+  },
+
+  setQuickSlot: (slotIndex, itemId) => {
+    const save = get().save;
+    if (!save || (itemId && !STORE_ITEMS[itemId])) return;
+    const quickSlots = assignQuickSlot(save.quickSlots ?? [], slotIndex, itemId);
+    const nextSave = { ...save, quickSlots };
+    set({ save: nextSave });
+    saveSlot(nextSave);
+    emitNotification({
+      type: 'item',
+      title: `QUICK SLOT ${slotIndex + 1}`,
+      message: itemId ? `${STORE_ITEMS[itemId].name} を登録` : '登録を解除',
+      icon: '◇',
+      dedupeKey: `quick-slot:${slotIndex}:${itemId ?? 'empty'}:${Date.now()}`,
+    });
   },
 
   toggleActiveParty: (partyIndex) => {
