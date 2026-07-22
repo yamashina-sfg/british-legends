@@ -310,6 +310,8 @@ export interface SaveData {
   /** 回復薬など、素材とは別に消費する道具 */
   items: Record<string, number>;
   equipmentInventory: string[];
+  /** equipmentId -> 強化値（0〜5）。装備はID単位で一意に所持する。 */
+  equipmentLevels: Record<string, number>;
   storyFragments: string[];
   learnedSkillBooks: string[];
   exploration: Record<string, {

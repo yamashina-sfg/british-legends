@@ -7,6 +7,7 @@ import { Window } from '@/components/ui/Window';
 import { Button } from '@/components/ui/Button';
 import { Gauge } from '@/components/ui/Gauge';
 import { Sprite } from '@/components/ui/Sprite';
+import { manuscriptStats } from '@/data/manuscripts';
 
 export function CharacterDetailOverlay() {
   const { save, selectedCharIndex, openOverlay } = useGameStore();
@@ -15,7 +16,7 @@ export function CharacterDetailOverlay() {
   if (!owned) return null;
 
   const char = getCharacter(owned.characterId);
-  const stats = statsWithEquipment(char, owned);
+  const stats = statsWithEquipment(char, owned, manuscriptStats(save.storyFragments ?? []), save.equipmentLevels ?? {});
   const evo = checkEvolution(owned, char, save.inventory);
   const nextLvExp = expForLevel(owned.level + 1);
 
@@ -42,7 +43,7 @@ export function CharacterDetailOverlay() {
         <span>すばやさ {stats.spd}</span>
       </div>
       <div className="tiny dim">
-        装備: {owned.equippedWeaponId ? getEquipment(owned.equippedWeaponId).name : 'なし'} / {owned.equippedArmorId ? getEquipment(owned.equippedArmorId).name : 'なし'} / {owned.equippedAccessoryId ? getEquipment(owned.equippedAccessoryId).name : 'なし'}
+        装備: {equipmentName(owned.equippedWeaponId, save.equipmentLevels)} / {equipmentName(owned.equippedArmorId, save.equipmentLevels)} / {equipmentName(owned.equippedAccessoryId, save.equipmentLevels)}
       </div>
 
       {char.tragicFlaw && (
@@ -102,4 +103,10 @@ export function CharacterDetailOverlay() {
       </Button>
     </Window>
   );
+}
+
+function equipmentName(id: string | undefined, levels: Record<string, number>): string {
+  if (!id) return 'なし';
+  const level = levels?.[id] ?? 0;
+  return `${getEquipment(id).name}${level > 0 ? ` +${level}` : ''}`;
 }

@@ -9,6 +9,7 @@ import { resolveMove, removeEntity } from '@/engine/mapmove';
 import { statsWithEquipment } from '@/engine/equipment';
 import { addDefeats, crossedResearchLevels, enemyResearchBenefit } from '@/engine/research';
 import { manuscriptStats } from '@/data/manuscripts';
+import { forgeCost, MAX_EQUIPMENT_LEVEL } from '@/engine/forging';
 import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
 import {
   createNewSave,
@@ -98,6 +99,7 @@ interface GameState {
   healParty: () => void;
   restAtInn: () => void;
   buyEquipment: (partyIndex: number, equipmentId: string) => void;
+  forgeEquipment: (equipmentId: string) => void;
   buyItem: (itemId: string) => void;
   consumeItem: (itemId: string) => boolean;
   toggleActiveParty: (partyIndex: number) => void;
@@ -512,6 +514,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           e.enemyIds ?? [],
           e.kind === 'boss',
           manuscriptStats(save.storyFragments ?? []),
+          save.equipmentLevels ?? {},
         );
         return;
       }
@@ -861,7 +864,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         ? { ...owned, equippedArmorId: item.id }
         : { ...owned, equippedAccessoryId: item.id };
     const party = save.party.map((p, index) => index === partyIndex ? nextOwned : p);
-    const nextSave = { ...save, party, gold: ownedLoot ? save.gold : save.gold - item.price };
+    const equipmentInventory = ownedLoot ? save.equipmentInventory : [...new Set([...(save.equipmentInventory ?? []), item.id])];
+    const nextSave = { ...save, party, equipmentInventory, gold: ownedLoot ? save.gold : save.gold - item.price };
     set({ save: nextSave, mapToast: `${item.name} を装備した！` });
     saveSlot(nextSave);
     emitNotification({
@@ -872,6 +876,22 @@ export const useGameStore = create<GameState>((set, get) => ({
       rarity: item.price >= 100 ? 'rare' : 'common',
       dedupeKey: `buy-equipment:${item.id}:${Date.now()}`,
     });
+  },
+
+  forgeEquipment: (equipmentId) => {
+    const save = get().save;
+    if (!save || !(save.equipmentInventory ?? []).includes(equipmentId)) return;
+    const item = getEquipment(equipmentId);
+    const currentLevel = save.equipmentLevels?.[equipmentId] ?? 0;
+    const cost = forgeCost(item, currentLevel);
+    if (!cost || currentLevel >= MAX_EQUIPMENT_LEVEL) return;
+    if (save.gold < cost.gold || (save.inventory[cost.materialId] ?? 0) < cost.materialQty) return;
+    const inventory = { ...save.inventory, [cost.materialId]: (save.inventory[cost.materialId] ?? 0) - cost.materialQty };
+    const equipmentLevels = { ...(save.equipmentLevels ?? {}), [equipmentId]: currentLevel + 1 };
+    const nextSave = { ...save, inventory, equipmentLevels, gold: save.gold - cost.gold };
+    set({ save: nextSave, mapToast: `${item.name} を +${currentLevel + 1} に強化した！` });
+    saveSlot(nextSave);
+    emitNotification({ type: 'item', title: 'FORGE SUCCESS', message: `${item.name} +${currentLevel + 1}`, icon: '⚒', rarity: currentLevel + 1 >= MAX_EQUIPMENT_LEVEL ? 'epic' : 'rare', dedupeKey: `forge:${equipmentId}:${currentLevel + 1}` });
   },
 
   buyItem: (itemId) => {

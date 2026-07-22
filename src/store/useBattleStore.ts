@@ -29,7 +29,7 @@ interface BattleState {
   planned: BattleAction[];
   lastAction: BattleAction | null;
 
-  start: (party: OwnedCharacter[], enemyIds: string[], isBoss: boolean, permanentBonus?: Partial<Stats>) => void;
+  start: (party: OwnedCharacter[], enemyIds: string[], isBoss: boolean, permanentBonus?: Partial<Stats>, equipmentLevels?: Record<string, number>) => void;
   livingAllies: () => Combatant[];
   livingEnemies: () => Combatant[];
   currentActor: () => Combatant | undefined;
@@ -80,8 +80,8 @@ export const useBattleStore = create<BattleState>((set, get) => ({
   planned: [],
   lastAction: null,
 
-  start: (party, enemyIds, isBoss, permanentBonus) => {
-    const allies = party.filter((p) => p.currentHp > 0).map((member, index) => combatantFromOwned(member, index, isBoss, permanentBonus));
+  start: (party, enemyIds, isBoss, permanentBonus, equipmentLevels) => {
+    const allies = party.filter((p) => p.currentHp > 0).map((member, index) => combatantFromOwned(member, index, isBoss, permanentBonus, equipmentLevels));
     const enemies = buildEnemyCombatants(enemyIds);
     set({
       active: true,
