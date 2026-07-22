@@ -10,6 +10,7 @@ export function FishingOverlay() {
   const { save, completeFishing, closeOverlay } = useGameStore();
   const [phase, setPhase] = useState<FishingPhase>('idle');
   const [message, setMessage] = useState('文学の海へ糸を垂らそう。');
+  const [auto,setAuto]=useState(false);
   const timer = useRef<number | null>(null);
   useEffect(() => () => { if (timer.current) window.clearTimeout(timer.current); }, []);
   if (!save) return null;
@@ -38,6 +39,8 @@ export function FishingOverlay() {
     setMessage(reward ? `${reward.label} ×${reward.qty} を釣り上げた！` : '釣果を記録できなかった。');
   };
 
+  useEffect(()=>{if(!auto||!save.fishing?.autoUnlocked)return;let cancelled=false;const cycle=()=>{if(cancelled)return;setPhase('waiting');setMessage('AUTO：写本の海を探索中……');timer.current=window.setTimeout(()=>{if(cancelled)return;setPhase('bite');setMessage('！ AUTO CATCH');timer.current=window.setTimeout(()=>{if(cancelled)return;const reward=completeFishing();setPhase('caught');setMessage(reward?`AUTO：${reward.label} ×${reward.qty}`:'釣果を記録できなかった。');timer.current=window.setTimeout(cycle,900);},1000+Math.random()*1000);},2000+Math.random()*1000);};cycle();return()=>{cancelled=true;if(timer.current)window.clearTimeout(timer.current)}},[auto,save.fishing?.autoUnlocked,completeFishing]);
+
   return (
     <Window title="THE INKWELL — 写本釣り" className="fishing-overlay">
       <div className={`fishing-water is-${phase}`} onClick={() => (phase === 'waiting' || phase === 'bite') && pull()}>
@@ -45,7 +48,7 @@ export function FishingOverlay() {
       </div>
       <div className="fishing-record"><div><small>TOTAL CASTS</small><strong>{count}</strong></div><div><small>PERMANENT LUK</small><strong>+{fishingLuck(count)}</strong></div><div><small>NEXT LUK</small><strong>{Math.min(1000, 1000 - (count % 1000))}回</strong></div></div>
       <p className={`fishing-message is-${phase}`}>{message}</p>
-      <div className="row"><Button onClick={closeOverlay}>やめる</Button>{phase === 'idle' || phase === 'caught' || phase === 'failed' ? <Button primary onClick={start}>釣り始める</Button> : <Button primary onClick={pull}>{phase === 'bite' ? '引き上げる！' : 'ウキを引く'}</Button>}</div>
+      <div className="row"><Button onClick={()=>{setAuto(false);closeOverlay()}}>やめる</Button>{!auto&&(phase === 'idle' || phase === 'caught' || phase === 'failed' ? <Button primary onClick={start}>釣り始める</Button> : <Button primary onClick={pull}>{phase === 'bite' ? '引き上げる！' : 'ウキを引く'}</Button>)}{save.fishing?.autoUnlocked&&<Button primary onClick={()=>setAuto(x=>!x)}>{auto?'自動釣り停止':'自動釣り開始'}</Button>}</div>
       <div className="tiny dim">1000回ごとにLUK+1（最大+100）。10・50・100回では固定報酬があります。</div>
     </Window>
   );
