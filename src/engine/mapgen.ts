@@ -1,5 +1,6 @@
 import type { DungeonMap, MapEntity, RewardEntry, TileType } from '@/types';
 import { getDungeon, getEnemy, getEquipment, getMaterial, getWorld, MATERIALS, STORE_ITEMS } from '@/data';
+import { fragmentsForWorld } from '@/data/manuscripts';
 
 // ============================================================
 // ダンジョンマップ自動生成（セルオートマトンで洞窟を生成）
@@ -203,7 +204,7 @@ function chestRewards(worldId: string, floorIndex: number, materialId?: string):
     const pool = skillByWorld[worldId] ?? ['hero_roar'];
     rewards.push({ kind: 'skill', id: pool[floorIndex % pool.length], qty: 1, label: 'スキルブック', rarity: 'rare' });
   } else if (roll < 0.95) {
-    const pool = STORY_FRAGMENTS[worldId] ?? [`${worldId}-fragment`];
+    const pool = fragmentsForWorld(worldId).map((fragment)=>fragment.id).length ? fragmentsForWorld(worldId).map((fragment)=>fragment.id) : STORY_FRAGMENTS[worldId] ?? [`${worldId}-fragment`];
     rewards.push({ kind: 'story', id: pool[floorIndex % pool.length], qty: 1, label: 'ストーリー断片', rarity: 'rare' });
   } else {
     const pool = RARE_EQUIPMENT[worldId] ?? [];

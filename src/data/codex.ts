@@ -1,4 +1,5 @@
 import type { CodexEntry } from '@/types';
+import { ENEMIES } from './enemies';
 
 // 文学要素の主な表現場所。倒した敵・加入したキャラ・入手素材が解放されると lore が読める。
 export const CODEX: Record<string, CodexEntry> = {
@@ -159,3 +160,10 @@ export const CODEX: Record<string, CodexEntry> = {
     loreText: '勇敢な将軍だったが、予言と妻の唆しにより王を弑逆する。野心と良心の相克に引き裂かれる悲劇の主人公。',
   },
 };
+
+// 全マスターモンスターを図鑑対象にする。個別伝承が未執筆の敵も、討伐後に
+// British Legends世界の修復記録として能力・ドロップ・固有報酬を開示する。
+for (const enemy of Object.values(ENEMIES)) {
+  const id=`codex_enemy_${enemy.id}`;
+  if(!CODEX[id])CODEX[id]={id,type:'enemy',refId:enemy.id,loreText:`${enemy.name}は『${enemy.worldId}』の物語を侵食する怪異。討伐記録の蓄積により、その能力と残された品がBibliothecaへ復元される。`};
+}

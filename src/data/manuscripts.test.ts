@@ -1,14 +1,7 @@
-import { describe, expect, it } from 'vitest';
-import { manuscriptBlessingLevel, manuscriptStats } from './manuscripts';
-
-describe('manuscript album', () => {
-  it('applies cumulative blessings for unique fragments', () => {
-    expect(manuscriptStats(['a', 'b', 'c'])).toMatchObject({ hp: 10, atk: 0 });
-    expect(manuscriptStats(['a', 'b', 'c', 'd', 'e', 'f'])).toMatchObject({ hp: 10, atk: 2 });
-    expect(manuscriptStats(Array.from({ length: 12 }, (_, i) => `f${i}`))).toEqual({ hp: 30, mp: 5, atk: 2, def: 2, spd: 0 });
-  });
-
-  it('does not count duplicate fragment ids twice', () => {
-    expect(manuscriptBlessingLevel(['a', 'a', 'b'])).toBe(0);
-  });
+import { describe,expect,it } from 'vitest';
+import { fragmentsForWorld,manuscriptBlessingLevel,manuscriptStats,manuscriptWorldLevel } from './manuscripts';
+describe('16分割写本アルバム',()=>{
+  const ids=fragmentsForWorld('beowulf').map((fragment)=>fragment.id);
+  it('各巻16マスを持ち、4/8/12/16片で累積バフを解放する',()=>{expect(ids).toHaveLength(16);expect(manuscriptWorldLevel(ids.slice(0,4),'beowulf')).toBe(1);expect(manuscriptStats(ids.slice(0,8))).toMatchObject({hp:20,atk:2});expect(manuscriptStats(ids)).toEqual({hp:60,mp:5,atk:4,int:2,def:4,mdef:2,spd:2,luk:2});});
+  it('重複ピースはランクへ数えない',()=>{expect(manuscriptBlessingLevel([ids[0],ids[0]])).toBe(0);});
 });

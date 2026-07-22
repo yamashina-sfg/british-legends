@@ -16,4 +16,5 @@ describe('釣り', () => {
     expect(fishingLuck(1000)).toBe(1);
     expect(fishingLuck(999999)).toBe(100);
   });
+  it('高い抽選値では未所持アルバムピースを一度だけ獲得する',()=>{const result=resolveFishing(createNewSave(1),0.95);expect(result.reward.kind).toBe('story');expect(result.save.storyFragments).toContain(result.reward.id);});
 });
