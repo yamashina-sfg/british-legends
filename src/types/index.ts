@@ -316,6 +316,8 @@ export interface OwnedCharacter {
   patronWorldId?: string;
   bodySkinWorldId?: string;
   skinLocked?: boolean;
+  /** ボス討伐フラッグで上昇し、会話・マップ条件を切り替える。 */
+  soulLevel?: number;
   equippedWeaponId?: string;
   equippedHeadId?: string;
   equippedArmorId?: string;
@@ -395,6 +397,12 @@ export interface SaveData {
   settings?: {
     skipBlessingCinematics: boolean;
     blessingCinematicsSeen: boolean;
+  };
+  adventure?: {
+    flags: string[];
+    openPortals: string[];
+    completedEventIds: string[];
+    tradeCounts: Record<string, number>;
   };
 }
 

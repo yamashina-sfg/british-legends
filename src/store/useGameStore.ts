@@ -28,6 +28,7 @@ import {
   unlockNextWorld,
 } from '@/engine/save';
 import { emitNotification } from '@/notifications/notificationBus';
+import { activatePortal, applyBossSoulFlags, claimOneTimeEvent, tradeAdventureItem } from '@/engine/adventure';
 import { useBattleStore } from './useBattleStore';
 
 export type Scene =
@@ -44,7 +45,7 @@ export type Scene =
   | 'gameOver'
   | 'worldClear';
 
-export type Overlay = 'party' | 'character' | 'evolution' | 'blessing' | 'materials' | 'codex' | 'settings' | 'store' | 'fishing' | 'pets' | 'arenaReception' | 'constellations' | 'skins' | 'skillLoadout' | null;
+export type Overlay = 'party' | 'character' | 'evolution' | 'blessing' | 'materials' | 'codex' | 'settings' | 'store' | 'fishing' | 'pets' | 'arenaReception' | 'constellations' | 'skins' | 'skillLoadout' | 'adventure' | null;
 
 interface ArenaRun { currentWave:number; startWave:number; runStartedAt:number; waveStartedAt:number; deadline:number; lastRewardLabel?:string; lastWaveTime?:number }
 
@@ -128,6 +129,9 @@ interface GameState {
   setCharacterSkin: (partyIndex:number, bodyWorldId:string|undefined, locked:boolean) => void;
   setSkillSlot: (partyIndex:number, slot:number, skillId:string|null) => void;
   setSkipBlessingCinematics: (enabled:boolean) => void;
+  travelPortal: (portalId:string) => boolean;
+  claimAdventureEvent: (eventId:string) => boolean;
+  tradeAdventure: (tradeId:string,giveId:string,giveQty:number,getId:string,getQty:number) => boolean;
   buyItem: (itemId: string) => void;
   consumeItem: (itemId: string) => boolean;
   setQuickSlot: (slotIndex: number, itemId: string | null) => void;
@@ -454,11 +458,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       const stats = statsWithEquipment(getCharacter(p.characterId), p);
       return { ...p, currentHp: stats.hp, currentMp: stats.mp };
     });
-    const nextSave: SaveData = normalizeActiveParty({
+    const nextSave: SaveData = activatePortal(normalizeActiveParty({
       ...save,
       party,
       progress: { ...save.progress, currentWorldId: worldId },
-    });
+    }),worldId,0);
     set({
       save: nextSave,
       worldId,
@@ -573,8 +577,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   descendFloor: () => {
-    const { worldId, map } = get();
-    if (!worldId || !map) return;
+    const { worldId, map, save } = get();
+    if (!worldId || !map || !save) return;
     const dgn = getDungeon(getWorld(worldId).dungeonId);
     const next = map.floorIndex + 1;
     if (next >= dgn.floors.length) {
@@ -582,7 +586,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       set({ scene: 'worldMap', map: null });
       return;
     }
-    set({ map: generateDungeonMap(worldId, next), mapToast: `${dgn.floors[next].name} へ降りた。` });
+    const nextSave=activatePortal(save,worldId,next);saveSlot(nextSave);set({ save:nextSave,map: generateDungeonMap(worldId, next), mapToast: `${dgn.floors[next].name} へ降りた。ポータルを解放した。` });
   },
 
   onBattleWon: () => {
@@ -679,7 +683,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       ? updateExploration(applyRewards(nextSaveBase, bonusRewards), worldId, nextMap)
       : applyRewards(nextSaveBase, bonusRewards);
     nextSave = awardSummonedPetExp(nextSave, totalExp);
-    if(encounter.isBoss)nextSave=awakenConstellation(nextSave,worldId);
+    if(encounter.isBoss){nextSave=awakenConstellation(nextSave,worldId);const soul=applyBossSoulFlags(nextSave,enemyIds);nextSave=soul.save;if(soul.raised.length)levelUps.push(`SOUL LEVEL +1：${soul.raised.map((id)=>getCharacter(id).name).join('・')}`);}
     const capture = tryCapturePet(nextSave, enemyIds);
     nextSave = capture.save;
     if (capture.captured) emitNotification({ type:'achievement', title:'NEW FAMILIAR', message:`${getPet(capture.captured.petId).name} が仲間になった`, icon:'◉', rarity:'epic', dedupeKey:`pet-capture:${capture.captured.petId}` });
@@ -1024,6 +1028,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   setCharacterSkin:(partyIndex,bodyWorldId,locked)=>{const save=get().save;if(!save||bodyWorldId&&!save.ownedBodySkins?.includes(bodyWorldId))return;const party=save.party.map((owned,index)=>index===partyIndex?{...owned,bodySkinWorldId:bodyWorldId,skinLocked:locked}:owned);const next={...save,party};saveSlot(next);set({save:next});},
   setSkillSlot:(partyIndex,slot,skillId)=>{const save=get().save,owned=save?.party[partyIndex];if(!save||!owned||slot<0||slot>=3||skillId&&!owned.learnedSkillIds.includes(skillId))return;const slots=Array.from({length:3},(_,index)=>owned.equippedSkillIds?.[index]??null);if(skillId){const previous=slots.indexOf(skillId);if(previous>=0)slots[previous]=slots[slot];}slots[slot]=skillId;const party=save.party.map((member,index)=>index===partyIndex?{...member,equippedSkillIds:slots}:member);const next={...save,party};saveSlot(next);set({save:next});},
   setSkipBlessingCinematics:(enabled)=>{const save=get().save;if(!save)return;const next={...save,settings:{skipBlessingCinematics:enabled,blessingCinematicsSeen:save.settings?.blessingCinematicsSeen??false}};saveSlot(next);set({save:next});},
+  travelPortal:(id)=>{const save=get().save;if(!save||!save.adventure?.openPortals.includes(id))return false;const [worldId,floorText]=id.split(':');const floorIndex=Number(floorText);const soul=Math.max(0,...save.party.map((member)=>member.soulLevel??0));if(!save.progress.unlockedWorldIds.includes(worldId)||!Number.isInteger(floorIndex)||soul<floorIndex)return false;const next={...save,progress:{...save.progress,currentWorldId:worldId}};saveSlot(next);set({save:next,worldId,map:generateDungeonMap(worldId,floorIndex),scene:'dungeon',overlay:null,mapToast:`ポータルから第${floorIndex+1}層へ転移した。`});return true;},
+  claimAdventureEvent:(eventId)=>{const save=get().save;if(!save)return false;const result=claimOneTimeEvent(save,eventId);if(!result.first)return false;saveSlot(result.save);set({save:result.save,mapToast:'司書から回復薬を受け取った。'});return true;},
+  tradeAdventure:(tradeId,giveId,giveQty,getId,getQty)=>{const save=get().save;if(!save)return false;const next=tradeAdventureItem(save,tradeId,giveId,giveQty,getId,getQty);if(!next)return false;saveSlot(next);set({save:next,mapToast:'交換が成立した。'});return true;},
 
   buyItem: (itemId) => {
     const save = get().save;

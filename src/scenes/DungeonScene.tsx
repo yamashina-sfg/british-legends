@@ -99,7 +99,7 @@ export function DungeonScene() {
           <div className="dungeon-hud__location"><span>AREA</span><strong>{atmosphere}</strong><small>{dgn.name} / 第{map.floorIndex + 1}層</small></div>
           <div className="dungeon-hud__objective"><span>QUEST</span><strong>{map.isBossFloor ? 'ボスの攻略法を見極めて討て' : '鍵・隠し壁・記録を探し、文学世界を修復せよ'}</strong></div>
           <div className="dungeon-hud__progress"><span>探索率</span><strong>{rate}%</strong><i><b style={{ width: `${rate}%` }} /></i></div>
-          <button className="dungeon-retreat" onClick={retreatToMap}>撤退</button>
+          <div className="dungeon-hud-actions"><button className="dungeon-retreat" onClick={() => useGameStore.getState().openOverlay('adventure')}>✦ 転移</button><button className="dungeon-retreat" onClick={retreatToMap}>撤退</button></div>
         </div>
 
         <div className="dungeon-stage">
