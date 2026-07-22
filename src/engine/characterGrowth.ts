@@ -2,6 +2,7 @@ import type { AllocatableStat, AllocatedStats, OwnedCharacter } from '@/types';
 
 export const STATUS_POINTS_PER_LEVEL = 3;
 export const BASE_STAT_ALLOCATION_CAP = 99;
+export const BASE_MAX_LEVEL = 50;
 
 export const ALLOCATABLE_STATS: AllocatableStat[] = ['atk', 'int', 'def', 'mdef', 'spd', 'luk'];
 
@@ -13,26 +14,64 @@ export function normalizeOwnedGrowth(owned: OwnedCharacter): OwnedCharacter {
   const allocated = { ...emptyAllocatedStats(), ...(owned.allocatedStats ?? {}) };
   const used = ALLOCATABLE_STATS.reduce((sum, key) => sum + Math.max(0, allocated[key] ?? 0), 0);
   const earned = Math.max(0, owned.level - 1) * STATUS_POINTS_PER_LEVEL;
+  const legacyUnspent = owned.unspentStatusPoints ?? Math.max(0, earned - used);
+  const levelStatusPoints = owned.levelStatusPoints ?? legacyUnspent;
+  const bonusStatusPoints = owned.bonusStatusPoints ?? 0;
+  const paidStatusPoints = owned.paidStatusPoints ?? 0;
   return {
     ...owned,
     allocatedStats: allocated,
-    unspentStatusPoints: owned.unspentStatusPoints ?? Math.max(0, earned - used),
+    levelStatusPoints,
+    bonusStatusPoints,
+    paidStatusPoints,
+    blessingCount: owned.blessingCount ?? 0,
+    unspentStatusPoints: levelStatusPoints + bonusStatusPoints + paidStatusPoints,
   };
 }
 
-export function allocateStatusPoint(
-  owned: OwnedCharacter,
-  stat: AllocatableStat,
-  marriageCount = 0,
-): OwnedCharacter | null {
+export function allocationCap(owned: OwnedCharacter): number {
+  return BASE_STAT_ALLOCATION_CAP + (owned.blessingCount ?? 0) * 10;
+}
+
+export function maxCharacterLevel(owned: OwnedCharacter): number {
+  return BASE_MAX_LEVEL + (owned.blessingCount ?? 0);
+}
+
+export function commitStatusAllocation(owned: OwnedCharacter, draft: AllocatedStats): OwnedCharacter | null {
   const normalized = normalizeOwnedGrowth(owned);
-  const cap = BASE_STAT_ALLOCATION_CAP + Math.max(0, marriageCount) * 10;
-  if ((normalized.unspentStatusPoints ?? 0) <= 0 || normalized.allocatedStats![stat] >= cap) return null;
-  return {
-    ...normalized,
-    allocatedStats: { ...normalized.allocatedStats!, [stat]: normalized.allocatedStats![stat] + 1 },
-    unspentStatusPoints: (normalized.unspentStatusPoints ?? 0) - 1,
+  const current = normalized.allocatedStats!;
+  const cap = allocationCap(normalized);
+  if (ALLOCATABLE_STATS.some((key) => draft[key] < current[key] || draft[key] > cap)) return null;
+  const cost = ALLOCATABLE_STATS.reduce((sum, key) => sum + draft[key] - current[key], 0);
+  if (cost < 0 || cost > (normalized.unspentStatusPoints ?? 0)) return null;
+  let remaining = cost;
+  const spend = (amount: number | undefined) => {
+    const used = Math.min(amount ?? 0, remaining);
+    remaining -= used;
+    return (amount ?? 0) - used;
   };
+  const levelStatusPoints = spend(normalized.levelStatusPoints);
+  const bonusStatusPoints = spend(normalized.bonusStatusPoints);
+  const paidStatusPoints = spend(normalized.paidStatusPoints);
+  return normalizeOwnedGrowth({ ...normalized, allocatedStats: { ...draft }, levelStatusPoints, bonusStatusPoints, paidStatusPoints });
+}
+
+export function blessCharacter(owned: OwnedCharacter, patronWorldId: string, unlockedPatronCount: number): OwnedCharacter | null {
+  const normalized = normalizeOwnedGrowth(owned);
+  if (normalized.level < maxCharacterLevel(normalized) || unlockedPatronCount < 1) return null;
+  const blessingCount = (normalized.blessingCount ?? 0) + 1;
+  return normalizeOwnedGrowth({
+    ...normalized,
+    level: 1,
+    exp: 0,
+    blessingCount,
+    patronWorldId,
+    levelStatusPoints: 0,
+    bonusStatusPoints: (normalized.bonusStatusPoints ?? 0) + 9 + unlockedPatronCount,
+    equippedWeaponId: undefined,
+    equippedArmorId: undefined,
+    equippedAccessoryId: undefined,
+  });
 }
 
 export function movementSpeed(spd: number): number {

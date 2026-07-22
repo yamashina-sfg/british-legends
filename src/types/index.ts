@@ -298,6 +298,12 @@ export interface OwnedCharacter {
   allocatedStats?: AllocatedStats;
   /** 未使用のレベルポイント。Lv1は0、レベルアップごとに3。 */
   unspentStatusPoints?: number;
+  /** 仕様上は獲得源別に管理する。旧セーブは合算値をレベルポイントへ移行。 */
+  levelStatusPoints?: number;
+  bonusStatusPoints?: number;
+  paidStatusPoints?: number;
+  blessingCount?: number;
+  patronWorldId?: string;
   equippedWeaponId?: string;
   equippedArmorId?: string;
   equippedAccessoryId?: string;

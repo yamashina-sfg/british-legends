@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { AllocatableStat, DungeonMap, OwnedCharacter, PlayerAvatar, RewardEntry, SaveData } from '@/types';
+import type { AllocatedStats, DungeonMap, OwnedCharacter, PlayerAvatar, RewardEntry, SaveData } from '@/types';
 import { CODEX, getCharacter, getDungeon, getEnemy, getEquipment, getMaterial, getSkill, getWorld, STORE_ITEMS } from '@/data';
 import { explorationRate } from '@/engine/mapgen';
 import { gainExp } from '@/engine/leveling';
@@ -11,7 +11,7 @@ import { addDefeats, crossedResearchLevels, enemyResearchBenefit } from '@/engin
 import { manuscriptStats } from '@/data/manuscripts';
 import { forgeCost, MAX_EQUIPMENT_LEVEL } from '@/engine/forging';
 import { assignQuickSlot } from '@/engine/quickSlots';
-import { allocateStatusPoint as allocateCharacterStatusPoint } from '@/engine/characterGrowth';
+import { blessCharacter as blessCharacterEngine, commitStatusAllocation as commitStatusAllocationEngine } from '@/engine/characterGrowth';
 import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
 import {
   createNewSave,
@@ -37,7 +37,7 @@ export type Scene =
   | 'gameOver'
   | 'worldClear';
 
-export type Overlay = 'party' | 'character' | 'evolution' | 'materials' | 'codex' | 'settings' | 'store' | null;
+export type Overlay = 'party' | 'character' | 'evolution' | 'blessing' | 'materials' | 'codex' | 'settings' | 'store' | null;
 
 interface RewardSummary {
   exp: number;
@@ -100,7 +100,8 @@ interface GameState {
 
   // 成長・進化
   evolveCharacter: (partyIndex: number) => { ok: boolean; message: string };
-  allocateStatusPoint: (partyIndex: number, stat: AllocatableStat) => void;
+  commitStatusAllocation: (partyIndex: number, allocation: AllocatedStats) => boolean;
+  blessCharacter: (partyIndex: number, patronWorldId: string) => boolean;
   healParty: () => void;
   restAtInn: () => void;
   buyEquipment: (partyIndex: number, equipmentId: string) => void;
@@ -844,16 +845,34 @@ export const useGameStore = create<GameState>((set, get) => ({
     return { ok: true, message: `${result.fromStageName} は ${result.toStageName} に進化した！` };
   },
 
-  allocateStatusPoint: (partyIndex, stat) => {
+  commitStatusAllocation: (partyIndex, allocation) => {
     const save = get().save;
     const owned = save?.party[partyIndex];
-    if (!save || !owned) return;
-    const allocated = allocateCharacterStatusPoint(owned, stat);
-    if (!allocated) return;
+    if (!save || !owned) return false;
+    const allocated = commitStatusAllocationEngine(owned, allocation);
+    if (!allocated) return false;
     const party = save.party.map((member, index) => (index === partyIndex ? allocated : member));
     const nextSave = { ...save, party };
     set({ save: nextSave });
     saveSlot(nextSave);
+    return true;
+  },
+
+  blessCharacter: (partyIndex, patronWorldId) => {
+    const save = get().save;
+    const owned = save?.party[partyIndex];
+    const patrons = save?.progress.clearedWorldIds ?? [];
+    if (!save || !owned || !patrons.includes(patronWorldId)) return false;
+    const blessed = blessCharacterEngine(owned, patronWorldId, patrons.length);
+    if (!blessed) return false;
+    const stats = statsWithEquipment(getCharacter(blessed.characterId), blessed);
+    blessed.currentHp = stats.hp;
+    blessed.currentMp = stats.mp;
+    const nextSave = { ...save, party: save.party.map((member, index) => index === partyIndex ? blessed : member) };
+    set({ save: nextSave, overlay: 'character' });
+    saveSlot(nextSave);
+    emitNotification({ type: 'achievement', channel: 'achievement', title: 'CONSTELLATION BLESSING', message: `${getCharacter(blessed.characterId).name} 祝福 ${blessed.blessingCount}回`, icon: '✦', rarity: 'legendary' });
+    return true;
   },
 
   healParty: () => {

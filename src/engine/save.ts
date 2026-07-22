@@ -91,6 +91,10 @@ export function createOwnedCharacter(characterId: string): OwnedCharacter {
     learnedSkillIds: char.skillIds,
     allocatedStats: emptyAllocatedStats(),
     unspentStatusPoints: 0,
+    levelStatusPoints: 0,
+    bonusStatusPoints: 0,
+    paidStatusPoints: 0,
+    blessingCount: 0,
   };
 }
 

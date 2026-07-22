@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { getCharacter, getEquipment, getSkill } from '@/data';
 import { expForLevel } from '@/engine/leveling';
@@ -8,11 +9,11 @@ import { Button } from '@/components/ui/Button';
 import { Gauge } from '@/components/ui/Gauge';
 import { Sprite } from '@/components/ui/Sprite';
 import { manuscriptStats } from '@/data/manuscripts';
-import type { AllocatableStat } from '@/types';
-import { BASE_STAT_ALLOCATION_CAP, normalizeOwnedGrowth } from '@/engine/characterGrowth';
+import type { AllocatableStat, AllocatedStats } from '@/types';
+import { allocationCap, maxCharacterLevel, normalizeOwnedGrowth } from '@/engine/characterGrowth';
 
 export function CharacterDetailOverlay() {
-  const { save, selectedCharIndex, openOverlay, allocateStatusPoint } = useGameStore();
+  const { save, selectedCharIndex, openOverlay, commitStatusAllocation } = useGameStore();
   if (!save) return null;
   const owned = save.party[selectedCharIndex];
   if (!owned) return null;
@@ -22,6 +23,18 @@ export function CharacterDetailOverlay() {
   const evo = checkEvolution(owned, char, save.inventory);
   const nextLvExp = expForLevel(owned.level + 1);
   const growth = normalizeOwnedGrowth(owned);
+  const committed = growth.allocatedStats!;
+  const [draft, setDraft] = useState<AllocatedStats>({ ...committed });
+  useEffect(() => setDraft({ ...committed }), [owned.characterId, owned.level, committed.atk, committed.int, committed.def, committed.mdef, committed.spd, committed.luk]);
+  const draftCost = useMemo(() => Object.keys(draft).reduce((sum, key) => sum + draft[key as AllocatableStat] - committed[key as AllocatableStat], 0), [draft, committed]);
+  const remaining = (growth.unspentStatusPoints ?? 0) - draftCost;
+  const cap = allocationCap(growth);
+  const changeDraft = (key: AllocatableStat, amount: number) => setDraft((current) => {
+    const next = Math.max(committed[key], Math.min(cap, current[key] + amount));
+    const increase = next - current[key];
+    if (increase > remaining) return { ...current, [key]: current[key] + Math.max(0, remaining) };
+    return { ...current, [key]: next };
+  });
   const statRows: { key: AllocatableStat; label: string; value: number }[] = [
     { key: 'atk', label: 'ATK 物理攻撃', value: stats.atk },
     { key: 'int', label: 'INT 魔法攻撃', value: stats.int ?? 0 },
@@ -37,7 +50,7 @@ export function CharacterDetailOverlay() {
         <Sprite label={char.name} side="ally" size="lg" presentation="portrait" />
         <div className="col" style={{ flex: 1, gap: 4 }}>
           <div className="accent">{char.stageName}</div>
-          <div className="small">Lv {owned.level}</div>
+          <div className="small">Lv {owned.level}/{maxCharacterLevel(growth)} ・ 祝福 {growth.blessingCount ?? 0}回</div>
           <div className="tiny dim">
             EXP {owned.exp} / 次Lv {nextLvExp}
           </div>
@@ -50,20 +63,25 @@ export function CharacterDetailOverlay() {
 
       <div className="status-allocation">
         <div className="row small">
-          <strong>レベルポイント</strong><span className="spacer" /><span className="accent">残り {growth.unspentStatusPoints}</span>
+          <strong>ステータス振り分け</strong><span className="spacer" /><span className="accent">残り {remaining}</span>
         </div>
         <div className="status-allocation__grid">
           {statRows.map(({ key, label, value }) => {
-            const allocated = growth.allocatedStats?.[key] ?? 0;
+            const allocated = draft[key];
+            const projected = value + (allocated - committed[key]);
             return (
               <div className="status-allocation__row" key={key}>
-                <span>{label}</span><strong>{value}</strong>
-                <span className="tiny dim">振分 {allocated}/{BASE_STAT_ALLOCATION_CAP}</span>
-                <Button disabled={(growth.unspentStatusPoints ?? 0) <= 0 || allocated >= BASE_STAT_ALLOCATION_CAP} onClick={() => allocateStatusPoint(selectedCharIndex, key)}>＋</Button>
+                <span>{label}</span><strong>{projected}</strong>
+                <span className="tiny dim">{allocated}/{cap}</span>
+                <div className="status-allocation__controls">
+                  {[-100, -10, -1, 1, 10, 100].map((amount) => <button key={amount} disabled={amount < 0 ? allocated <= committed[key] : remaining <= 0 || allocated >= cap} onClick={() => changeDraft(key, amount)}>{amount > 0 ? `+${amount}` : amount}</button>)}
+                </div>
               </div>
             );
           })}
         </div>
+        <div className="status-allocation__actions"><Button disabled={draftCost === 0} onClick={() => setDraft({ ...committed })}>キャンセル</Button><Button primary disabled={draftCost === 0} onClick={() => commitStatusAllocation(selectedCharIndex, draft)}>確定</Button></div>
+        <div className="tiny dim">レベル {growth.levelStatusPoints ?? 0} / 祝福 {growth.bonusStatusPoints ?? 0} / 有料 {growth.paidStatusPoints ?? 0}</div>
       </div>
       <div className="tiny dim">
         装備: {equipmentName(owned.equippedWeaponId, save.equipmentLevels)} / {equipmentName(owned.equippedArmorId, save.equipmentLevels)} / {equipmentName(owned.equippedAccessoryId, save.equipmentLevels)}
@@ -120,6 +138,9 @@ export function CharacterDetailOverlay() {
 
       <Button primary center disabled={!evo.hasEvolution} onClick={() => openOverlay('evolution', selectedCharIndex)}>
         {evo.hasEvolution ? (evo.canEvolve ? '進化できる！' : '進化') : '最終進化に到達'}
+      </Button>
+      <Button center disabled={owned.level < maxCharacterLevel(growth) || save.progress.clearedWorldIds.length === 0} onClick={() => openOverlay('blessing', selectedCharIndex)}>
+        星辰の祝福 {owned.level < maxCharacterLevel(growth) ? `（Lv${maxCharacterLevel(growth)}で解放）` : ''}
       </Button>
       <Button center onClick={() => openOverlay('party')}>
         パーティへ戻る
