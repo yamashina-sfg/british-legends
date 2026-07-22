@@ -54,6 +54,9 @@ export interface Combatant {
   tragicFlaw?: FlawRuntime;
   alive: boolean;
   isPet?: boolean;
+  barrierHp:number;
+  barrierMax:number;
+  barrierTurns:number;
 }
 
 export type CommandType = 'attack' | 'skill' | 'defend';
@@ -108,7 +111,7 @@ export function combatantFromOwned(owned: OwnedCharacter, partyIndex = 0, isBoss
     maxMp: stats.mp,
     hp: Math.min(owned.currentHp, stats.hp),
     mp: Math.min(owned.currentMp, stats.mp),
-    skillIds: skillIdsWithTragicFlaw(char, owned.learnedSkillIds),
+    skillIds: skillIdsWithTragicFlaw(char, ['attack_basic',...((owned.equippedSkillIds?.filter(Boolean) as string[]|undefined) ?? owned.learnedSkillIds.filter((id)=>id!=='attack_basic'))]),
     atkBuff: 0,
     tragicCharge: 0,
     actionCount: 0,
@@ -122,6 +125,7 @@ export function combatantFromOwned(owned: OwnedCharacter, partyIndex = 0, isBoss
     passiveTriggered: false,
     tragicFlaw: createFlawRuntime(char, isBossBattle),
     alive: owned.currentHp > 0,
+    barrierHp:0,barrierMax:0,barrierTurns:0,
   };
 }
 
@@ -152,12 +156,13 @@ export function combatantFromEnemy(enemyId: string, index: number): Combatant {
     cursed: 0,
     passiveTriggered: false,
     alive: true,
+    barrierHp:0,barrierMax:0,barrierTurns:0,
   };
 }
 
 export function combatantFromPet(owned: OwnedPet, index: number): Combatant {
   const pet=getPet(owned.petId); const stats=petStats(owned);
-  return { uid:owned.uid,side:'ally',name:pet.name,spriteId:pet.sourceEnemyId,sourceId:owned.petId,level:owned.level,stats,maxHp:stats.hp,maxMp:stats.mp,hp:Math.min(owned.currentHp,stats.hp),mp:stats.mp,skillIds:pet.skillIds,atkBuff:0,tragicCharge:0,actionCount:0,defending:false,rageTriggered:false,phaseTwoTriggered:false,finalTriggered:false,summonedGuard:false,poison:0,cursed:0,passiveTriggered:false,alive:owned.currentHp>0,isPet:true };
+  return { uid:owned.uid,side:'ally',name:pet.name,spriteId:pet.sourceEnemyId,sourceId:owned.petId,level:owned.level,stats,maxHp:stats.hp,maxMp:stats.mp,hp:Math.min(owned.currentHp,stats.hp),mp:stats.mp,skillIds:pet.skillIds,atkBuff:0,tragicCharge:0,actionCount:0,defending:false,rageTriggered:false,phaseTwoTriggered:false,finalTriggered:false,summonedGuard:false,poison:0,cursed:0,passiveTriggered:false,alive:owned.currentHp>0,isPet:true,barrierHp:0,barrierMax:0,barrierTurns:0 };
 }
 
 /** 敵IDリスト（同一IDが並ぶと A/B で区別）からコンバタント生成 */
@@ -293,6 +298,7 @@ function pickTarget(cs: Combatant[], preferUid: string | undefined, side: Side):
 function applyDamage(target: Combatant, raw: number): number {
   const cursedBonus = target.cursed > 0 ? Math.ceil(raw * 0.12) : 0;
   const dmg = target.defending ? Math.max(1, Math.floor((raw + cursedBonus) / 2)) : raw + cursedBonus;
+  if(target.barrierHp>0){target.barrierHp=Math.max(0,target.barrierHp-dmg);if(target.barrierHp===0){target.barrierMax=0;target.barrierTurns=0;}return 0;}
   target.hp = Math.max(0, target.hp - dmg);
   if (target.hp === 0) target.alive = false;
   return dmg;
@@ -352,6 +358,9 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
   }
 
   switch (skill.type) {
+    case 'barrier':{
+      const amount=Math.max(1,Math.floor(((actor.stats.int??0)+actor.stats.atk/10)*11*skill.power));actor.barrierHp=amount;actor.barrierMax=amount;actor.barrierTurns=3;logs.push({text:`${actor.name} に ${amount} の文学障壁が展開された！`,feedback:{targetUid:actor.uid,text:`BARRIER ${amount}`,kind:'status',priority:7}});break;
+    }
     case 'charge': {
       const flawLog = onDefend(actor.tragicFlaw);
       actor.tragicCharge = Math.floor((actor.tragicFlaw?.state.meter ?? actor.tragicCharge * 34) / 34);
@@ -508,5 +517,5 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
 
 /** ラウンド冒頭：防御フラグをリセット */
 export function resetRoundFlags(combatants: Combatant[]): Combatant[] {
-  return combatants.map((c) => ({ ...c, defending: false }));
+  return combatants.map((c) => {const turns=Math.max(0,c.barrierTurns-1);return{...c,defending:false,barrierTurns:turns,barrierHp:turns?c.barrierHp:0,barrierMax:turns?c.barrierMax:0}});
 }

@@ -22,7 +22,7 @@ export type AllocatableStat = 'atk' | 'int' | 'def' | 'mdef' | 'spd' | 'luk';
 export type AllocatedStats = Record<AllocatableStat, number>;
 
 // --- スキル -------------------------------------------------
-export type SkillType = 'attack' | 'heal' | 'revive' | 'buff' | 'debuff' | 'charge' | 'sacrifice';
+export type SkillType = 'attack' | 'heal' | 'revive' | 'buff' | 'debuff' | 'charge' | 'sacrifice' | 'barrier';
 export type SkillTarget = 'single' | 'all' | 'self';
 
 export interface Skill {
@@ -294,6 +294,7 @@ export interface OwnedCharacter {
   currentHp: number;
   currentMp: number;
   learnedSkillIds: string[];
+  equippedSkillIds?: (string | null)[];
   /** レベルポイントで振り分けた能力値。英雄固有の基礎値とは別枠。 */
   allocatedStats?: AllocatedStats;
   /** 未使用のレベルポイント。Lv1は0、レベルアップごとに3。 */

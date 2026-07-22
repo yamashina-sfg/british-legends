@@ -144,6 +144,7 @@ export function CharacterDetailOverlay() {
         星辰の祝福 {owned.level < maxCharacterLevel(growth) ? `（Lv${maxCharacterLevel(growth)}で解放）` : ''}
       </Button>
       <Button center onClick={() => openOverlay('skins', selectedCharIndex)}>頭・身体スキン</Button>
+      <Button center onClick={() => openOverlay('skillLoadout', selectedCharIndex)}>魔法スロット</Button>
       <Button center onClick={() => openOverlay('party')}>
         パーティへ戻る
       </Button>
