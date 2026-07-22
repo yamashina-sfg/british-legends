@@ -12,6 +12,7 @@ import { permanentStats } from '@/engine/permanentStats';
 import type { AllocatableStat, AllocatedStats } from '@/types';
 import { allocationCap, maxCharacterLevel, normalizeOwnedGrowth } from '@/engine/characterGrowth';
 import { unlockedConstellationIds } from '@/engine/constellations';
+import { characterStatBreakdown } from '@/engine/statBreakdown';
 
 export function CharacterDetailOverlay() {
   const { save, selectedCharIndex, openOverlay, commitStatusAllocation } = useGameStore();
@@ -26,6 +27,7 @@ export function CharacterDetailOverlay() {
   const growth = normalizeOwnedGrowth(owned);
   const committed = growth.allocatedStats!;
   const [draft, setDraft] = useState<AllocatedStats>({ ...committed });
+  const [breakdownOpen,setBreakdownOpen]=useState(false);
   useEffect(() => setDraft({ ...committed }), [owned.characterId, owned.level, committed.atk, committed.int, committed.def, committed.mdef, committed.spd, committed.luk]);
   const draftCost = useMemo(() => Object.keys(draft).reduce((sum, key) => sum + draft[key as AllocatableStat] - committed[key as AllocatableStat], 0), [draft, committed]);
   const remaining = (growth.unspentStatusPoints ?? 0) - draftCost;
@@ -83,6 +85,8 @@ export function CharacterDetailOverlay() {
         </div>
         <div className="status-allocation__actions"><Button disabled={draftCost === 0} onClick={() => setDraft({ ...committed })}>キャンセル</Button><Button primary disabled={draftCost === 0} onClick={() => commitStatusAllocation(selectedCharIndex, draft)}>確定</Button></div>
         <div className="tiny dim">レベル {growth.levelStatusPoints ?? 0} / 祝福 {growth.bonusStatusPoints ?? 0} / 有料 {growth.paidStatusPoints ?? 0}</div>
+        <button className="status-breakdown-toggle" onClick={()=>setBreakdownOpen(x=>!x)}>{breakdownOpen?'▲ 能力内訳を閉じる':'▼ 能力内訳を表示'}</button>
+        {breakdownOpen&&<div className="status-breakdown"><header><span>能力</span><span>基礎</span><span>振分</span><span>装備</span><span>アルバム</span><span>図鑑</span><span>釣り</span><span>星神</span></header>{statRows.map(({key})=>{const b=characterStatBreakdown(char,owned,save,key);return <div key={key}><b>{key.toUpperCase()}</b><span>{b.base}</span><span>{b.allocated}</span><span>{b.equipment}</span><span>{b.album}</span><span>{b.codex}</span><span>{b.fishing}</span><span>{b.constellation}</span></div>})}</div>}
       </div>
       <div className="tiny dim">
         装備6部位: {equippedItemIds(owned).length ? equippedItemIds(owned).map((id) => equipmentName(id, save.equipmentLevels)).join(' / ') : 'なし'}
