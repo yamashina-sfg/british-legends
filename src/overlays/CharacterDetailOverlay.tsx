@@ -8,9 +8,11 @@ import { Button } from '@/components/ui/Button';
 import { Gauge } from '@/components/ui/Gauge';
 import { Sprite } from '@/components/ui/Sprite';
 import { manuscriptStats } from '@/data/manuscripts';
+import type { AllocatableStat } from '@/types';
+import { BASE_STAT_ALLOCATION_CAP, normalizeOwnedGrowth } from '@/engine/characterGrowth';
 
 export function CharacterDetailOverlay() {
-  const { save, selectedCharIndex, openOverlay } = useGameStore();
+  const { save, selectedCharIndex, openOverlay, allocateStatusPoint } = useGameStore();
   if (!save) return null;
   const owned = save.party[selectedCharIndex];
   if (!owned) return null;
@@ -19,6 +21,15 @@ export function CharacterDetailOverlay() {
   const stats = statsWithEquipment(char, owned, manuscriptStats(save.storyFragments ?? []), save.equipmentLevels ?? {});
   const evo = checkEvolution(owned, char, save.inventory);
   const nextLvExp = expForLevel(owned.level + 1);
+  const growth = normalizeOwnedGrowth(owned);
+  const statRows: { key: AllocatableStat; label: string; value: number }[] = [
+    { key: 'atk', label: 'ATK 物理攻撃', value: stats.atk },
+    { key: 'int', label: 'INT 魔法攻撃', value: stats.int ?? 0 },
+    { key: 'def', label: 'DEF 物理防御', value: stats.def },
+    { key: 'mdef', label: 'MDEF 魔法防御', value: stats.mdef ?? 0 },
+    { key: 'spd', label: 'SPD 素早さ', value: stats.spd },
+    { key: 'luk', label: 'LUK 運', value: stats.luk ?? 0 },
+  ];
 
   return (
     <Window title={`${char.name} の詳細`} className="col">
@@ -37,10 +48,22 @@ export function CharacterDetailOverlay() {
         </div>
       </div>
 
-      <div className="row small" style={{ gap: 16, flexWrap: 'wrap' }}>
-        <span>こうげき {stats.atk}</span>
-        <span>ぼうぎょ {stats.def}</span>
-        <span>すばやさ {stats.spd}</span>
+      <div className="status-allocation">
+        <div className="row small">
+          <strong>レベルポイント</strong><span className="spacer" /><span className="accent">残り {growth.unspentStatusPoints}</span>
+        </div>
+        <div className="status-allocation__grid">
+          {statRows.map(({ key, label, value }) => {
+            const allocated = growth.allocatedStats?.[key] ?? 0;
+            return (
+              <div className="status-allocation__row" key={key}>
+                <span>{label}</span><strong>{value}</strong>
+                <span className="tiny dim">振分 {allocated}/{BASE_STAT_ALLOCATION_CAP}</span>
+                <Button disabled={(growth.unspentStatusPoints ?? 0) <= 0 || allocated >= BASE_STAT_ALLOCATION_CAP} onClick={() => allocateStatusPoint(selectedCharIndex, key)}>＋</Button>
+              </div>
+            );
+          })}
+        </div>
       </div>
       <div className="tiny dim">
         装備: {equipmentName(owned.equippedWeaponId, save.equipmentLevels)} / {equipmentName(owned.equippedArmorId, save.equipmentLevels)} / {equipmentName(owned.equippedAccessoryId, save.equipmentLevels)}

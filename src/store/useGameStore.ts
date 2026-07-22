@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { DungeonMap, OwnedCharacter, RewardEntry, SaveData } from '@/types';
+import type { AllocatableStat, DungeonMap, OwnedCharacter, PlayerAvatar, RewardEntry, SaveData } from '@/types';
 import { CODEX, getCharacter, getDungeon, getEnemy, getEquipment, getMaterial, getSkill, getWorld, STORE_ITEMS } from '@/data';
 import { explorationRate } from '@/engine/mapgen';
 import { gainExp } from '@/engine/leveling';
@@ -11,6 +11,7 @@ import { addDefeats, crossedResearchLevels, enemyResearchBenefit } from '@/engin
 import { manuscriptStats } from '@/data/manuscripts';
 import { forgeCost, MAX_EQUIPMENT_LEVEL } from '@/engine/forging';
 import { assignQuickSlot } from '@/engine/quickSlots';
+import { allocateStatusPoint as allocateCharacterStatusPoint } from '@/engine/characterGrowth';
 import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
 import {
   createNewSave,
@@ -26,6 +27,7 @@ import { useBattleStore } from './useBattleStore';
 export type Scene =
   | 'title'
   | 'opening'
+  | 'characterCreate'
   | 'saveSelect'
   | 'worldMap'
   | 'worldSelect'
@@ -77,6 +79,7 @@ interface GameState {
   enterTown: (worldId: string) => void;
   openLodge: () => void;
   replayOpening: (slotId?: number) => void;
+  createPlayerAvatar: (avatar: Pick<PlayerAvatar, 'name' | 'headStyle'>) => void;
   openOverlay: (o: Overlay, charIndex?: number) => void;
   closeOverlay: () => void;
 
@@ -97,6 +100,7 @@ interface GameState {
 
   // 成長・進化
   evolveCharacter: (partyIndex: number) => { ok: boolean; message: string };
+  allocateStatusPoint: (partyIndex: number, stat: AllocatableStat) => void;
   healParty: () => void;
   restAtInn: () => void;
   buyEquipment: (partyIndex: number, equipmentId: string) => void;
@@ -359,6 +363,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       set({ save: nextSave });
       saveSlot(nextSave);
     }
+    if (!nextSave.playerAvatar) {
+      set({ save: nextSave, scene: 'characterCreate' });
+      return;
+    }
     const fallbackWorld = nextSave.progress.currentWorldId ?? nextSave.progress.unlockedWorldIds[0];
     if (fallbackWorld) get().enterTown(fallbackWorld);
   },
@@ -367,6 +375,21 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (save) {
       set({ save, scene: 'opening', overlay: null, map: null, encounter: null });
     }
+  },
+  createPlayerAvatar: ({ name, headStyle }) => {
+    const save = get().save;
+    if (!save) return;
+    const bodies: PlayerAvatar['bodyType'][] = ['guardian', 'scholar', 'wanderer'];
+    const playerAvatar: PlayerAvatar = {
+      name: name.trim().slice(0, 12) || 'Reader',
+      headStyle,
+      bodyType: bodies[Math.floor(Math.random() * bodies.length)],
+    };
+    const nextSave = { ...save, playerAvatar };
+    saveSlot(nextSave);
+    const fallbackWorld = nextSave.progress.currentWorldId ?? nextSave.progress.unlockedWorldIds[0];
+    set({ save: nextSave });
+    if (fallbackWorld) get().enterTown(fallbackWorld);
   },
   openOverlay: (o, charIndex) =>
     set({ overlay: o, selectedCharIndex: charIndex ?? get().selectedCharIndex }),
@@ -819,6 +842,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       dedupeKey: `evolve:${result.owned.characterId}`,
     });
     return { ok: true, message: `${result.fromStageName} は ${result.toStageName} に進化した！` };
+  },
+
+  allocateStatusPoint: (partyIndex, stat) => {
+    const save = get().save;
+    const owned = save?.party[partyIndex];
+    if (!save || !owned) return;
+    const allocated = allocateCharacterStatusPoint(owned, stat);
+    if (!allocated) return;
+    const party = save.party.map((member, index) => (index === partyIndex ? allocated : member));
+    const nextSave = { ...save, party };
+    set({ save: nextSave });
+    saveSlot(nextSave);
   },
 
   healParty: () => {
