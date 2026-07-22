@@ -33,7 +33,8 @@ function play(path: string, volume: number) {
   const audio = cloneFor(path);
   audio.pause();
   audio.currentTime = 0;
-  audio.volume = volume;
+  const setting=Number(localStorage.getItem('british-legends:se-volume')??'.8');
+  audio.volume = Math.max(0,Math.min(1,volume*setting));
   void audio.play().catch(() => {
     // Browser autoplay policy can reject sound before the first player gesture.
   });

@@ -49,7 +49,7 @@ export function createNewSave(slotId: number): SaveData {
     constellations: {},
     ownedBodySkins: [],
     ownedHeadStyles: [1, 2, 3, 4],
-    settings: { skipBlessingCinematics: false, blessingCinematicsSeen: false },
+    settings: { skipBlessingCinematics: false, blessingCinematicsSeen: false, bgmVolume:.7, seVolume:.8, language:'ja' },
     adventure: { flags: [], openPortals: [], completedEventIds: [], tradeCounts: {} },
     commerce: defaultCommerce(),
   };
@@ -80,7 +80,7 @@ export function loadSlot(slotId: number): SaveData | null {
       constellations: parsed.constellations ?? Object.fromEntries((parsed.progress?.clearedWorldIds ?? []).map((id)=>[id,2])) as Record<string,2>,
       ownedBodySkins: parsed.ownedBodySkins ?? [...(parsed.progress?.clearedWorldIds ?? [])],
       ownedHeadStyles: parsed.ownedHeadStyles ?? [1,2,3,4],
-      settings: { skipBlessingCinematics: parsed.settings?.skipBlessingCinematics ?? false, blessingCinematicsSeen: parsed.settings?.blessingCinematicsSeen ?? false },
+      settings: { skipBlessingCinematics: parsed.settings?.skipBlessingCinematics ?? false, blessingCinematicsSeen: parsed.settings?.blessingCinematicsSeen ?? false, bgmVolume:parsed.settings?.bgmVolume??.7,seVolume:parsed.settings?.seVolume??.8,language:parsed.settings?.language??'ja' },
       adventure: { flags:parsed.adventure?.flags??[], openPortals:parsed.adventure?.openPortals??[], completedEventIds:parsed.adventure?.completedEventIds??[], tradeCounts:parsed.adventure?.tradeCounts??{} },
       commerce: normalizeCommerce(parsed.commerce),
       party: (parsed.party ?? []).map((owned) => {const learned=[...new Set([...owned.learnedSkillIds,'arcane_burst','story_barrier'])];return normalizeEquipmentSlots(normalizeOwnedGrowth({...owned,soulLevel:owned.soulLevel??0,learnedSkillIds:learned,equippedSkillIds:owned.equippedSkillIds??learned.filter((id)=>id!=='attack_basic').slice(0,3)}))}),
