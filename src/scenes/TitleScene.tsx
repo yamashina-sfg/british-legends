@@ -5,12 +5,14 @@ import beowulfWorldArt from '@/assets/world/beowulf-overworld-v1.png';
 import { listSlots } from '@/engine/save';
 import { guestAccountId } from '@/engine/account';
 import { APP_VERSION } from '@/engine/versioning';
+import { useI18n } from '@/i18n';
 
 export function TitleScene() {
   const goSaveSelect = useGameStore((s) => s.goSaveSelect);
   const replayOpening = useGameStore((s) => s.replayOpening);
   const replaySlot = listSlots().find((slot) => slot?.openingWatched)?.slotId;
   const guestId=guestAccountId();
+  const {t}=useI18n();
 
   return (
     <div className="title-scene fade-in" style={{ '--title-art': `url(${beowulfWorldArt})` } as CSSProperties}>
@@ -27,7 +29,7 @@ export function TitleScene() {
 
       <div className="title-scene__menu menu-list">
         <Button primary center onClick={goSaveSelect}>
-          物語を修復する
+          {t('restore')}
         </Button>
         <Button center disabled={!replaySlot} onClick={() => replaySlot && replayOpening(replaySlot)}>
           Replay Opening
@@ -38,7 +40,7 @@ export function TitleScene() {
       <div className="title-scene__footer">
         <span>ID {guestId} / v{APP_VERSION}</span>
         <span>© 2026 British Legends Project</span>
-        <a href="/privacy.html" target="_blank" rel="noreferrer">プライバシーポリシー</a>
+        <a href="/privacy.html" target="_blank" rel="noreferrer">{t('privacy')}</a>
       </div>
     </div>
   );

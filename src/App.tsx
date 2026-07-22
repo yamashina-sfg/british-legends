@@ -1,4 +1,4 @@
-import { Component, type ErrorInfo, type ReactNode } from 'react';
+import { Component, useEffect, type ErrorInfo, type ReactNode } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { TitleScene } from '@/scenes/TitleScene';
 import { OpeningScene } from '@/scenes/OpeningScene';
@@ -63,6 +63,8 @@ class AppErrorBoundary extends Component<AppErrorBoundaryProps, AppErrorBoundary
 
 export default function App() {
   const scene = useGameStore((s) => s.scene);
+  const language=useGameStore((s)=>s.save?.settings?.language??'ja');
+  useEffect(()=>{document.documentElement.lang=language;},[language]);
 
   return (
     <AppErrorBoundary>

@@ -2,29 +2,31 @@ import { useGameStore } from '@/store/useGameStore';
 import { Window } from '@/components/ui/Window';
 import { Button } from '@/components/ui/Button';
 import { useState } from 'react';
+import { useI18n } from '@/i18n';
 
 export function SettingsOverlay() {
   const { closeOverlay, persist, goTitle, save, setSkipBlessingCinematics,setGameSettings } = useGameStore();
   const [section,setSection]=useState<'system'|'account'|'inventory'|'legal'>('system');
+  const {t}=useI18n();
   if(!save)return null;
   const settings=save.settings??{skipBlessingCinematics:false,blessingCinematicsSeen:false,bgmVolume:.7,seVolume:.8,language:'ja' as const};
 
   return (
     <Window title="GAME MENU" className="game-menu">
-      <nav>{([['system','設定'],['account','アカウント'],['inventory','所持品'],['legal','規約']] as const).map(([id,label])=><button key={id} className={section===id?'is-active':''} onClick={()=>setSection(id)}>{label}</button>)}</nav>
+      <nav>{([['system','system'],['account','account'],['inventory','inventory'],['legal','legal']] as const).map(([id,label])=><button key={id} className={section===id?'is-active':''} onClick={()=>setSection(id)}>{t(label)}</button>)}</nav>
       {section==='system'&&<section className="game-menu__section">
       <label>BGM音量 <b>{Math.round((settings.bgmVolume??.7)*100)}</b><input type="range" min="0" max="1" step=".1" value={settings.bgmVolume??.7} onChange={e=>setGameSettings({bgmVolume:Number(e.target.value)})}/></label>
       <label>SE音量 <b>{Math.round((settings.seVolume??.8)*100)}</b><input type="range" min="0" max="1" step=".1" value={settings.seVolume??.8} onChange={e=>setGameSettings({seVolume:Number(e.target.value)})}/></label>
-      <label>表示言語 <select value={settings.language??'ja'} onChange={e=>setGameSettings({language:e.target.value as 'ja'|'en'})}><option value="ja">日本語</option><option value="en">English（主要UI）</option></select></label>
+      <label>{t('language')} <select value={settings.language??'ja'} onChange={e=>setGameSettings({language:e.target.value as 'ja'|'en'})}><option value="ja">日本語</option><option value="en">English</option></select></label>
       <Button
         center
         onClick={() => {
           persist();
           closeOverlay();
-          alert('セーブしました。');
+          alert(t('saved'));
         }}
       >
-        いまセーブする
+        {t('saveNow')}
       </Button>
       <Button center onClick={() => setSkipBlessingCinematics(!(save?.settings?.skipBlessingCinematics ?? false))}>
         既読の祝福演出を自動スキップ：{save?.settings?.skipBlessingCinematics ? 'ON' : 'OFF'}
@@ -42,7 +44,7 @@ export function SettingsOverlay() {
           }
         }}
       >
-        タイトルに戻る
+        {t('backTitle')}
       </Button>
       {section==='system'&&<div className="tiny dim center" style={{ lineHeight: 1.7 }}>
         進行は戦闘・進化のたびに自動セーブされます。
@@ -50,7 +52,7 @@ export function SettingsOverlay() {
         BGM: CC0音源（cynicmusic / Katana / RandomMind / CleytonKauffman）
       </div>}
       <Button center onClick={closeOverlay}>
-        とじる
+        {t('close')}
       </Button>
     </Window>
   );

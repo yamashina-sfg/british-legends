@@ -1,0 +1,1 @@
+import{describe,expect,it}from'vitest';import{translate}from'./i18n';describe('localization',()=>{it('switches the same key between Japanese and English',()=>{expect(translate('ja','attack')).toBe('たたかう');expect(translate('en','attack')).toBe('Attack')})});

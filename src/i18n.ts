@@ -1,0 +1,6 @@
+import{useGameStore}from'@/store/useGameStore';
+const JA={restore:'物語を修復する',lobby:'ロビー',party:'パーティ',pets:'使い魔',store:'ストア',materials:'素材',codex:'図鑑',constellations:'星神',fishing:'釣り',arena:'闘技場',settings:'設定',system:'設定',account:'アカウント',inventory:'所持品',legal:'規約',language:'表示言語',saveNow:'いまセーブする',saved:'セーブしました。',backTitle:'タイトルに戻る',close:'とじる',attack:'たたかう',skills:'とくぎ',items:'どうぐ',defend:'ぼうぎょ',back:'もどる',privacy:'プライバシーポリシー'} as const;
+type Key=keyof typeof JA;
+const EN:Record<Key,string>={restore:'Restore the Stories',lobby:'Lodge',party:'Party',pets:'Familiars',store:'Store',materials:'Materials',codex:'Codex',constellations:'Constellations',fishing:'Fishing',arena:'Arena',settings:'Settings',system:'System',account:'Account',inventory:'Inventory',legal:'Legal',language:'Language',saveNow:'Save Now',saved:'Game saved.',backTitle:'Return to Title',close:'Close',attack:'Attack',skills:'Skills',items:'Items',defend:'Defend',back:'Back',privacy:'Privacy Policy'};
+export function translate(language:'ja'|'en'|undefined,key:Key){return language==='en'?EN[key]:JA[key]}
+export function useI18n(){const language=useGameStore(s=>s.save?.settings?.language??'ja');return{language,t:(key:Key)=>translate(language,key)}}

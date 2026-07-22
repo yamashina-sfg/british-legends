@@ -12,6 +12,7 @@ import { gainExp } from '@/engine/leveling';
 import { meterPercent } from '@/engine/tragicFlaw';
 import { actionGaugeDurationMs, actionGaugePercent } from '@/engine/actionGauge';
 import { threatBand } from '@/engine/threat';
+import { useI18n } from '@/i18n';
 import beowulfAttackField from '@/assets/battle/beowulf-attack-field.png';
 import hamletAttackField from '@/assets/battle/hamlet-attack-field.png';
 import macbethAttackField from '@/assets/battle/macbeth-attack-field.png';
@@ -58,6 +59,7 @@ const BATTLE_FIELDS_BY_WORLD: Record<string, string> = {
 };
 
 export function BattleScene() {
+  const {t}=useI18n();
   const { combatants, log, phase, currentActor, chooseCommand, lastAction } = useBattleStore();
   const { onBattleWon, onBattleLost, save, consumeItem, arenaRun } = useGameStore();
   const [arenaRemaining,setArenaRemaining]=useState(60);
@@ -386,10 +388,10 @@ export function BattleScene() {
                 })}
               </div>
               <div className="battle-command-grid">
-                <Button onClick={() => { setMode('target'); setModeActorUid(actor.uid); setTargetActorUid(actor.uid); }}>▶ たたかう</Button>
-                <Button onClick={() => { setMode('skill'); setModeActorUid(actor.uid); }}>とくぎ</Button>
-                <Button onClick={() => { setMode('item'); setModeActorUid(actor.uid); }}>どうぐ</Button>
-                <Button onClick={() => submitCommand({ type: 'defend' })}>ぼうぎょ</Button>
+                <Button onClick={() => { setMode('target'); setModeActorUid(actor.uid); setTargetActorUid(actor.uid); }}>▶ {t('attack')}</Button>
+                <Button onClick={() => { setMode('skill'); setModeActorUid(actor.uid); }}>{t('skills')}</Button>
+                <Button onClick={() => { setMode('item'); setModeActorUid(actor.uid); }}>{t('items')}</Button>
+                <Button onClick={() => submitCommand({ type: 'defend' })}>{t('defend')}</Button>
               </div>
             </>
           )}
@@ -402,7 +404,7 @@ export function BattleScene() {
                   <span className="spacer" /><span className="dim tiny">MP {skill.mpCost} / {skill.description}{skill.targetBookItemId?` / 本×${actor.skillBookCounts[skill.targetBookItemId]??0} 効果${skillBookMultiplier(skill,actor.skillBookCounts).toFixed(2)}倍`:''}</span>
                 </Button>
               ))}
-              <Button onClick={() => { setMode('command'); setModeActorUid(actor.uid); }}>もどる</Button>
+              <Button onClick={() => { setMode('command'); setModeActorUid(actor.uid); }}>{t('back')}</Button>
             </div>
           )}
           {phase === 'input' && actor && visibleMode === 'item' && (
@@ -419,13 +421,13 @@ export function BattleScene() {
                   </Button>
                 );
               })}
-              <Button onClick={() => { setMode('command'); setModeActorUid(actor.uid); }}>もどる</Button>
+              <Button onClick={() => { setMode('command'); setModeActorUid(actor.uid); }}>{t('back')}</Button>
             </div>
           )}
           {phase === 'input' && actor && visibleMode === 'target' && (
             <div className="menu-list battle-menu-list">
               <div className="tiny dim">敵を選択してください</div>
-              <Button onClick={() => { setMode(pendingSkillId ? 'skill' : 'command'); setPendingSkillId(null); setModeActorUid(actor.uid); setTargetActorUid(null); }}>もどる</Button>
+              <Button onClick={() => { setMode(pendingSkillId ? 'skill' : 'command'); setPendingSkillId(null); setModeActorUid(actor.uid); setTargetActorUid(null); }}>{t('back')}</Button>
             </div>
           )}
           {phase === 'resolving' && <div className="center dim">敵の行動を見守る…</div>}
