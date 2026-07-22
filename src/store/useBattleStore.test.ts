@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { combatantFromEnemy, combatantFromOwned, decideEnemyAction, resetRoundFlags, resolveAction } from '@/engine/battle';
+import { combatantFromEnemy, combatantFromOwned, combatantFromPet, decideEnemyAction, resetRoundFlags, resolveAction } from '@/engine/battle';
 import { effectiveStats } from '@/engine/tragicFlaw';
 import { expForLevel, gainExp, requiredExpForNextLevel } from '@/engine/leveling';
 import { getCharacter } from '@/data';
@@ -81,6 +81,7 @@ describe('battle command input', () => {
   it('同系列バフは強い値を優先し、同値なら長い残り時間へ更新する',()=>{
     const hero=combatantFromOwned(beowulf);hero.mp=100;resolveAction([hero],{actorUid:hero.uid,type:'skill',skillId:'hero_roar'});expect(hero.activeBuffs).toHaveLength(1);expect(hero.activeBuffs[0].remainingTurns).toBe(3);const ticked=resetRoundFlags([hero])[0];expect(ticked.activeBuffs[0].remainingTurns).toBe(2);resolveAction([ticked],{actorUid:ticked.uid,type:'skill',skillId:'hero_roar'});expect(ticked.activeBuffs).toHaveLength(1);expect(ticked.activeBuffs[0].remainingTurns).toBe(3);
   });
+  it('全プレイヤー対象と全ペット対象のバフを分離する',()=>{const hero=combatantFromOwned({...beowulf,characterId:'beowulf_hero',learnedSkillIds:['bibliotheca_rally']});const ally=combatantFromOwned(hamlet,1);const pet=combatantFromPet({uid:'buff_pet',petId:'star_fox',level:1,exp:0,enhance:0,currentHp:55},0);hero.mp=100;resolveAction([hero,ally,pet],{actorUid:hero.uid,type:'skill',skillId:'bibliotheca_rally'});expect(hero.activeBuffs).toHaveLength(1);expect(ally.activeBuffs).toHaveLength(1);expect(pet.activeBuffs).toHaveLength(0);resolveAction([pet,hero,ally],{actorUid:pet.uid,type:'skill',skillId:'familiar_hymn'});expect(pet.activeBuffs.some(buff=>buff.status==='def')).toBe(true);expect(hero.activeBuffs.some(buff=>buff.status==='def')).toBe(false)});
 
   it('assigns unique combatant ids even when two party entries share a character id', () => {
     expect(combatantFromOwned(beowulf, 0).uid).not.toBe(combatantFromOwned(beowulf, 1).uid);

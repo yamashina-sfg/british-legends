@@ -196,6 +196,8 @@ function applyTimedBuff(target: Combatant, skill: Skill, value: number): 'applie
   target.activeBuffs.push(next); return 'applied';
 }
 
+export function selectBuffTargets(actor:Combatant,all:Combatant[],target:Skill['buffTarget']):Combatant[]{const allies=livingOf(all,actor.side);switch(target??'self'){case'self':return[actor];case'self_pchar':return actor.isPet?[allies.find(x=>!x.isPet)??actor]:[actor];case'self_pet':return actor.isPet?[actor]:[allies.find(x=>x.isPet)??actor];case'all_pchar':return allies.filter(x=>!x.isPet);case'all_pet':return allies.filter(x=>x.isPet);case'self_alliance':case'all_alliance':return allies;default:return[actor]}}
+
 function statsWithTimedBuffs(combatant: Combatant): Stats {
   const stats = { ...combatant.stats };
   for (const buff of combatant.activeBuffs) {
@@ -500,8 +502,9 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
         actor.defending = true;
       }
       const value = skill.power * skillBookMultiplier(skill, actor.skillBookCounts);
-      const result = applyTimedBuff(actor, skill, value);
-      logs.push({ text: result === 'kept' ? `${actor.name} には、より強い同系列バフが適用中だ。` : `${actor.name} に「${skill.name}」の効果（${value} / ${skill.durationTurns ?? 3}T）が適用された！`, feedback: { targetUid: actor.uid, text: skill.buffStatus?.toUpperCase() ?? 'BUFF', kind: 'status', priority: 6 } });
+      const buffTargets=selectBuffTargets(actor,working,skill.buffTarget);
+      for(const target of buffTargets){const result=applyTimedBuff(target,skill,value);logs.push({text:result==='kept'?`${target.name} には、より強い同系列バフが適用中だ。`:`${target.name} に「${skill.name}」の効果（${value} / ${skill.durationTurns??3}T）が適用された！`,feedback:{targetUid:target.uid,text:skill.buffStatus?.toUpperCase()??'BUFF',kind:'status',priority:6}})}
+      if(buffTargets.length===0)logs.push({text:'対象となる仲間がいない。'});
       break;
     }
     case 'debuff': {

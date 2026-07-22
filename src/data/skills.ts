@@ -17,6 +17,8 @@ export const SKILLS: Record<string, Skill> = {
   elixir: { id: 'elixir', name: '生命の霊薬', type: 'heal', target: 'self', mpCost: 0, power: 160, description: 'HPを160回復する。' },
   arcane_burst: { id:'arcane_burst',name:'写本爆発',type:'attack',target:'all',mpCost:10,power:1.35,targetBookItemId:'witch_scroll',itemMultiBase:1,itemMultiAdd:0.05,description:'指定した物語座標を中心に、回避不能の魔法爆発を起こす。予言の写本で威力上昇。' },
   story_barrier: { id:'story_barrier',name:'物語障壁',type:'barrier',target:'self',mpCost:8,power:0.12,targetBookItemId:'research_notes',itemMultiBase:1,itemMultiAdd:0.05,durationTurns:3,description:'3ターンの障壁を展開する。破壊時の余剰ダメージは無効。研究手記で強度上昇。' },
+  bibliotheca_rally:{id:'bibliotheca_rally',name:'英雄叙事の合唱',type:'buff',target:'all',mpCost:9,power:.12,buffIndex:201,buffStatus:'atk',buffTarget:'all_pchar',durationTurns:3,description:'英雄キャラ全員のATKを3ターン12%高める。'},
+  familiar_hymn:{id:'familiar_hymn',name:'使い魔の聖句',type:'buff',target:'all',mpCost:0,power:5,buffIndex:202,buffStatus:'def',buffTarget:'all_pet',durationTurns:3,description:'召喚中の使い魔全員のDEFを3ターン高める。'},
 
   // --- Beowulf 系 ---
   mighty_grip: {

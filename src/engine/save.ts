@@ -83,7 +83,7 @@ export function loadSlot(slotId: number): SaveData | null {
       settings: { skipBlessingCinematics: parsed.settings?.skipBlessingCinematics ?? false, blessingCinematicsSeen: parsed.settings?.blessingCinematicsSeen ?? false, bgmVolume:parsed.settings?.bgmVolume??.7,seVolume:parsed.settings?.seVolume??.8,language:parsed.settings?.language??'ja' },
       adventure: { flags:parsed.adventure?.flags??[], openPortals:parsed.adventure?.openPortals??[], completedEventIds:parsed.adventure?.completedEventIds??[], tradeCounts:parsed.adventure?.tradeCounts??{} },
       commerce: normalizeCommerce(parsed.commerce),
-      party: (parsed.party ?? []).map((owned) => {const learned=[...new Set([...owned.learnedSkillIds,'arcane_burst','story_barrier'])];return normalizeEquipmentSlots(normalizeOwnedGrowth({...owned,soulLevel:owned.soulLevel??0,learnedSkillIds:learned,equippedSkillIds:owned.equippedSkillIds??learned.filter((id)=>id!=='attack_basic').slice(0,3)}))}),
+      party: (parsed.party ?? []).map((owned) => {const learned=[...new Set([...owned.learnedSkillIds,...getCharacter(owned.characterId).skillIds,'arcane_burst','story_barrier'])];return normalizeEquipmentSlots(normalizeOwnedGrowth({...owned,soulLevel:owned.soulLevel??0,learnedSkillIds:learned,equippedSkillIds:owned.equippedSkillIds??learned.filter((id)=>id!=='attack_basic').slice(0,3)}))}),
     });
   } catch {
     return null;
