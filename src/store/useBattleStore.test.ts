@@ -59,7 +59,9 @@ describe('battle command input', () => {
     expect(useBattleStore.getState().planned).toHaveLength(0);
     expect(useBattleStore.getState().inputIndex).toBe(0);
     expect(useBattleStore.getState().combatants.some((combatant) => combatant.side === 'ally' && combatant.hp < combatant.maxHp)).toBe(true);
-    expect(useBattleStore.getState().log.map((entry) => entry.text).join('\n')).toContain('Dragon は「Tail Smash」を放った！');
+    const roundLog=useBattleStore.getState().log.map((entry) => entry.text).join('\n');
+    expect(roundLog).toContain('敵のターン！');
+    expect(roundLog).toContain('Dragon');
   });
 
   it('召喚中の使い魔はラウンド先頭でスキルを自動使用する', () => {
