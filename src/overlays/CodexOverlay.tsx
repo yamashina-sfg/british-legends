@@ -5,6 +5,7 @@ import { CORE_WORLD_IDS, CORE_WORLD_META, LONG_TERM_FOUNDATIONS, type CoreWorldI
 import type { CodexEntry, CodexType } from '@/types';
 import { Window } from '@/components/ui/Window';
 import { Button } from '@/components/ui/Button';
+import { Sprite } from '@/components/ui/Sprite';
 import { enemyResearchBenefit } from '@/engine/research';
 import { fragmentsForWorld, MANUSCRIPT_BLESSING_THRESHOLDS, manuscriptBlessingLevel, manuscriptStats } from '@/data/manuscripts';
 
@@ -14,6 +15,8 @@ const TABS: { type: CodexType; label: string }[] = [
   { type: 'character', label: '仲間' },
   { type: 'enemy', label: '魔物' },
 ];
+
+const TAB_ICONS: Record<CodexType, string> = { world: '▤', story: '❖', character: '♟', enemy: '♜', material: '◆' };
 
 export function CodexOverlay() {
   const { save, closeOverlay } = useGameStore();
@@ -70,11 +73,17 @@ export function CodexOverlay() {
   };
 
   return (
-    <Window title="図鑑 — Bibliotheca" className="codex-collection">
+    <Window title="THE GRAND ARCHIVE" className="codex-collection">
+      <div className="codex-header">
+        <div className="codex-header__seal">B</div>
+        <div><span>BIBLIOTHECA / RESTORATION RECORD</span><strong>失われた英国文学の大図鑑</strong></div>
+        <Button center onClick={closeOverlay}>閉じる</Button>
+      </div>
       <div className="codex-summary">
-        <div>
+        <div className="codex-summary__primary">
           <span>ARCHIVE RESTORED</span>
-          <strong>{totalRate}%</strong>
+          <strong>{totalRate}<small>%</small></strong>
+          <i><b style={{ width: `${totalRate}%` }} /></i>
         </div>
         <div>
           <span>CORE STORIES</span>
@@ -101,7 +110,7 @@ export function CodexOverlay() {
             className={tab === t.type ? 'is-active' : ''}
             onClick={() => setTab(t.type)}
           >
-            {t.label}
+            <i>{TAB_ICONS[t.type]}</i><span>{t.label}</span><small>{Object.values(CODEX).filter((entry) => entry.type === t.type && isDiscovered(entry)).length}</small>
           </button>
         ))}
       </div>
@@ -109,6 +118,7 @@ export function CodexOverlay() {
         収集 {discoveredCount}/{entries.length}
       </div>
 
+      <div className="codex-scroll-area">
       {tab === 'story' && (
         <section className="manuscript-album" aria-label="写本アルバム">
           <header>
@@ -162,7 +172,12 @@ export function CodexOverlay() {
             : null;
           return (
             <div key={e.id} className={found ? 'codex-card is-found' : 'codex-card'}>
-              <i className={found ? pixelClass(e) : 'codex-pixel codex-pixel--locked'} />
+              <div className={found ? pixelClass(e) : 'codex-pixel codex-pixel--locked'}>
+                {found && e.type === 'character' && <Sprite label={getCharacter(e.refId).name} side="ally" size="sm" presentation="portrait" />}
+                {found && e.type === 'enemy' && <Sprite label={getEnemy(e.refId).name} side="enemy" size="sm" presentation="portrait" facing={getEnemy(e.refId).facing ?? 'left'} />}
+                {found && (e.type === 'world' || e.type === 'story') && <b>{e.type === 'world' ? 'BOOK' : 'PAGE'}</b>}
+                {!found && <b>?</b>}
+              </div>
               <div>
                 <div className="codex-card__title">{found ? titleOf(e) : '？？？'}</div>
                 {found && meta && (
@@ -191,10 +206,7 @@ export function CodexOverlay() {
           );
         })}
       </div>
-
-      <Button center onClick={closeOverlay}>
-        とじる
-      </Button>
+      </div>
     </Window>
   );
 }
