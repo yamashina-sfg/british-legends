@@ -315,6 +315,7 @@ export interface OwnedCharacter {
   blessingCount?: number;
   patronWorldId?: string;
   bodySkinWorldId?: string;
+  headSkinStyle?: number;
   skinLocked?: boolean;
   /** ボス討伐フラッグで上昇し、会話・マップ条件を切り替える。 */
   soulLevel?: number;
