@@ -6,3 +6,4 @@ export function guestAccountId():string{
   const existing=localStorage.getItem(GUEST_ID_KEY);if(existing)return existing;
   const id=createGuestId();localStorage.setItem(GUEST_ID_KEY,id);return id;
 }
+export function clearGuestAccountId():void{localStorage.removeItem(GUEST_ID_KEY)}

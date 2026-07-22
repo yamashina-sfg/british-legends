@@ -1,1 +1,1 @@
-import{describe,expect,it}from'vitest';import{translate}from'./i18n';describe('localization',()=>{it('switches the same key between Japanese and English',()=>{expect(translate('ja','attack')).toBe('たたかう');expect(translate('en','attack')).toBe('Attack')})});
+import{describe,expect,it}from'vitest';import{translate}from'./i18n';describe('localization',()=>{it('switches the same key among Japanese, English and Korean',()=>{expect(translate('ja','attack')).toBe('たたかう');expect(translate('en','attack')).toBe('Attack');expect(translate('ko','attack')).toBe('공격')})});

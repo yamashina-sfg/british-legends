@@ -404,6 +404,7 @@ export interface SaveData {
     bestTimes:Record<number,number>;
     claimedFirstWaves:number[];
     attempts:number;
+    nickname?:string;
   };
   constellations?: Record<string, 1 | 2>;
   ownedBodySkins?: string[];
@@ -413,7 +414,7 @@ export interface SaveData {
     blessingCinematicsSeen: boolean;
     bgmVolume?: number;
     seVolume?: number;
-    language?: 'ja' | 'en';
+    language?: 'ja' | 'en' | 'ko';
   };
   adventure?: {
     flags: string[];

@@ -2966,6 +2966,26 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
 .arena-timer.is-normal { color: #d9e1cf; border-color: #738275; }
 .arena-timer.is-warning { color: #f1d36d; border-color: #a78843; }
 .arena-timer.is-danger { color: #ff7b7b; border-color: #a44f4f; }
+.arena-nickname { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: end; padding: 7px; border: 1px solid #554c3a; background: #151d1a; }
+.arena-nickname label { display: grid; gap: 4px; color: #aaa28f; font-size: 8px; }
+.arena-nickname input { padding: 7px; color: #ead17a; border: 1px solid #766443; background: #0e1513; font-family: var(--font); }
+.arena-nickname small { grid-column: 1 / -1; color: #d2b660; }
+.arena-ranking__rows button { grid-template-columns: 42px minmax(0,1fr) auto auto; align-items: center; }
+.arena-ranking__rows button small { color: #8fa58f; font-size: 8px; }
+.arena-detail-times { display: grid; max-height: 180px; overflow: auto; }
+.arena-detail-times span { display: flex; justify-content: space-between; gap: 14px; padding: 5px; border-bottom: 1px solid #3d4439; font-size: 9px; }
+.arena-countdown-track { width: min(320px,80vw); height: 5px; border: 1px solid #655a43; background: #101613; }
+.arena-countdown-track i { display: block; height: 100%; background: linear-gradient(90deg,#8c733d,#e2bf5d); transition: width .08s linear; }
+.account-name-edit { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.account-name-edit input { min-width: 0; padding: 8px; color: #e8d187; border: 1px solid #665b46; background: #111816; font-family: var(--font); }
+.account-message { color: #ddc266 !important; }
+.game-menu__legal a { color: #e0c46b; }
+.arena-exit-button { position: absolute; z-index: 21; right: 8px; top: 8px; padding: 6px 10px; color: #d3c5aa; border: 1px solid #77575a; background: rgba(20,16,17,.9); font: 9px var(--font); }
+.arena-result { align-content: center; width: min(620px,100%); margin: auto; }
+.arena-result > label { display: grid; gap: 5px; width: min(360px,90vw); color: #b7af99; font-size: 9px; }
+.arena-result > label input { padding: 9px; color: #efd16e; border: 1px solid #796744; background: #111816; font-family: var(--font); }
+.arena-result-times { display: grid; width: min(420px,90vw); max-height: 180px; overflow: auto; }
+.arena-result-times span { display: flex; justify-content: space-between; padding: 6px 9px; border-bottom: 1px solid #46483d; color: #bdb59e; }
 @media (max-width: 700px) { .quick-slot-settings header { flex-direction: column; gap: 3px; }.quick-slot-settings > div { gap: 3px; }.quick-slot-settings > div button { padding: 3px; }.battle-quick-slots button { min-height: 40px; padding-inline: 2px; } }
 
 /* Dungeon cockpit redesign: the map is the hero, controls stay within thumb reach. */

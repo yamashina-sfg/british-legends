@@ -15,7 +15,7 @@ import { craftEquipment as craftEquipmentEngine, EQUIPMENT_RECIPES } from '@/eng
 import { resolveFishing, type FishingReward } from '@/engine/fishing';
 import { permanentStats } from '@/engine/permanentStats';
 import { getPet } from '@/data/pets';
-import { applyArenaReward, ARENA_ENTRY_FEE, ARENA_MAX_WAVE, ARENA_WAVE_LIMIT_MS, ARENA_WAVES } from '@/engine/arena';
+import { applyArenaReward, ARENA_ENTRY_FEE, ARENA_MAX_WAVE, ARENA_WAVE_LIMIT_MS, ARENA_WAVES, validateArenaNickname } from '@/engine/arena';
 import { awakenConstellation, restoreConstellationStatue, unlockedConstellationIds } from '@/engine/constellations';
 import { awardSummonedPetExp, evolvePet as evolvePetEngine, petStats, setPetSlot as setPetSlotEngine, trainPet as trainPetEngine, tryCapturePet } from '@/engine/pets';
 import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
@@ -53,7 +53,7 @@ export type Scene =
 
 export type Overlay = 'party' | 'character' | 'evolution' | 'blessing' | 'materials' | 'codex' | 'settings' | 'store' | 'fishing' | 'pets' | 'arenaReception' | 'constellations' | 'skins' | 'skillLoadout' | 'adventure' | null;
 
-interface ArenaRun { currentWave:number; startWave:number; runStartedAt:number; waveStartedAt:number; deadline:number; lastRewardLabel?:string; lastWaveTime?:number }
+interface ArenaRun { currentWave:number; startWave:number; runStartedAt:number; waveStartedAt:number; deadline:number; lastRewardLabel?:string; lastWaveTime?:number; waveTimes?:Record<number,number>; finished?:boolean }
 
 interface RewardSummary {
   exp: number;
@@ -97,6 +97,7 @@ interface GameState {
   openLodge: () => void;
   replayOpening: (slotId?: number) => void;
   createPlayerAvatar: (avatar: Pick<PlayerAvatar, 'name' | 'headStyle'>) => void;
+  renamePlayer: (name:string) => boolean;
   openOverlay: (o: Overlay, charIndex?: number) => void;
   closeOverlay: () => void;
 
@@ -132,6 +133,7 @@ interface GameState {
   enterArena: (startWave:number) => boolean;
   startArenaWave: () => void;
   exitArena: () => void;
+  setArenaNickname: (nickname:string) => {ok:boolean;message:string};
   restoreConstellation: (worldId:string) => boolean;
   setCharacterSkin: (partyIndex:number, bodyWorldId:string|undefined, locked:boolean,headStyle?:number) => void;
   setSkillSlot: (partyIndex:number, slot:number, skillId:string|null) => void;
@@ -441,6 +443,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ save: nextSave });
     if (fallbackWorld) get().enterTown(fallbackWorld);
   },
+  renamePlayer:(name)=>{const save=get().save;const clean=name.trim().slice(0,12);if(!save?.playerAvatar||!clean)return false;const next={...save,playerAvatar:{...save.playerAvatar,name:clean}};saveSlot(next);set({save:next});return true;},
   openOverlay: (o, charIndex) =>
     set({ overlay: o, selectedCharIndex: charIndex ?? get().selectedCharIndex }),
   closeOverlay: () => set({ overlay: null }),
@@ -459,7 +462,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   eraseGame: (slotId) => {
     deleteSlot(slotId);
-    set({});
+    if(get().save?.slotId===slotId)set({save:null,overlay:null,map:null,encounter:null,arenaRun:null});
   },
 
   persist: () => {
@@ -621,7 +624,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const arena=awarded.save.arena!;const previous=arena.bestTimes[wave];const party=awarded.save.party.map((owned)=>{const combatant=battle.combatants.find((entry)=>entry.side==='ally'&&!entry.isPet&&entry.sourceId===owned.characterId);return combatant?{...owned,currentHp:combatant.hp,currentMp:combatant.mp}:owned;});
       const pets=(awarded.save.pets??[]).map((pet)=>{const combatant=battle.combatants.find((entry)=>entry.uid===pet.uid);return combatant?{...pet,currentHp:combatant.hp}:pet;});
       const nextSave={...awarded.save,party,pets,arena:{...arena,bestTimes:{...arena.bestTimes,[wave]:previous?Math.min(previous,elapsed):elapsed}}};
-      saveSlot(nextSave);battle.reset();set({save:nextSave,scene:'arena',arenaRun:{...arenaRun,currentWave:wave+1,lastRewardLabel:awarded.reward.label,lastWaveTime:elapsed},mapToast:`${awarded.reward.label} / ${awarded.reward.gold}G`});return;
+      saveSlot(nextSave);battle.reset();set({save:nextSave,scene:'arena',arenaRun:{...arenaRun,currentWave:wave+1,lastRewardLabel:awarded.reward.label,lastWaveTime:elapsed,waveTimes:{...(arenaRun.waveTimes??{}),[wave]:elapsed}},mapToast:`${awarded.reward.label} / ${awarded.reward.gold}G`});return;
     }
     if (!encounter || !worldId || !save) return;
     const enemyIds = encounter.enemyIds;
@@ -756,7 +759,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   onBattleLost: () => {
     const save = get().save;
-    if(save&&get().arenaRun){useBattleStore.getState().reset();const party=save.party.map((owned)=>{const stats=statsWithEquipment(getCharacter(owned.characterId),owned,permanentStats(save),save.equipmentLevels);return{...owned,currentHp:stats.hp,currentMp:stats.mp};});const pets=(save.pets??[]).map((pet)=>({...pet,currentHp:petStats(pet).hp}));const next={...save,party,pets};saveSlot(next);set({save:next,scene:'town',arenaRun:null,mapToast:'闘技場から帰還した。所持金の敗北ペナルティはありません。'});return;}
+    if(save&&get().arenaRun){const arenaRun=get().arenaRun!;useBattleStore.getState().reset();const party=save.party.map((owned)=>{const stats=statsWithEquipment(getCharacter(owned.characterId),owned,permanentStats(save),save.equipmentLevels);return{...owned,currentHp:stats.hp,currentMp:stats.mp};});const pets=(save.pets??[]).map((pet)=>({...pet,currentHp:petStats(pet).hp}));const next={...save,party,pets};saveSlot(next);set({save:next,scene:'arena',arenaRun:{...arenaRun,finished:true},mapToast:'試合終了。所持金の敗北ペナルティはありません。'});return;}
     const worldId = get().worldId ?? save?.progress.currentWorldId ?? save?.progress.unlockedWorldIds[0] ?? null;
     useBattleStore.getState().reset();
     if (!save) {
@@ -1052,9 +1055,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   trainPet: (uid) => { const save=get().save;if(!save)return false;const next=trainPetEngine(save,uid);if(!next)return false;set({save:next});saveSlot(next);playGameSfx('reinforce');return true; },
   evolvePet: (uid) => { const save=get().save;if(!save)return false;const next=evolvePetEngine(save,uid);if(!next)return false;set({save:next});saveSlot(next);return true; },
 
-  enterArena:(startWave)=>{const save=get().save;if(!save||save.gold<ARENA_ENTRY_FEE)return false;const maxStart=Math.min(5,Math.max(1,(save.arena?.bestWave??0)+1));const selected=Math.max(1,Math.min(maxStart,startWave));const arena={...(save.arena??{bestWave:0,selectedStartWave:1,bestTimes:{},claimedFirstWaves:[],attempts:0}),selectedStartWave:selected,attempts:(save.arena?.attempts??0)+1};const next={...save,gold:save.gold-ARENA_ENTRY_FEE,arena};const now=Date.now();saveSlot(next);set({save:next,overlay:null,arenaRun:{currentWave:selected,startWave:selected,runStartedAt:now,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS},scene:'arena'});return true;},
+  enterArena:(startWave)=>{const save=get().save;if(!save||save.gold<ARENA_ENTRY_FEE)return false;const maxStart=Math.min(10,Math.max(1,save.arena?.bestWave??0));const selected=Math.max(1,Math.min(maxStart,startWave));const arena={...(save.arena??{bestWave:0,selectedStartWave:1,bestTimes:{},claimedFirstWaves:[],attempts:0}),selectedStartWave:selected,attempts:(save.arena?.attempts??0)+1};const next={...save,gold:save.gold-ARENA_ENTRY_FEE,arena};const now=Date.now();saveSlot(next);set({save:next,overlay:null,arenaRun:{currentWave:selected,startWave:selected,runStartedAt:now,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS,waveTimes:{}},scene:'arena'});return true;},
   startArenaWave:()=>{const {save,arenaRun}=get();if(!save||!arenaRun||arenaRun.currentWave>ARENA_MAX_WAVE)return;const enemyIds=ARENA_WAVES[arenaRun.currentWave];const now=Date.now();set({scene:'battle',arenaRun:{...arenaRun,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS}});useBattleStore.getState().start(battleParty(save),enemyIds,false,permanentStats(save),save.equipmentLevels,(save.pets??[]).filter((pet)=>save.petSlots?.includes(pet.uid)),save.inventory);},
   exitArena:()=>{const save=get().save;if(!save)return;useBattleStore.getState().reset();const party=save.party.map((owned)=>{const stats=statsWithEquipment(getCharacter(owned.characterId),owned,permanentStats(save),save.equipmentLevels);return{...owned,currentHp:stats.hp,currentMp:stats.mp};});const pets=(save.pets??[]).map((pet)=>({...pet,currentHp:petStats(pet).hp}));const next={...save,party,pets};saveSlot(next);set({save:next,arenaRun:null,scene:'town',overlay:null,mapToast:'闘技場を退出した。'});},
+  setArenaNickname:(nickname)=>{const save=get().save;if(!save)return{ok:false,message:'セーブデータがありません。'};const result=validateArenaNickname(nickname);if(!result.ok)return{ok:false,message:result.message};const arena={...(save.arena??{bestWave:0,selectedStartWave:1,bestTimes:{},claimedFirstWaves:[],attempts:0}),nickname:result.value};const next={...save,arena};saveSlot(next);set({save:next});return{ok:true,message:result.message};},
   restoreConstellation:(worldId)=>{const save=get().save;if(!save)return false;const next=restoreConstellationStatue(save,worldId);if(!next)return false;saveSlot(next);set({save:next});playGameSfx('blessing');emitNotification({type:'achievement',title:'CONSTELLATION RESTORED',message:`${getWorld(worldId).title} の文学星座と身体スキンを解放`,icon:'✦',rarity:'legendary',dedupeKey:`constellation:${worldId}`});return true;},
   setCharacterSkin:(partyIndex,bodyWorldId,locked,headStyle)=>{const save=get().save;if(!save||bodyWorldId&&!save.ownedBodySkins?.includes(bodyWorldId)||headStyle&&!save.ownedHeadStyles?.includes(headStyle))return;const party=save.party.map((owned,index)=>index===partyIndex?{...owned,bodySkinWorldId:bodyWorldId,headSkinStyle:headStyle,skinLocked:locked}:owned);const next={...save,party};saveSlot(next);set({save:next});playGameSfx('attachment');},
   setSkillSlot:(partyIndex,slot,skillId)=>{const save=get().save,owned=save?.party[partyIndex];if(!save||!owned||slot<0||slot>=unlockedMagicSlotCount(save)||skillId&&!owned.learnedSkillIds.includes(skillId))return;const slots=Array.from({length:3},(_,index)=>owned.equippedSkillIds?.[index]??null);if(skillId){const previous=slots.indexOf(skillId);if(previous>=0)slots[previous]=slots[slot];}slots[slot]=skillId;const party=save.party.map((member,index)=>index===partyIndex?{...member,equippedSkillIds:slots}:member);const next={...save,party};saveSlot(next);set({save:next});},
