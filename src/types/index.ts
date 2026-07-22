@@ -24,6 +24,7 @@ export type AllocatedStats = Record<AllocatableStat, number>;
 // --- スキル -------------------------------------------------
 export type SkillType = 'attack' | 'heal' | 'revive' | 'buff' | 'debuff' | 'charge' | 'sacrifice' | 'barrier';
 export type SkillTarget = 'single' | 'all' | 'self';
+export type BuffTarget = 'self' | 'self_pchar' | 'self_pet' | 'self_alliance' | 'all_pchar' | 'all_pet' | 'all_alliance';
 
 export interface Skill {
   id: string;
@@ -34,6 +35,14 @@ export interface Skill {
   /** attack: ダメージ倍率, heal: 回復量, buff/debuff: 効果量 */
   power: number;
   description: string;
+  targetBookItemId?: string;
+  itemMultiBase?: number;
+  itemMultiAdd?: number;
+  buffIndex?: 101 | 201 | 202;
+  buffAttribute?: string;
+  buffStatus?: AllocatableStat;
+  buffTarget?: BuffTarget;
+  durationTurns?: number;
 }
 
 // --- Tragic Flaw System ------------------------------------

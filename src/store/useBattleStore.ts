@@ -31,7 +31,7 @@ interface BattleState {
   planned: BattleAction[];
   lastAction: BattleAction | null;
 
-  start: (party: OwnedCharacter[], enemyIds: string[], isBoss: boolean, permanentBonus?: Partial<Stats>, equipmentLevels?: Record<string, number>, pets?: OwnedPet[]) => void;
+  start: (party: OwnedCharacter[], enemyIds: string[], isBoss: boolean, permanentBonus?: Partial<Stats>, equipmentLevels?: Record<string, number>, pets?: OwnedPet[], skillBookCounts?: Record<string, number>) => void;
   livingAllies: () => Combatant[];
   livingEnemies: () => Combatant[];
   currentActor: () => Combatant | undefined;
@@ -51,6 +51,8 @@ const cloneCombatants = (combatants: Combatant[]) =>
   combatants.map((combatant) => ({
     ...combatant,
     stats: { ...combatant.stats },
+    activeBuffs: combatant.activeBuffs.map((buff) => ({ ...buff })),
+    skillBookCounts: { ...combatant.skillBookCounts },
     tragicFlaw: combatant.tragicFlaw
       ? { flaw: combatant.tragicFlaw.flaw, state: { ...combatant.tragicFlaw.state } }
       : undefined,
@@ -82,8 +84,8 @@ export const useBattleStore = create<BattleState>((set, get) => ({
   planned: [],
   lastAction: null,
 
-  start: (party, enemyIds, isBoss, permanentBonus, equipmentLevels, pets = []) => {
-    const allies = party.filter((p) => p.currentHp > 0).map((member, index) => combatantFromOwned(member, index, isBoss, permanentBonus, equipmentLevels));
+  start: (party, enemyIds, isBoss, permanentBonus, equipmentLevels, pets = [], skillBookCounts = {}) => {
+    const allies = party.filter((p) => p.currentHp > 0).map((member, index) => combatantFromOwned(member, index, isBoss, permanentBonus, equipmentLevels, skillBookCounts));
     const familiars = pets.filter((pet) => pet.currentHp > 0).map(combatantFromPet);
     const enemies = buildEnemyCombatants(enemyIds);
     set({

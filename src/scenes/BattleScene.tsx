@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { useBattleStore } from '@/store/useBattleStore';
 import { getCharacter, getEnemy, getSkill, STORE_ITEMS } from '@/data';
@@ -7,7 +7,7 @@ import { Window } from '@/components/ui/Window';
 import { Gauge } from '@/components/ui/Gauge';
 import { Sprite } from '@/components/ui/Sprite';
 import { playBattleSfx, preloadBattleSfx } from '@/audio/sfx';
-import type { BattleFeedbackKind, Combatant } from '@/engine/battle';
+import { skillBookMultiplier, type BattleFeedbackKind, type Combatant } from '@/engine/battle';
 import { gainExp } from '@/engine/leveling';
 import { meterPercent } from '@/engine/tragicFlaw';
 import beowulfAttackField from '@/assets/battle/beowulf-attack-field.png';
@@ -65,6 +65,7 @@ export function BattleScene() {
   const [actionPoseUid, setActionPoseUid] = useState<string | null>(null);
   const [floatingTexts, setFloatingTexts] = useState<FloatingBattleText[]>([]);
   const [battleRewardLines, setBattleRewardLines] = useState<string[]>([]);
+  const [expandedBuffUids,setExpandedBuffUids]=useState<string[]>([]);
   const logRef = useRef<HTMLDivElement>(null);
   const processedLogCount = useRef(0);
   const floatingTimeouts = useRef<number[]>([]);
@@ -255,7 +256,10 @@ export function BattleScene() {
     );
   };
 
-  const statusChips = (combatant: Combatant) => {
+  const statusChips = (combatant: Combatant, expandable=false) => {
+    const expanded=expandedBuffUids.includes(combatant.uid);
+    const timed=[...combatant.activeBuffs].sort((a,b)=>a.remainingTurns-b.remainingTurns);
+    const visibleTimed=expanded?timed:timed.slice(0,5);
     const chips = [
       combatant.atkBuff > 0 ? { key: 'atk', icon: '⚔', label: `ATK +${combatant.atkBuff}`, tone: 'buff' } : null,
       combatant.defending ? { key: 'guard', icon: '◈', label: '防御', tone: 'buff' } : null,
@@ -263,9 +267,10 @@ export function BattleScene() {
       combatant.poison > 0 ? { key: 'poison', icon: '☠', label: `毒 ${combatant.poison}T`, tone: 'debuff' } : null,
       combatant.cursed > 0 ? { key: 'curse', icon: '◆', label: `呪い ${combatant.cursed}T`, tone: 'debuff' } : null,
       combatant.barrierHp > 0 ? { key:'barrier',icon:'◈',label:`障壁 ${combatant.barrierHp} / ${combatant.barrierTurns}T`,tone:'buff' } : null,
-    ].filter(Boolean) as { key: string; icon: string; label: string; tone: string }[];
+      ...visibleTimed.map((buff)=>({key:`buff:${buff.key}`,icon:buff.icon,label:`${buff.label} / ${buff.remainingTurns}T`,tone:'buff',progress:buff.remainingTurns/buff.totalTurns})),
+    ].filter(Boolean) as { key: string; icon: string; label: string; tone: string;progress?:number }[];
     if (chips.length === 0) return null;
-    return <div className="battle-effect-chips" aria-label={`${combatant.name}の状態効果`}>{chips.map((chip) => <span key={chip.key} className={`is-${chip.tone}`} title={chip.label}><i>{chip.icon}</i>{chip.label}</span>)}</div>;
+    return <div className="battle-effect-chips" aria-label={`${combatant.name}の状態効果`}>{chips.map((chip) => <span key={chip.key} className={`is-${chip.tone}`} title={chip.label} style={chip.progress===undefined?undefined:{'--buff-progress':chip.progress} as CSSProperties}><i>{chip.icon}</i>{chip.label}</span>)}{expandable&&timed.length>5&&<button className="buff-expand" onClick={()=>setExpandedBuffUids((uids)=>uids.includes(combatant.uid)?uids.filter((uid)=>uid!==combatant.uid):[...uids,combatant.uid])}>{expanded?'▲':'▼'} {timed.length}</button>}</div>;
   };
 
   return (
@@ -340,7 +345,7 @@ export function BattleScene() {
                   );
                 })()}
                 {flawChip(a)}
-                {statusChips(a)}
+                {statusChips(a,true)}
                 <div className="battle-stat-line"><span>HP {a.hp}/{a.maxHp}</span><Gauge value={a.hp} max={a.maxHp} type="hp" /></div>
                 {a.barrierHp>0&&<div className="battle-stat-line barrier-line"><span>SHIELD {a.barrierHp}</span><Gauge value={a.barrierHp} max={a.barrierMax} type="mp" /></div>}
                 <div className="battle-stat-line"><span>MP {a.mp}/{a.maxMp}</span><Gauge value={a.mp} max={a.maxMp} type="mp" /></div>
@@ -385,7 +390,7 @@ export function BattleScene() {
                 <Button key={skill.id} disabled={actor.mp < skill.mpCost} onClick={() => onPickSkill(skill.id)}>
                   <span>{skill.name}</span>
                   {actor.tragicFlaw?.flaw.activeSkill.skillId === skill.id && <span className="tragic-skill-mark">宿命</span>}
-                  <span className="spacer" /><span className="dim tiny">MP {skill.mpCost} / {skill.description}</span>
+                  <span className="spacer" /><span className="dim tiny">MP {skill.mpCost} / {skill.description}{skill.targetBookItemId?` / 本×${actor.skillBookCounts[skill.targetBookItemId]??0} 効果${skillBookMultiplier(skill,actor.skillBookCounts).toFixed(2)}倍`:''}</span>
                 </Button>
               ))}
               <Button onClick={() => { setMode('command'); setModeActorUid(actor.uid); }}>もどる</Button>

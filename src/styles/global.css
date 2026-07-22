@@ -3076,3 +3076,11 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
 @media (max-width:700px) and (orientation:portrait) {
   .codex-collection { width:calc(100vw - 14px);height:calc(100dvh - 14px); }.codex-summary { grid-template-columns:repeat(3,1fr);padding:0 8px; }.codex-summary div { min-height:55px;padding:6px; }.codex-tabs { grid-template-columns:repeat(4,1fr);padding:0 8px; }.codex-tabs button { padding:5px 2px; }.codex-tabs button > i,.codex-tabs button > small { display:none; }.codex-collection-grid { grid-template-columns:1fr; }.codex-scroll-area { padding-inline:8px; }
 }
+
+.battle-effect-chips > span { position:relative;overflow:hidden; }
+.battle-effect-chips > span[style]::after { content:"";position:absolute;inset:calc(var(--buff-progress) * 100%) 0 0;background:#05070899;pointer-events:none; }
+.buff-expand { min-width:32px;padding:2px 5px;border:1px solid #8b7652;background:#202823;color:#ddc978;font:inherit; }
+
+.battle-effect-chips > span { position:relative;overflow:hidden; }
+.battle-effect-chips > span[style]::after { content:"";position:absolute;inset:calc(var(--buff-progress) * 100%) 0 0;background:#05070899;pointer-events:none; }
+.buff-expand { min-width:32px;padding:2px 5px;border:1px solid #8b7652;background:#202823;color:#ddc978;font:inherit; }

@@ -564,6 +564,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           permanentStats(save),
           save.equipmentLevels ?? {},
           (save.pets ?? []).filter((pet) => save.petSlots?.includes(pet.uid)),
+          save.inventory,
         );
         return;
       }
@@ -1016,7 +1017,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   evolvePet: (uid) => { const save=get().save;if(!save)return false;const next=evolvePetEngine(save,uid);if(!next)return false;set({save:next});saveSlot(next);return true; },
 
   enterArena:(startWave)=>{const save=get().save;if(!save||save.gold<ARENA_ENTRY_FEE)return false;const maxStart=Math.min(5,Math.max(1,(save.arena?.bestWave??0)+1));const selected=Math.max(1,Math.min(maxStart,startWave));const arena={...(save.arena??{bestWave:0,selectedStartWave:1,bestTimes:{},claimedFirstWaves:[],attempts:0}),selectedStartWave:selected,attempts:(save.arena?.attempts??0)+1};const next={...save,gold:save.gold-ARENA_ENTRY_FEE,arena};const now=Date.now();saveSlot(next);set({save:next,overlay:null,arenaRun:{currentWave:selected,startWave:selected,runStartedAt:now,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS},scene:'arena'});return true;},
-  startArenaWave:()=>{const {save,arenaRun}=get();if(!save||!arenaRun||arenaRun.currentWave>ARENA_MAX_WAVE)return;const enemyIds=ARENA_WAVES[arenaRun.currentWave];const now=Date.now();set({scene:'battle',arenaRun:{...arenaRun,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS}});useBattleStore.getState().start(getActiveParty(save),enemyIds,false,permanentStats(save),save.equipmentLevels,(save.pets??[]).filter((pet)=>save.petSlots?.includes(pet.uid)));},
+  startArenaWave:()=>{const {save,arenaRun}=get();if(!save||!arenaRun||arenaRun.currentWave>ARENA_MAX_WAVE)return;const enemyIds=ARENA_WAVES[arenaRun.currentWave];const now=Date.now();set({scene:'battle',arenaRun:{...arenaRun,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS}});useBattleStore.getState().start(getActiveParty(save),enemyIds,false,permanentStats(save),save.equipmentLevels,(save.pets??[]).filter((pet)=>save.petSlots?.includes(pet.uid)),save.inventory);},
   exitArena:()=>{const save=get().save;if(!save)return;useBattleStore.getState().reset();const party=save.party.map((owned)=>{const stats=statsWithEquipment(getCharacter(owned.characterId),owned,permanentStats(save),save.equipmentLevels);return{...owned,currentHp:stats.hp,currentMp:stats.mp};});const pets=(save.pets??[]).map((pet)=>({...pet,currentHp:petStats(pet).hp}));const next={...save,party,pets};saveSlot(next);set({save:next,arenaRun:null,scene:'town',overlay:null,mapToast:'闘技場を退出した。'});},
   restoreConstellation:(worldId)=>{const save=get().save;if(!save)return false;const next=restoreConstellationStatue(save,worldId);if(!next)return false;saveSlot(next);set({save:next});emitNotification({type:'achievement',title:'CONSTELLATION RESTORED',message:`${getWorld(worldId).title} の文学星座と身体スキンを解放`,icon:'✦',rarity:'legendary',dedupeKey:`constellation:${worldId}`});return true;},
   setCharacterSkin:(partyIndex,bodyWorldId,locked)=>{const save=get().save;if(!save||bodyWorldId&&!save.ownedBodySkins?.includes(bodyWorldId))return;const party=save.party.map((owned,index)=>index===partyIndex?{...owned,bodySkinWorldId:bodyWorldId,skinLocked:locked}:owned);const next={...save,party};saveSlot(next);set({save:next});},
