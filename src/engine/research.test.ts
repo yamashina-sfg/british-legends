@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { addDefeats, crossedResearchLevels, enemyResearchBenefit } from './research';
+import { addDefeats, crossedResearchLevels, enemyDefeatStatBonus, enemyResearchBenefit, totalEnemyDefeatStats } from './research';
 
 describe('enemy research', () => {
   it('unlocks archive benefits at 1, 5 and 15 defeats', () => {
@@ -13,4 +13,5 @@ describe('enemy research', () => {
     expect(addDefeats({ grendel: 4 }, ['grendel', 'grendel'])).toEqual({ grendel: 6 });
     expect(crossedResearchLevels(4, 6)).toEqual([2]);
   });
+  it('100体ごとに固有能力が1上がり、10000体で上限になる',()=>{const at98=enemyDefeatStatBonus('grendel',980);expect(at98.value).toBe(9);expect(enemyDefeatStatBonus('grendel',21354).value).toBe(100);expect(Object.values(totalEnemyDefeatStats({grendel:980,dragon:100})).reduce((a,b)=>a+b,0)).toBe(10);});
 });

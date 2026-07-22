@@ -30,6 +30,7 @@ import {
 import { emitNotification } from '@/notifications/notificationBus';
 import { activatePortal, applyBossSoulFlags, claimOneTimeEvent, tradeAdventureItem } from '@/engine/adventure';
 import { useBattleStore } from './useBattleStore';
+import { fragmentsForWorld } from '@/data/manuscripts';
 
 export type Scene =
   | 'title'
@@ -322,13 +323,15 @@ function updateExploration(save: SaveData, worldId: string, map: DungeonMap): Sa
   };
 }
 
-function battleBonusRewards(worldId: string, enemyIds: string[], isBoss: boolean): RewardEntry[] {
+function battleBonusRewards(save:SaveData,worldId: string, enemyIds: string[], isBoss: boolean): RewardEntry[] {
   const rewards: RewardEntry[] = [];
   if (Math.random() < (isBoss ? 0.9 : 0.32)) {
     const qty = (isBoss ? 45 : 8) + Math.floor(Math.random() * (isBoss ? 55 : 18));
     rewards.push({ kind: 'gold', id: 'gold', qty, label: 'Gold' });
   }
   if (Math.random() < (isBoss ? 0.72 : 0.18)) rewards.push({ kind: 'codex', id: `codex_enemy_${enemyIds[0]}`, qty: 1, label: '図鑑ページ' });
+  const missingPieces=fragmentsForWorld(worldId).filter((fragment)=>!save.storyFragments.includes(fragment.id));
+  if(missingPieces.length&&Math.random()<(isBoss?1:0.12)){const index=(save.defeatCounts?.[enemyIds[0]]??0)%missingPieces.length;rewards.push({kind:'story',id:missingPieces[index].id,qty:1,label:`アルバムピース ${missingPieces[index].pieceNumber}`,rarity:'rare'});}
   if (isBoss) {
     const bossRewards: Record<string, RewardEntry[]> = {
       dragon: [
@@ -660,7 +663,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       ...enemyIds.map((id) => `codex_enemy_${id}`),
       ...Object.keys(drops).map((id) => `codex_material_${id}`),
     ];
-    const bonusRewards = battleBonusRewards(worldId, enemyIds, encounter.isBoss);
+    const bonusRewards = battleBonusRewards(save,worldId, enemyIds, encounter.isBoss);
     const defeatCounts = addDefeats(save.defeatCounts ?? {}, enemyIds);
 
     const nextSaveBase: SaveData = {

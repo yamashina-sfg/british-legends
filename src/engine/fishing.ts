@@ -1,9 +1,10 @@
 import type { SaveData } from '@/types';
+import { MANUSCRIPT_FRAGMENTS } from '@/data/manuscripts';
 
 export const FISHING_LUCK_UNIT = 1000;
 export const FISHING_LUCK_MAX = 100;
 
-export interface FishingReward { kind: 'material' | 'item' | 'equipment'; id: string; qty: number; label: string }
+export interface FishingReward { kind: 'material' | 'item' | 'equipment' | 'story'; id: string; qty: number; label: string }
 export interface FishingResult { save: SaveData; reward: FishingReward; milestone: boolean }
 
 const COMMON_REWARDS: FishingReward[] = [
@@ -25,10 +26,13 @@ export function resolveFishing(save: SaveData, roll = Math.random()): FishingRes
   const fishing = save.fishing ?? { count: 0, autoUnlocked: false, claimedMilestones: [] };
   const count = fishing.count + 1;
   const fixed = MILESTONES[count];
-  const reward = fixed ?? COMMON_REWARDS[Math.min(COMMON_REWARDS.length - 1, Math.floor(Math.max(0, roll) * COMMON_REWARDS.length))];
+  const missing=MANUSCRIPT_FRAGMENTS.filter((fragment)=>!save.storyFragments.includes(fragment.id));
+  const albumReward: FishingReward|undefined=!fixed&&roll>=0.92&&missing.length?{kind:'story',id:missing[(count-1)%missing.length].id,qty:1,label:'水濡れのアルバムピース'}:undefined;
+  const reward = fixed ?? albumReward ?? COMMON_REWARDS[Math.min(COMMON_REWARDS.length - 1, Math.floor(Math.max(0, roll) * COMMON_REWARDS.length))];
   const next: SaveData = { ...save, fishing: { ...fishing, count, claimedMilestones: fixed ? [...new Set([...fishing.claimedMilestones, count])] : fishing.claimedMilestones } };
   if (reward.kind === 'material') next.inventory = { ...next.inventory, [reward.id]: (next.inventory[reward.id] ?? 0) + reward.qty };
   if (reward.kind === 'item') next.items = { ...next.items, [reward.id]: (next.items[reward.id] ?? 0) + reward.qty };
   if (reward.kind === 'equipment') next.equipmentInventory = [...new Set([...(next.equipmentInventory ?? []), reward.id])];
+  if (reward.kind === 'story') next.storyFragments = [...new Set([...(next.storyFragments ?? []), reward.id])];
   return { save: next, reward, milestone: Boolean(fixed) };
 }
