@@ -11,6 +11,7 @@ import { BattleScene } from '@/scenes/BattleScene';
 import { GameOverScene } from '@/scenes/GameOverScene';
 import { WorldClearScene } from '@/scenes/WorldClearScene';
 import { TownScene } from '@/scenes/TownScene';
+import { ArenaScene } from '@/scenes/ArenaScene';
 import { OverlayHost } from '@/overlays/OverlayHost';
 import { AudioManager } from '@/components/common/AudioManager';
 import { NotificationProvider } from '@/notifications/NotificationProvider';
@@ -72,6 +73,7 @@ export default function App() {
           {scene === 'worldSelect' && <WorldSelectScene />}
           {scene === 'town' && <TownScene />}
           {scene === 'dungeon' && <DungeonScene />}
+          {scene === 'arena' && <ArenaScene />}
           {scene === 'battle' && <BattleScene />}
           {scene === 'gameOver' && <GameOverScene />}
           {scene === 'worldClear' && <WorldClearScene />}

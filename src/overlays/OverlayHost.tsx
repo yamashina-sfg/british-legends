@@ -9,6 +9,7 @@ import { StoreOverlay } from './StoreOverlay';
 import { BlessingOverlay } from './BlessingOverlay';
 import { FishingOverlay } from './FishingOverlay';
 import { PetsOverlay } from './PetsOverlay';
+import { ArenaReceptionOverlay } from './ArenaReceptionOverlay';
 
 export function OverlayHost() {
   const overlay = useGameStore((s) => s.overlay);
@@ -28,6 +29,7 @@ export function OverlayHost() {
         {overlay === 'store' && <StoreOverlay />}
         {overlay === 'fishing' && <FishingOverlay />}
         {overlay === 'pets' && <PetsOverlay />}
+        {overlay === 'arenaReception' && <ArenaReceptionOverlay />}
       </div>
     </div>
   );
