@@ -11,6 +11,7 @@ import { skillBookMultiplier, type BattleFeedbackKind, type Combatant } from '@/
 import { gainExp } from '@/engine/leveling';
 import { meterPercent } from '@/engine/tragicFlaw';
 import { actionGaugeDurationMs, actionGaugePercent } from '@/engine/actionGauge';
+import { threatBand } from '@/engine/threat';
 import beowulfAttackField from '@/assets/battle/beowulf-attack-field.png';
 import hamletAttackField from '@/assets/battle/hamlet-attack-field.png';
 import macbethAttackField from '@/assets/battle/macbeth-attack-field.png';
@@ -25,6 +26,7 @@ import dallowayBattleField from '@/assets/battle/dalloway-battle-field-v1.png';
 import nineteen84BattleField from '@/assets/battle/nineteen84-battle-field-v1.png';
 
 type Mode = 'command' | 'skill' | 'item' | 'target';
+const ELEMENT_LABEL={fire:'炎',wind:'風',water:'水',light:'光',dark:'闇'} as const;
 
 interface FloatingBattleText {
   id: string;
@@ -300,7 +302,7 @@ export function BattleScene() {
             <div key={a.uid} className={`battle-unit battle-unit--ally ${!a.alive ? 'is-fainted' : ''}`}>
               <Sprite label={a.name} side="ally" size="lg" pose={!a.alive ? 'hurt' : actionPoseUid === a.uid ? 'attack' : 'idle'} facing="right" faint={!a.alive} />
               <BattleFloatingTexts effects={floatingTexts.filter((effect) => effect.targetUid === a.uid)} />
-              <span>{a.name}</span>
+              <span>{a.name} {a.element&&<i className={`battle-element is-${a.element}`}>{ELEMENT_LABEL[a.element]}</i>}</span>
             </div>
           ))}
         </div>
@@ -325,7 +327,7 @@ export function BattleScene() {
                   faint={!e.alive}
                 />
                 <BattleFloatingTexts effects={floatingTexts.filter((effect) => effect.targetUid === e.uid)} />
-                <span>{e.name}</span>
+                <span className={`threat-${threatBand(e.stats,actor?.stats??allies[0]?.stats??e.stats)}`}>{e.name} {e.element&&<i className={`battle-element is-${e.element}`}>{ELEMENT_LABEL[e.element]}</i>}</span>
                 {e.alive && <Gauge value={e.hp} max={e.maxHp} type="hp" />}
                 {statusChips(e)}
               </button>

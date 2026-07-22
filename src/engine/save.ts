@@ -15,6 +15,11 @@ export function slotKey(slotId: number): string {
   return `${STORAGE_PREFIX}${slotId}`;
 }
 
+export function expandLegacyCharacterHp(owned: OwnedCharacter): OwnedCharacter {
+  const maxHp = statsAtLevel(getCharacter(owned.characterId), owned.level).hp;
+  return { ...owned, currentHp: Math.min(maxHp, Math.max(1, owned.currentHp * 10)) };
+}
+
 /** 新規セーブデータ。最初の世界だけ解放しておく。 */
 export function createNewSave(slotId: number): SaveData {
   const firstWorldId = WORLD_ORDER[0];
@@ -60,6 +65,7 @@ export function loadSlot(slotId: number): SaveData | null {
     const raw = localStorage.getItem(slotKey(slotId));
     if (!raw) return null;
     const parsed = JSON.parse(raw) as SaveData;
+    const expandsLegacyHp = (parsed.dataVersion ?? 0) < 29;
     return normalizeActiveParty({
       ...parsed,
       dataVersion: DATA_VERSION,
@@ -83,7 +89,7 @@ export function loadSlot(slotId: number): SaveData | null {
       settings: { skipBlessingCinematics: parsed.settings?.skipBlessingCinematics ?? false, blessingCinematicsSeen: parsed.settings?.blessingCinematicsSeen ?? false, bgmVolume:parsed.settings?.bgmVolume??.7,seVolume:parsed.settings?.seVolume??.8,language:parsed.settings?.language??'ja' },
       adventure: { flags:parsed.adventure?.flags??[], openPortals:parsed.adventure?.openPortals??[], completedEventIds:parsed.adventure?.completedEventIds??[], tradeCounts:parsed.adventure?.tradeCounts??{} },
       commerce: normalizeCommerce(parsed.commerce),
-      party: (parsed.party ?? []).map((owned) => {const learned=[...new Set([...owned.learnedSkillIds,...getCharacter(owned.characterId).skillIds,'arcane_burst','story_barrier'])];return normalizeEquipmentSlots(normalizeOwnedGrowth({...owned,soulLevel:owned.soulLevel??0,learnedSkillIds:learned,equippedSkillIds:owned.equippedSkillIds??learned.filter((id)=>id!=='attack_basic').slice(0,3)}))}),
+      party: (parsed.party ?? []).map((owned) => {const learned=[...new Set([...owned.learnedSkillIds,...getCharacter(owned.characterId).skillIds,'arcane_burst','story_barrier'])];const migrated=expandsLegacyHp?expandLegacyCharacterHp(owned):owned;return normalizeEquipmentSlots(normalizeOwnedGrowth({...migrated,soulLevel:owned.soulLevel??0,learnedSkillIds:learned,equippedSkillIds:owned.equippedSkillIds??learned.filter((id)=>id!=='attack_basic').slice(0,3)}))}),
     });
   } catch {
     return null;

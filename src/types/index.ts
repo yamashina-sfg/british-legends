@@ -20,6 +20,7 @@ export interface Stats {
 
 export type AllocatableStat = 'atk' | 'int' | 'def' | 'mdef' | 'spd' | 'luk';
 export type AllocatedStats = Record<AllocatableStat, number>;
+export type Element = 'fire' | 'wind' | 'water' | 'light' | 'dark';
 
 // --- スキル -------------------------------------------------
 export type SkillType = 'attack' | 'heal' | 'revive' | 'buff' | 'debuff' | 'charge' | 'sacrifice' | 'barrier';
@@ -43,6 +44,9 @@ export interface Skill {
   buffStatus?: AllocatableStat;
   buffTarget?: BuffTarget;
   durationTurns?: number;
+  damageKind?: 'physical' | 'magic';
+  element?: Element;
+  explosion?: boolean;
 }
 
 // --- Tragic Flaw System ------------------------------------

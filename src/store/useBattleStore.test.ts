@@ -7,17 +7,17 @@ import { useBattleStore } from './useBattleStore';
 import type { OwnedCharacter, OwnedPet } from '@/types';
 
 const beowulf: OwnedCharacter = {
-  characterId: 'beowulf_young', level: 1, exp: 0, currentHp: 80, currentMp: 12,
+  characterId: 'beowulf_young', level: 1, exp: 0, currentHp: 800, currentMp: 12,
   learnedSkillIds: ['attack_basic', 'mighty_grip'],
 };
 
 const hamlet: OwnedCharacter = {
-  characterId: 'hamlet_prince', level: 1, exp: 0, currentHp: 70, currentMp: 24,
+  characterId: 'hamlet_prince', level: 1, exp: 0, currentHp: 700, currentMp: 24,
   learnedSkillIds: ['attack_basic', 'poison_blade'],
 };
 
 const macbeth: OwnedCharacter = {
-  characterId: 'macbeth_thane', level: 1, exp: 0, currentHp: 90, currentMp: 18,
+  characterId: 'macbeth_thane', level: 1, exp: 0, currentHp: 900, currentMp: 18,
   learnedSkillIds: ['attack_basic', 'bloody_dagger'],
 };
 
@@ -34,7 +34,8 @@ describe('battle command input', () => {
 
   it('requests exactly one attack command from each living ally before resolving the round', () => {
     const battle = useBattleStore.getState();
-    battle.start([beowulf, hamlet], ['grendel'], false);
+    battle.start([beowulf, hamlet], ['dragon'], false);
+    const durableEnemy=useBattleStore.getState().combatants.find((entry)=>entry.side==='enemy')!;durableEnemy.hp=durableEnemy.maxHp=100000;
 
     expect(useBattleStore.getState().currentActor()?.sourceId).toBe('beowulf_young');
     const firstActorUid = useBattleStore.getState().currentActor()!.uid;
@@ -58,7 +59,7 @@ describe('battle command input', () => {
     expect(useBattleStore.getState().planned).toHaveLength(0);
     expect(useBattleStore.getState().inputIndex).toBe(0);
     expect(useBattleStore.getState().combatants.some((combatant) => combatant.side === 'ally' && combatant.hp < combatant.maxHp)).toBe(true);
-    expect(useBattleStore.getState().log.map((entry) => entry.text).join('\n')).toContain('Grendel は「噛みつき」を放った！');
+    expect(useBattleStore.getState().log.map((entry) => entry.text).join('\n')).toContain('Dragon は「Tail Smash」を放った！');
   });
 
   it('召喚中の使い魔はラウンド先頭でスキルを自動使用する', () => {
@@ -75,7 +76,7 @@ describe('battle command input', () => {
   });
 
   it('本の所持数に応じて爆発とバリアの効果倍率が上がる',()=>{
-    const plain=combatantFromOwned(beowulf);const boosted=combatantFromOwned(beowulf,0,false,undefined,{}, {witch_scroll:4,research_notes:4});const enemyA=combatantFromEnemy('dragon',0);const enemyB=combatantFromEnemy('dragon',0);plain.mp=boosted.mp=100;vi.spyOn(Math,'random').mockReturnValue(0.5);resolveAction([plain,enemyA],{actorUid:plain.uid,type:'skill',skillId:'arcane_burst'});resolveAction([boosted,enemyB],{actorUid:boosted.uid,type:'skill',skillId:'arcane_burst'});expect(enemyB.hp).toBeLessThan(enemyA.hp);resolveAction([plain,enemyA],{actorUid:plain.uid,type:'skill',skillId:'story_barrier'});resolveAction([boosted,enemyB],{actorUid:boosted.uid,type:'skill',skillId:'story_barrier'});expect(boosted.barrierHp).toBeGreaterThan(plain.barrierHp);
+    const plain=combatantFromOwned(beowulf);const boosted=combatantFromOwned(beowulf,0,false,undefined,{}, {witch_scroll:4,research_notes:4});const enemyA=combatantFromEnemy('dragon',0);const enemyB=combatantFromEnemy('dragon',0);enemyA.hp=enemyA.maxHp=enemyB.hp=enemyB.maxHp=100000;plain.mp=boosted.mp=100;vi.spyOn(Math,'random').mockReturnValue(0.5);resolveAction([plain,enemyA],{actorUid:plain.uid,type:'skill',skillId:'arcane_burst'});resolveAction([boosted,enemyB],{actorUid:boosted.uid,type:'skill',skillId:'arcane_burst'});expect(enemyB.hp).toBeLessThan(enemyA.hp);resolveAction([plain,enemyA],{actorUid:plain.uid,type:'skill',skillId:'story_barrier'});resolveAction([boosted,enemyB],{actorUid:boosted.uid,type:'skill',skillId:'story_barrier'});expect(boosted.barrierHp).toBeGreaterThan(plain.barrierHp);
   });
 
   it('同系列バフは強い値を優先し、同値なら長い残り時間へ更新する',()=>{
@@ -90,6 +91,7 @@ describe('battle command input', () => {
   it('resolves an attack from every party member in one player phase', () => {
     const battle = useBattleStore.getState();
     battle.start([beowulf, hamlet, macbeth], ['dragon'], false);
+    const durableEnemy=useBattleStore.getState().combatants.find((entry)=>entry.side==='enemy')!;durableEnemy.hp=durableEnemy.maxHp=100000;
     const enemyUid = useBattleStore.getState().livingEnemies()[0].uid;
 
     for (const characterId of ['beowulf_young', 'hamlet_prince', 'macbeth_thane']) {
@@ -206,8 +208,8 @@ describe('tragic flaw system', () => {
     const enemy = combatantFromEnemy('grendel', 0);
     resolveAction([actor, enemy], { actorUid: actor.uid, type: 'skill', skillId: 'bloody_crown', targetUid: enemy.uid });
 
-    expect(actor.hp).toBe(72);
-    expect(actor.tragicFlaw?.state.hpSpent).toBe(18);
+    expect(actor.hp).toBe(720);
+    expect(actor.tragicFlaw?.state.hpSpent).toBe(180);
     expect(effectiveStats(actor.stats, actor.tragicFlaw, actor.hp, actor.maxHp).atk).toBeGreaterThan(actor.stats.atk);
   });
 
