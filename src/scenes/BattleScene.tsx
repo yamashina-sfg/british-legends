@@ -211,6 +211,17 @@ export function BattleScene() {
     return accepted;
   };
 
+  const useBattleItem = (itemId: string) => {
+    const item = STORE_ITEMS[itemId];
+    if (!item?.skillId || (save?.items[itemId] ?? 0) <= 0) return;
+    const faintedAlly = allies.find((ally) => !ally.alive);
+    if (item.skillId === 'phoenix_page' && !faintedAlly) return;
+    const command = item.skillId === 'phoenix_page'
+      ? { type: 'skill' as const, skillId: item.skillId, targetUid: faintedAlly?.uid }
+      : { type: 'skill' as const, skillId: item.skillId };
+    if (submitCommand(command)) consumeItem(item.id);
+  };
+
   const onSelectTarget = (target: Combatant) => {
     // ターゲットを開いた仲間以外の入力は、連打や描画更新中でも受け付けない。
     if (!actor || targetActorUid !== actor.uid) return;
@@ -330,12 +341,22 @@ export function BattleScene() {
             </div>
           )}
           {phase === 'input' && actor && visibleMode === 'command' && (
-            <div className="battle-command-grid">
-              <Button onClick={() => { setMode('target'); setModeActorUid(actor.uid); setTargetActorUid(actor.uid); }}>▶ たたかう</Button>
-              <Button onClick={() => { setMode('skill'); setModeActorUid(actor.uid); }}>とくぎ</Button>
-              <Button onClick={() => { setMode('item'); setModeActorUid(actor.uid); }}>どうぐ</Button>
-              <Button onClick={() => submitCommand({ type: 'defend' })}>ぼうぎょ</Button>
-            </div>
+            <>
+              <div className="battle-quick-slots" aria-label="クイックスロット">
+                {(save?.quickSlots ?? []).map((itemId, index) => {
+                  const item = itemId ? STORE_ITEMS[itemId] : null;
+                  const count = itemId ? save?.items[itemId] ?? 0 : 0;
+                  const disabled = !item || count <= 0 || (item.skillId === 'phoenix_page' && !allies.some((ally) => !ally.alive));
+                  return <button key={index} disabled={disabled} onClick={() => itemId && useBattleItem(itemId)}><small>{index + 1}</small><b>{item?.name ?? 'EMPTY'}</b><span>×{count}</span></button>;
+                })}
+              </div>
+              <div className="battle-command-grid">
+                <Button onClick={() => { setMode('target'); setModeActorUid(actor.uid); setTargetActorUid(actor.uid); }}>▶ たたかう</Button>
+                <Button onClick={() => { setMode('skill'); setModeActorUid(actor.uid); }}>とくぎ</Button>
+                <Button onClick={() => { setMode('item'); setModeActorUid(actor.uid); }}>どうぐ</Button>
+                <Button onClick={() => submitCommand({ type: 'defend' })}>ぼうぎょ</Button>
+              </div>
+            </>
           )}
           {phase === 'input' && actor && visibleMode === 'skill' && (
             <div className="menu-list battle-menu-list">
@@ -357,11 +378,7 @@ export function BattleScene() {
                 const disabled = count <= 0 || (item.skillId === 'phoenix_page' && !faintedAlly);
                 return (
                   <Button key={item.id} disabled={disabled} onClick={() => {
-                    if (!item.skillId) return;
-                    const command = item.skillId === 'phoenix_page'
-                      ? { type: 'skill' as const, skillId: item.skillId, targetUid: faintedAlly?.uid }
-                      : { type: 'skill' as const, skillId: item.skillId };
-                    if (submitCommand(command)) consumeItem(item.id);
+                    useBattleItem(item.id);
                   }}>
                     <span>{item.name} ×{count}</span><span className="spacer" /><span className="dim tiny">{item.description}</span>
                   </Button>

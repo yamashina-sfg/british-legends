@@ -2,6 +2,7 @@ import type { OwnedCharacter, SaveData } from '@/types';
 import { getCharacter, getWorld, WORLD_ORDER } from '@/data';
 import { statsAtLevel } from './leveling';
 import { normalizeActiveParty } from './party';
+import { DEFAULT_QUICK_SLOTS, normalizeQuickSlots } from './quickSlots';
 
 const STORAGE_PREFIX = 'british-legends:slot:';
 export const SAVE_SLOTS = [1, 2, 3];
@@ -27,12 +28,15 @@ export function createNewSave(slotId: number): SaveData {
     party: [],
     inventory: {},
     items: {},
+    quickSlots: [...DEFAULT_QUICK_SLOTS],
     equipmentInventory: [],
+    equipmentLevels: {},
     storyFragments: [],
     learnedSkillBooks: [],
     exploration: {},
     gold: 36,
     codex: { discoveredIds: [] },
+    defeatCounts: {},
   };
 }
 
@@ -46,10 +50,13 @@ export function loadSlot(slotId: number): SaveData | null {
       openingWatched: parsed.openingWatched ?? true,
       gold: parsed.gold ?? 36,
       items: parsed.items ?? {},
+      quickSlots: normalizeQuickSlots(parsed.quickSlots),
       equipmentInventory: parsed.equipmentInventory ?? [],
+      equipmentLevels: parsed.equipmentLevels ?? {},
       storyFragments: parsed.storyFragments ?? [],
       learnedSkillBooks: parsed.learnedSkillBooks ?? [],
       exploration: parsed.exploration ?? {},
+      defeatCounts: parsed.defeatCounts ?? {},
     });
   } catch {
     return null;

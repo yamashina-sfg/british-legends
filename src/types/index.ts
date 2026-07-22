@@ -309,7 +309,11 @@ export interface SaveData {
   inventory: Record<string, number>;
   /** 回復薬など、素材とは別に消費する道具 */
   items: Record<string, number>;
+  /** 戦闘画面へ表示する消費アイテムID。常に4枠へ正規化する。 */
+  quickSlots: (string | null)[];
   equipmentInventory: string[];
+  /** equipmentId -> 強化値（0〜5）。装備はID単位で一意に所持する。 */
+  equipmentLevels: Record<string, number>;
   storyFragments: string[];
   learnedSkillBooks: string[];
   exploration: Record<string, {
@@ -324,4 +328,6 @@ export interface SaveData {
   }>;
   gold: number;
   codex: { discoveredIds: string[] };
+  /** enemyId -> 累計討伐数。図鑑の伝承研究と研究ボーナスに使用する。 */
+  defeatCounts: Record<string, number>;
 }

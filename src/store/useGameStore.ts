@@ -7,6 +7,10 @@ import { evolve as evolveEngine } from '@/engine/evolution';
 import { generateDungeonMap } from '@/engine/mapgen';
 import { resolveMove, removeEntity } from '@/engine/mapmove';
 import { statsWithEquipment } from '@/engine/equipment';
+import { addDefeats, crossedResearchLevels, enemyResearchBenefit } from '@/engine/research';
+import { manuscriptStats } from '@/data/manuscripts';
+import { forgeCost, MAX_EQUIPMENT_LEVEL } from '@/engine/forging';
+import { assignQuickSlot } from '@/engine/quickSlots';
 import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
 import {
   createNewSave,
@@ -96,8 +100,10 @@ interface GameState {
   healParty: () => void;
   restAtInn: () => void;
   buyEquipment: (partyIndex: number, equipmentId: string) => void;
+  forgeEquipment: (equipmentId: string) => void;
   buyItem: (itemId: string) => void;
   consumeItem: (itemId: string) => boolean;
+  setQuickSlot: (slotIndex: number, itemId: string | null) => void;
   toggleActiveParty: (partyIndex: number) => void;
 }
 
@@ -505,7 +511,13 @@ export const useGameStore = create<GameState>((set, get) => ({
           encounter: { entityId: e.id, enemyIds: e.enemyIds ?? [], isBoss: e.kind === 'boss' },
           scene: 'battle',
         });
-        useBattleStore.getState().start(getActiveParty(save), e.enemyIds ?? [], e.kind === 'boss');
+        useBattleStore.getState().start(
+          getActiveParty(save),
+          e.enemyIds ?? [],
+          e.kind === 'boss',
+          manuscriptStats(save.storyFragments ?? []),
+          save.equipmentLevels ?? {},
+        );
         return;
       }
     }
@@ -530,16 +542,25 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!encounter || !worldId || !save) return;
     const enemyIds = encounter.enemyIds;
 
-    const totalExp = enemyIds.reduce((sum, id) => sum + getEnemy(id).exp, 0);
+    const totalExp = enemyIds.reduce((sum, id) => {
+      const enemy = getEnemy(id);
+      const research = enemyResearchBenefit(save.defeatCounts?.[id] ?? 0);
+      return sum + Math.ceil(enemy.exp * (1 + research.expRate));
+    }, 0);
     const totalGold = enemyIds.reduce((sum, id) => {
       const enemy = getEnemy(id);
-      return sum + (enemy.gold ?? Math.max(4, Math.floor(enemy.exp / 3)));
+      const baseGold = enemy.gold ?? Math.max(4, Math.floor(enemy.exp / 3));
+      const research = enemyResearchBenefit(save.defeatCounts?.[id] ?? 0);
+      return sum + Math.ceil(baseGold * (1 + research.goldRate));
     }, 0);
 
     const drops: Record<string, number> = {};
     for (const id of enemyIds) {
+      const research = enemyResearchBenefit(save.defeatCounts?.[id] ?? 0);
       for (const d of getEnemy(id).dropTable) {
-        if (Math.random() < d.rate) drops[d.materialId] = (drops[d.materialId] ?? 0) + 1;
+        if (Math.random() < Math.min(1, d.rate + research.dropRateBonus)) {
+          drops[d.materialId] = (drops[d.materialId] ?? 0) + 1;
+        }
       }
     }
     const bonusItems: Record<string, number> = {};
@@ -580,6 +601,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       ...Object.keys(drops).map((id) => `codex_material_${id}`),
     ];
     const bonusRewards = battleBonusRewards(worldId, enemyIds, encounter.isBoss);
+    const defeatCounts = addDefeats(save.defeatCounts ?? {}, enemyIds);
 
     const nextSaveBase: SaveData = {
       ...save,
@@ -588,6 +610,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       items,
       gold: save.gold + totalGold,
       codex: { discoveredIds: discover(save, codexIds) },
+      defeatCounts,
     };
 
     // 倒した敵をマップから除去
@@ -597,6 +620,21 @@ export const useGameStore = create<GameState>((set, get) => ({
       : applyRewards(nextSaveBase, bonusRewards);
 
     notifyBattleResult(enemyIds, totalExp, totalGold, drops, bonusItems, bonusRewards, levelUps, encounter.isBoss);
+    for (const id of new Set(enemyIds)) {
+      const before = save.defeatCounts?.[id] ?? 0;
+      const after = defeatCounts[id] ?? before;
+      for (const level of crossedResearchLevels(before, after)) {
+        emitNotification({
+          type: 'achievement',
+          channel: 'achievement',
+          title: '伝承研究が進展',
+          message: `${getEnemy(id).name} 研究 Rank ${level} を解放`,
+          icon: '§',
+          rarity: level === 3 ? 'epic' : 'rare',
+          dedupeKey: `research:${id}:${level}`,
+        });
+      }
+    }
 
     set({
       save: nextSave,
@@ -828,7 +866,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         ? { ...owned, equippedArmorId: item.id }
         : { ...owned, equippedAccessoryId: item.id };
     const party = save.party.map((p, index) => index === partyIndex ? nextOwned : p);
-    const nextSave = { ...save, party, gold: ownedLoot ? save.gold : save.gold - item.price };
+    const equipmentInventory = ownedLoot ? save.equipmentInventory : [...new Set([...(save.equipmentInventory ?? []), item.id])];
+    const nextSave = { ...save, party, equipmentInventory, gold: ownedLoot ? save.gold : save.gold - item.price };
     set({ save: nextSave, mapToast: `${item.name} を装備した！` });
     saveSlot(nextSave);
     emitNotification({
@@ -839,6 +878,22 @@ export const useGameStore = create<GameState>((set, get) => ({
       rarity: item.price >= 100 ? 'rare' : 'common',
       dedupeKey: `buy-equipment:${item.id}:${Date.now()}`,
     });
+  },
+
+  forgeEquipment: (equipmentId) => {
+    const save = get().save;
+    if (!save || !(save.equipmentInventory ?? []).includes(equipmentId)) return;
+    const item = getEquipment(equipmentId);
+    const currentLevel = save.equipmentLevels?.[equipmentId] ?? 0;
+    const cost = forgeCost(item, currentLevel);
+    if (!cost || currentLevel >= MAX_EQUIPMENT_LEVEL) return;
+    if (save.gold < cost.gold || (save.inventory[cost.materialId] ?? 0) < cost.materialQty) return;
+    const inventory = { ...save.inventory, [cost.materialId]: (save.inventory[cost.materialId] ?? 0) - cost.materialQty };
+    const equipmentLevels = { ...(save.equipmentLevels ?? {}), [equipmentId]: currentLevel + 1 };
+    const nextSave = { ...save, inventory, equipmentLevels, gold: save.gold - cost.gold };
+    set({ save: nextSave, mapToast: `${item.name} を +${currentLevel + 1} に強化した！` });
+    saveSlot(nextSave);
+    emitNotification({ type: 'item', title: 'FORGE SUCCESS', message: `${item.name} +${currentLevel + 1}`, icon: '⚒', rarity: currentLevel + 1 >= MAX_EQUIPMENT_LEVEL ? 'epic' : 'rare', dedupeKey: `forge:${equipmentId}:${currentLevel + 1}` });
   },
 
   buyItem: (itemId) => {
@@ -873,6 +928,22 @@ export const useGameStore = create<GameState>((set, get) => ({
       dedupeKey: `consume:${itemId}:${Date.now()}`,
     });
     return true;
+  },
+
+  setQuickSlot: (slotIndex, itemId) => {
+    const save = get().save;
+    if (!save || (itemId && !STORE_ITEMS[itemId])) return;
+    const quickSlots = assignQuickSlot(save.quickSlots ?? [], slotIndex, itemId);
+    const nextSave = { ...save, quickSlots };
+    set({ save: nextSave });
+    saveSlot(nextSave);
+    emitNotification({
+      type: 'item',
+      title: `QUICK SLOT ${slotIndex + 1}`,
+      message: itemId ? `${STORE_ITEMS[itemId].name} を登録` : '登録を解除',
+      icon: '◇',
+      dedupeKey: `quick-slot:${slotIndex}:${itemId ?? 'empty'}:${Date.now()}`,
+    });
   },
 
   toggleActiveParty: (partyIndex) => {
