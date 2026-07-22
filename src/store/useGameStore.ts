@@ -12,6 +12,7 @@ import { manuscriptStats } from '@/data/manuscripts';
 import { forgeCost, MAX_EQUIPMENT_LEVEL } from '@/engine/forging';
 import { assignQuickSlot } from '@/engine/quickSlots';
 import { blessCharacter as blessCharacterEngine, commitStatusAllocation as commitStatusAllocationEngine } from '@/engine/characterGrowth';
+import { craftEquipment as craftEquipmentEngine, EQUIPMENT_RECIPES } from '@/engine/equipmentCrafting';
 import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
 import {
   createNewSave,
@@ -106,6 +107,7 @@ interface GameState {
   restAtInn: () => void;
   buyEquipment: (partyIndex: number, equipmentId: string) => void;
   forgeEquipment: (equipmentId: string) => void;
+  craftEquipment: (recipeId: string) => void;
   buyItem: (itemId: string) => void;
   consumeItem: (itemId: string) => boolean;
   setQuickSlot: (slotIndex: number, itemId: string | null) => void;
@@ -906,6 +908,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const owned = save?.party[partyIndex];
     if (!save || !owned) return;
     const item = getEquipment(equipmentId);
+    if (owned.level < (item.requiredLevel ?? 1)) return;
     const equippedId = item.slot === 'weapon'
       ? owned.equippedWeaponId
       : item.slot === 'head' ? owned.equippedHeadId
@@ -945,6 +948,18 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ save: nextSave, mapToast: `${item.name} を +${currentLevel + 1} に強化した！` });
     saveSlot(nextSave);
     emitNotification({ type: 'item', title: 'FORGE SUCCESS', message: `${item.name} +${currentLevel + 1}`, icon: '⚒', rarity: currentLevel + 1 >= MAX_EQUIPMENT_LEVEL ? 'epic' : 'rare', dedupeKey: `forge:${equipmentId}:${currentLevel + 1}` });
+  },
+
+  craftEquipment: (recipeId) => {
+    const save = get().save;
+    const recipe = EQUIPMENT_RECIPES.find((entry) => entry.id === recipeId);
+    if (!save || !recipe) return;
+    const nextSave = craftEquipmentEngine(save, recipe);
+    if (!nextSave) return;
+    const item = getEquipment(recipe.resultEquipmentId);
+    set({ save: nextSave, mapToast: `${item.name} の制作に成功した！` });
+    saveSlot(nextSave);
+    emitNotification({ type: 'item', title: 'CRAFT SUCCESS', message: item.name, icon: '⚒', rarity: 'epic', dedupeKey: `craft:${recipe.id}` });
   },
 
   buyItem: (itemId) => {

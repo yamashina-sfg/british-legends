@@ -7,17 +7,19 @@ import { Button } from '@/components/ui/Button';
 import { Window } from '@/components/ui/Window';
 import { forgeCost, MAX_EQUIPMENT_LEVEL } from '@/engine/forging';
 import { equippedItemIds } from '@/engine/equipment';
+import { canCraftEquipment, EQUIPMENT_RECIPES } from '@/engine/equipmentCrafting';
 
-type StoreTab = EquipmentSlot | 'item' | 'forge';
+type StoreTab = EquipmentSlot | 'item' | 'forge' | 'craft';
 
 const TAB_LABELS: Record<StoreTab, string> = {
   weapon: '武器',
   head: '頭', armor: '鎧', arms: '腕', shield: '盾', legs: '脚',
   item: '道具',
   forge: '鍛造',
+  craft: '制作',
 };
 
-const TAB_ICONS: Record<StoreTab, string> = { weapon: '⚔', head: '♛', armor: '◆', arms: '❖', shield: '◈', legs: '♟', item: '▣', forge: '♨' };
+const TAB_ICONS: Record<StoreTab, string> = { weapon: '⚔', head: '♛', armor: '◆', arms: '❖', shield: '◈', legs: '♟', item: '▣', forge: '♨', craft: '⚒' };
 
 function bonusLabel(bonus: object) {
   return Object.entries(bonus).map(([stat, value]) => `${stat.toUpperCase()} +${value}`).join('  ');
@@ -26,10 +28,10 @@ function bonusLabel(bonus: object) {
 export function StoreOverlay() {
   const [tab, setTab] = useState<StoreTab>('weapon');
   const [selectedQuickSlot, setSelectedQuickSlot] = useState(0);
-  const { save, buyEquipment, buyItem, forgeEquipment, setQuickSlot, closeOverlay } = useGameStore();
+  const { save, buyEquipment, buyItem, forgeEquipment, craftEquipment, setQuickSlot, closeOverlay } = useGameStore();
   if (!save) return null;
 
-  const equipment = tab === 'item' || tab === 'forge' ? [] : Object.values(EQUIPMENT).filter((item) => item.slot === tab);
+  const equipment = tab === 'item' || tab === 'forge' || tab === 'craft' ? [] : Object.values(EQUIPMENT).filter((item) => item.slot === tab);
   const ownedEquipment = [...new Set([
     ...(save.equipmentInventory ?? []),
     ...save.party.flatMap(equippedItemIds),
@@ -66,7 +68,19 @@ export function StoreOverlay() {
         {tab === 'forge' && ownedEquipment.length === 0 && (
           <div className="store-empty">鍛造できる装備がない。6部位の武具を購入するか、探索で発見しよう。</div>
         )}
-        {tab === 'forge' ? ownedEquipment.map((item) => {
+        {tab === 'craft' ? EQUIPMENT_RECIPES.map((recipe) => {
+          const base = EQUIPMENT[recipe.baseEquipmentId];
+          const result = EQUIPMENT[recipe.resultEquipmentId];
+          const level = save.equipmentLevels?.[base.id] ?? 0;
+          const material = getMaterial(recipe.materialId);
+          return (
+            <article className={`store-item forge-item ${canCraftEquipment(save, recipe) ? '' : 'is-unaffordable'}`} key={recipe.id}>
+              <div className="store-item__art"><img className="store-item__icon" src={STORE_ICON_BY_ID[result.id]} alt="" aria-hidden="true" /><span>CRAFT</span></div>
+              <div><strong>{result.name}</strong><p>{base.name} +5 から上位武器を制作。素材装備は消費されない。</p><em>基礎: {base.name} +{level} / {material.name} {save.inventory[recipe.materialId] ?? 0}/{recipe.materialQty}</em></div>
+              <div className="store-item__buy"><b><i>G</i> {recipe.gold}</b><Button disabled={!canCraftEquipment(save, recipe)} onClick={() => craftEquipment(recipe.id)}>制作する</Button></div>
+            </article>
+          );
+        }) : tab === 'forge' ? ownedEquipment.map((item) => {
           const level = save.equipmentLevels?.[item.id] ?? 0;
           const cost = forgeCost(item, level);
           const canForge = Boolean(cost && save.gold >= cost.gold && (save.inventory[cost.materialId] ?? 0) >= cost.materialQty);
@@ -89,8 +103,8 @@ export function StoreOverlay() {
         )) : equipment.map((item) => (
           <article className={`store-item ${save.gold < item.price ? 'is-unaffordable' : ''} ${equippedIds.has(item.id) ? 'is-equipped' : ''}`} key={item.id}>
             <div className="store-item__art"><img className="store-item__icon" src={STORE_ICON_BY_ID[item.id]} alt="" aria-hidden="true" /><span>{item.slot.toUpperCase()}</span></div>
-            <div><div className="store-item__name"><strong>{item.name}</strong>{equippedIds.has(item.id) ? <small>装備中</small> : ownedIds.has(item.id) ? <small>所持済</small> : null}</div><p>{item.description}</p><em>{bonusLabel(item.bonus)}</em></div>
-            <div className="store-item__buy"><b><i>G</i> {item.price}</b><Button disabled={save.gold < item.price} onClick={() => buyEquipment(0, item.id)}>{ownedIds.has(item.id) ? '装備する' : '購入して装備'}</Button></div>
+            <div><div className="store-item__name"><strong>{item.name}</strong>{equippedIds.has(item.id) ? <small>装備中</small> : ownedIds.has(item.id) ? <small>所持済</small> : null}</div><p>{item.description}</p><em>{bonusLabel(item.bonus)} / 装着Lv {item.requiredLevel ?? 1}</em></div>
+            <div className="store-item__buy"><b><i>G</i> {item.price}</b><Button disabled={save.gold < item.price || (save.party[0]?.level ?? 0) < (item.requiredLevel ?? 1)} onClick={() => buyEquipment(0, item.id)}>{(save.party[0]?.level ?? 0) < (item.requiredLevel ?? 1) ? `Lv${item.requiredLevel}必要` : ownedIds.has(item.id) ? '装備する' : '購入して装備'}</Button></div>
           </article>
         ))}
       </div>
