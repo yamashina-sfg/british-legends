@@ -56,7 +56,8 @@ const BATTLE_FIELDS_BY_WORLD: Record<string, string> = {
 
 export function BattleScene() {
   const { combatants, log, phase, currentActor, chooseCommand, lastAction } = useBattleStore();
-  const { onBattleWon, onBattleLost, save, consumeItem } = useGameStore();
+  const { onBattleWon, onBattleLost, save, consumeItem, arenaRun } = useGameStore();
+  const [arenaRemaining,setArenaRemaining]=useState(60);
   const [mode, setMode] = useState<Mode>('command');
   const [pendingSkillId, setPendingSkillId] = useState<string | null>(null);
   const [modeActorUid, setModeActorUid] = useState<string | null>(null);
@@ -115,6 +116,8 @@ export function BattleScene() {
   useEffect(() => {
     preloadBattleSfx();
   }, []);
+
+  useEffect(()=>{if(!arenaRun)return;const tick=()=>{const remaining=Math.max(0,Math.ceil((arenaRun.deadline-Date.now())/1000));setArenaRemaining(remaining);if(remaining<=0&&useBattleStore.getState().phase!=='won')onBattleLost();};tick();const id=window.setInterval(tick,250);return()=>window.clearInterval(id);},[arenaRun?.deadline,onBattleLost]);
 
   useEffect(() => {
     if (phase === 'input') {
@@ -266,6 +269,7 @@ export function BattleScene() {
 
   return (
     <div className="battle-scene fade-in">
+      {arenaRun&&<div className={`arena-timer ${arenaRemaining<=10?'is-danger':''}`}>WAVE {arenaRun.currentWave}　{arenaRemaining}s</div>}
       <div className={`battle-arena battle-arena--${battlefieldWorld}`} aria-label="battlefield">
         <div className="battle-field-backdrop" style={{ backgroundImage: `url(${battlefieldImage})` }} />
         <div className="battle-arena__sky" />

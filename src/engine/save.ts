@@ -42,6 +42,7 @@ export function createNewSave(slotId: number): SaveData {
     fishing: { count: 0, autoUnlocked: false, claimedMilestones: [] },
     pets: [],
     petSlots: [null, null, null],
+    arena: { bestWave: 0, selectedStartWave: 1, bestTimes: {}, claimedFirstWaves: [], attempts: 0 },
   };
 }
 
@@ -65,6 +66,7 @@ export function loadSlot(slotId: number): SaveData | null {
       fishing: parsed.fishing ?? { count: 0, autoUnlocked: false, claimedMilestones: [] },
       pets: parsed.pets ?? [],
       petSlots: Array.from({ length: 3 }, (_, index) => parsed.petSlots?.[index] ?? null),
+      arena: parsed.arena ?? { bestWave: 0, selectedStartWave: 1, bestTimes: {}, claimedFirstWaves: [], attempts: 0 },
       party: (parsed.party ?? []).map((owned) => normalizeEquipmentSlots(normalizeOwnedGrowth(owned))),
     });
   } catch {

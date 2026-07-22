@@ -369,6 +369,13 @@ export interface SaveData {
   };
   pets?: OwnedPet[];
   petSlots?: (string | null)[];
+  arena?: {
+    bestWave:number;
+    selectedStartWave:number;
+    bestTimes:Record<number,number>;
+    claimedFirstWaves:number[];
+    attempts:number;
+  };
 }
 
 export interface OwnedPet {

@@ -15,6 +15,7 @@ import { craftEquipment as craftEquipmentEngine, EQUIPMENT_RECIPES } from '@/eng
 import { resolveFishing, type FishingReward } from '@/engine/fishing';
 import { permanentStats } from '@/engine/permanentStats';
 import { getPet } from '@/data/pets';
+import { applyArenaReward, ARENA_ENTRY_FEE, ARENA_MAX_WAVE, ARENA_WAVE_LIMIT_MS, ARENA_WAVES } from '@/engine/arena';
 import { awardSummonedPetExp, evolvePet as evolvePetEngine, petStats, setPetSlot as setPetSlotEngine, trainPet as trainPetEngine, tryCapturePet } from '@/engine/pets';
 import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
 import {
@@ -37,11 +38,14 @@ export type Scene =
   | 'worldSelect'
   | 'town'
   | 'dungeon'
+  | 'arena'
   | 'battle'
   | 'gameOver'
   | 'worldClear';
 
-export type Overlay = 'party' | 'character' | 'evolution' | 'blessing' | 'materials' | 'codex' | 'settings' | 'store' | 'fishing' | 'pets' | null;
+export type Overlay = 'party' | 'character' | 'evolution' | 'blessing' | 'materials' | 'codex' | 'settings' | 'store' | 'fishing' | 'pets' | 'arenaReception' | null;
+
+interface ArenaRun { currentWave:number; startWave:number; runStartedAt:number; waveStartedAt:number; deadline:number; lastRewardLabel?:string; lastWaveTime?:number }
 
 interface RewardSummary {
   exp: number;
@@ -74,6 +78,7 @@ interface GameState {
   newlyJoinedCharacterId: string | null;
   /** 作品選択画面で表示中のワールド */
   viewingWorldId: string | null;
+  arenaRun: ArenaRun | null;
 
   // 画面遷移
   goTitle: () => void;
@@ -115,6 +120,9 @@ interface GameState {
   setPetSlot: (slot: number, uid: string | null) => void;
   trainPet: (uid: string) => boolean;
   evolvePet: (uid: string) => boolean;
+  enterArena: (startWave:number) => boolean;
+  startArenaWave: () => void;
+  exitArena: () => void;
   buyItem: (itemId: string) => void;
   consumeItem: (itemId: string) => boolean;
   setQuickSlot: (slotIndex: number, itemId: string | null) => void;
@@ -352,6 +360,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   lastReward: null,
   newlyJoinedCharacterId: null,
   viewingWorldId: null,
+  arenaRun: null,
 
   goTitle: () => set({ scene: 'title', overlay: null }),
   goSaveSelect: () => set({ scene: 'saveSelect', overlay: null }),
@@ -571,8 +580,15 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   onBattleWon: () => {
-    const { encounter, worldId, save, map } = get();
+    const { encounter, worldId, save, map, arenaRun } = get();
     const battle = useBattleStore.getState();
+    if(save&&arenaRun){
+      const elapsed=Math.max(0,Date.now()-arenaRun.waveStartedAt);const wave=arenaRun.currentWave;const awarded=applyArenaReward(save,wave);
+      const arena=awarded.save.arena!;const previous=arena.bestTimes[wave];const party=awarded.save.party.map((owned)=>{const combatant=battle.combatants.find((entry)=>entry.side==='ally'&&!entry.isPet&&entry.sourceId===owned.characterId);return combatant?{...owned,currentHp:combatant.hp,currentMp:combatant.mp}:owned;});
+      const pets=(awarded.save.pets??[]).map((pet)=>{const combatant=battle.combatants.find((entry)=>entry.uid===pet.uid);return combatant?{...pet,currentHp:combatant.hp}:pet;});
+      const nextSave={...awarded.save,party,pets,arena:{...arena,bestTimes:{...arena.bestTimes,[wave]:previous?Math.min(previous,elapsed):elapsed}}};
+      saveSlot(nextSave);battle.reset();set({save:nextSave,scene:'arena',arenaRun:{...arenaRun,currentWave:wave+1,lastRewardLabel:awarded.reward.label,lastWaveTime:elapsed},mapToast:`${awarded.reward.label} / ${awarded.reward.gold}G`});return;
+    }
     if (!encounter || !worldId || !save) return;
     const enemyIds = encounter.enemyIds;
 
@@ -697,6 +713,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   onBattleLost: () => {
     const save = get().save;
+    if(save&&get().arenaRun){useBattleStore.getState().reset();const party=save.party.map((owned)=>{const stats=statsWithEquipment(getCharacter(owned.characterId),owned,permanentStats(save),save.equipmentLevels);return{...owned,currentHp:stats.hp,currentMp:stats.mp};});const pets=(save.pets??[]).map((pet)=>({...pet,currentHp:petStats(pet).hp}));const next={...save,party,pets};saveSlot(next);set({save:next,scene:'town',arenaRun:null,mapToast:'闘技場から帰還した。所持金の敗北ペナルティはありません。'});return;}
     const worldId = get().worldId ?? save?.progress.currentWorldId ?? save?.progress.unlockedWorldIds[0] ?? null;
     useBattleStore.getState().reset();
     if (!save) {
@@ -992,6 +1009,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   setPetSlot: (slot, uid) => { const save=get().save;if(!save)return;const next=setPetSlotEngine(save,slot,uid);set({save:next});saveSlot(next); },
   trainPet: (uid) => { const save=get().save;if(!save)return false;const next=trainPetEngine(save,uid);if(!next)return false;set({save:next});saveSlot(next);return true; },
   evolvePet: (uid) => { const save=get().save;if(!save)return false;const next=evolvePetEngine(save,uid);if(!next)return false;set({save:next});saveSlot(next);return true; },
+
+  enterArena:(startWave)=>{const save=get().save;if(!save||save.gold<ARENA_ENTRY_FEE)return false;const maxStart=Math.min(5,Math.max(1,(save.arena?.bestWave??0)+1));const selected=Math.max(1,Math.min(maxStart,startWave));const arena={...(save.arena??{bestWave:0,selectedStartWave:1,bestTimes:{},claimedFirstWaves:[],attempts:0}),selectedStartWave:selected,attempts:(save.arena?.attempts??0)+1};const next={...save,gold:save.gold-ARENA_ENTRY_FEE,arena};const now=Date.now();saveSlot(next);set({save:next,overlay:null,arenaRun:{currentWave:selected,startWave:selected,runStartedAt:now,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS},scene:'arena'});return true;},
+  startArenaWave:()=>{const {save,arenaRun}=get();if(!save||!arenaRun||arenaRun.currentWave>ARENA_MAX_WAVE)return;const enemyIds=ARENA_WAVES[arenaRun.currentWave];const now=Date.now();set({scene:'battle',arenaRun:{...arenaRun,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS}});useBattleStore.getState().start(getActiveParty(save),enemyIds,false,permanentStats(save),save.equipmentLevels,(save.pets??[]).filter((pet)=>save.petSlots?.includes(pet.uid)));},
+  exitArena:()=>{const save=get().save;if(!save)return;useBattleStore.getState().reset();const party=save.party.map((owned)=>{const stats=statsWithEquipment(getCharacter(owned.characterId),owned,permanentStats(save),save.equipmentLevels);return{...owned,currentHp:stats.hp,currentMp:stats.mp};});const pets=(save.pets??[]).map((pet)=>({...pet,currentHp:petStats(pet).hp}));const next={...save,party,pets};saveSlot(next);set({save:next,arenaRun:null,scene:'town',overlay:null,mapToast:'闘技場を退出した。'});},
 
   buyItem: (itemId) => {
     const save = get().save;

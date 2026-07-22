@@ -1,0 +1,2 @@
+import{describe,expect,it}from'vitest';import{createNewSave}from'./save';import{applyArenaReward,arenaReward}from'./arena';
+describe('闘技場',()=>{it('WAVE5初回は固有装備、2回目は周回報酬になる',()=>{let save=createNewSave(1);let first=applyArenaReward(save,5);expect(first.reward.equipmentId).toBe('iron_sword');let second=applyArenaReward(first.save,5);expect(second.reward.itemId).toBe('high_recovery_potion');expect(arenaReward(5,false).equipmentId).toBeUndefined();});});
