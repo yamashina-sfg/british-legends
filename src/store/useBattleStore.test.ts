@@ -4,7 +4,7 @@ import { effectiveStats } from '@/engine/tragicFlaw';
 import { expForLevel, gainExp, requiredExpForNextLevel } from '@/engine/leveling';
 import { getCharacter } from '@/data';
 import { useBattleStore } from './useBattleStore';
-import type { OwnedCharacter } from '@/types';
+import type { OwnedCharacter, OwnedPet } from '@/types';
 
 const beowulf: OwnedCharacter = {
   characterId: 'beowulf_young', level: 1, exp: 0, currentHp: 80, currentMp: 12,
@@ -59,6 +59,15 @@ describe('battle command input', () => {
     expect(useBattleStore.getState().inputIndex).toBe(0);
     expect(useBattleStore.getState().combatants.some((combatant) => combatant.side === 'ally' && combatant.hp < combatant.maxHp)).toBe(true);
     expect(useBattleStore.getState().log.map((entry) => entry.text).join('\n')).toContain('Grendel は「噛みつき」を放った！');
+  });
+
+  it('召喚中の使い魔はラウンド先頭でスキルを自動使用する', () => {
+    const pet: OwnedPet = { uid:'pet_test', petId:'marsh_imp', level:1, exp:0, enhance:0, currentHp:35 };
+    const battle=useBattleStore.getState(); battle.start([beowulf],['royal_guard'],false,undefined,undefined,[pet]);
+    const actor=battle.currentActor()!; const enemy=battle.livingEnemies()[0];
+    expect(battle.chooseCommand(actor.uid,{type:'defend'})).toBe(true);
+    expect(useBattleStore.getState().combatants.find((entry)=>entry.uid==='pet_test')?.actionCount).toBe(1);
+    expect(useBattleStore.getState().log.map((entry)=>entry.text).join('\n')).toContain('沼頁の幼鬼');
   });
 
   it('assigns unique combatant ids even when two party entries share a character id', () => {

@@ -1,4 +1,4 @@
-import type { Enemy, OwnedCharacter, Skill, Stats } from '@/types';
+import type { Enemy, OwnedCharacter, OwnedPet, Skill, Stats } from '@/types';
 import { getCharacter, getEnemy, getSkill } from '@/data';
 import { statsWithEquipment } from './equipment';
 import { calcDamage, calcHeal } from './damage';
@@ -12,6 +12,8 @@ import {
   skillIdsWithTragicFlaw,
   type FlawRuntime,
 } from './tragicFlaw';
+import { getPet } from '@/data/pets';
+import { petStats } from './pets';
 
 // ============================================================
 // 戦闘エンジン（純粋ロジック・React非依存）
@@ -51,6 +53,7 @@ export interface Combatant {
   passiveTriggered: boolean;
   tragicFlaw?: FlawRuntime;
   alive: boolean;
+  isPet?: boolean;
 }
 
 export type CommandType = 'attack' | 'skill' | 'defend';
@@ -150,6 +153,11 @@ export function combatantFromEnemy(enemyId: string, index: number): Combatant {
     passiveTriggered: false,
     alive: true,
   };
+}
+
+export function combatantFromPet(owned: OwnedPet, index: number): Combatant {
+  const pet=getPet(owned.petId); const stats=petStats(owned);
+  return { uid:owned.uid,side:'ally',name:pet.name,spriteId:pet.sourceEnemyId,sourceId:owned.petId,level:owned.level,stats,maxHp:stats.hp,maxMp:stats.mp,hp:Math.min(owned.currentHp,stats.hp),mp:stats.mp,skillIds:pet.skillIds,atkBuff:0,tragicCharge:0,actionCount:0,defending:false,rageTriggered:false,phaseTwoTriggered:false,finalTriggered:false,summonedGuard:false,poison:0,cursed:0,passiveTriggered:false,alive:owned.currentHp>0,isPet:true };
 }
 
 /** 敵IDリスト（同一IDが並ぶと A/B で区別）からコンバタント生成 */

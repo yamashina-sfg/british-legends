@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import type { Combatant, BattleAction, LogEntry } from '@/engine/battle';
 import {
   buildEnemyCombatants,
+  combatantFromPet,
   combatantFromOwned,
   decideEnemyAction,
   isBattleOver,
@@ -11,7 +12,8 @@ import {
   resetRoundFlags,
   resolveAction,
 } from '@/engine/battle';
-import type { OwnedCharacter, Stats } from '@/types';
+import type { OwnedCharacter, OwnedPet, Stats } from '@/types';
+import { getSkill } from '@/data';
 
 export type BattlePhase = 'input' | 'resolving' | 'won' | 'lost';
 
@@ -29,7 +31,7 @@ interface BattleState {
   planned: BattleAction[];
   lastAction: BattleAction | null;
 
-  start: (party: OwnedCharacter[], enemyIds: string[], isBoss: boolean, permanentBonus?: Partial<Stats>, equipmentLevels?: Record<string, number>) => void;
+  start: (party: OwnedCharacter[], enemyIds: string[], isBoss: boolean, permanentBonus?: Partial<Stats>, equipmentLevels?: Record<string, number>, pets?: OwnedPet[]) => void;
   livingAllies: () => Combatant[];
   livingEnemies: () => Combatant[];
   currentActor: () => Combatant | undefined;
@@ -80,14 +82,15 @@ export const useBattleStore = create<BattleState>((set, get) => ({
   planned: [],
   lastAction: null,
 
-  start: (party, enemyIds, isBoss, permanentBonus, equipmentLevels) => {
+  start: (party, enemyIds, isBoss, permanentBonus, equipmentLevels, pets = []) => {
     const allies = party.filter((p) => p.currentHp > 0).map((member, index) => combatantFromOwned(member, index, isBoss, permanentBonus, equipmentLevels));
+    const familiars = pets.filter((pet) => pet.currentHp > 0).map(combatantFromPet);
     const enemies = buildEnemyCombatants(enemyIds);
     set({
       active: true,
       isBoss,
       enemyIds,
-      combatants: [...allies, ...enemies],
+      combatants: [...allies, ...familiars, ...enemies],
       log: [{ text: allies.length > 0 ? (isBoss ? 'ボスが立ちはだかる！' : '魔物が現れた！') : '戦える仲間がいない……。' }],
       phase: allies.length > 0 ? 'input' : 'lost',
       turnActorUids: allies.map((ally) => ally.uid),
@@ -117,6 +120,17 @@ export const useBattleStore = create<BattleState>((set, get) => ({
     const working = inputIndex === 0 ? cloneCombatants(resetRoundFlags(combatants)) : cloneCombatants(combatants);
     const action: BattleAction = { ...a, actorUid: actor.uid };
     const roundLog = resolveAction(working, action);
+
+    // ターン制への翻訳: ラウンド先頭の英雄が行動した直後、召喚中の使い魔が
+    // skill01を優先して最も近い生存敵へ自動行動する。
+    if (inputIndex === 0 && !isBattleOver(working)) {
+      for (const pet of livingOf(working, 'ally').filter((combatant) => combatant.isPet)) {
+        const target = livingOf(working, 'enemy')[0];
+        if (!target) break;
+        const skillId = pet.skillIds.find((id) => pet.mp >= getSkill(id).mpCost);
+        roundLog.push(...resolveAction(working, { actorUid:pet.uid, type:skillId?'skill':'attack', skillId, targetUid:target.uid }));
+      }
+    }
 
     let phase: BattlePhase = 'input';
 
@@ -151,7 +165,7 @@ export const useBattleStore = create<BattleState>((set, get) => ({
             log: [...state.log, ...enemyLog],
             planned: [],
             lastAction: enemyResult?.action ?? null,
-            turnActorUids: livingOf(afterEnemy, 'ally').map((ally) => ally.uid),
+            turnActorUids: livingOf(afterEnemy, 'ally').filter((ally)=>!ally.isPet).map((ally) => ally.uid),
             inputIndex: 0,
             phase: nextPhase,
           });
@@ -159,7 +173,7 @@ export const useBattleStore = create<BattleState>((set, get) => ({
         }
 
         const nextIndexAfterEnemy = nextLivingTurnIndex(turnActorUids, afterEnemy, inputIndex + 1);
-        const refreshedTurnActorUids = livingOf(afterEnemy, 'ally').map((ally) => ally.uid);
+        const refreshedTurnActorUids = livingOf(afterEnemy, 'ally').filter((ally)=>!ally.isPet).map((ally) => ally.uid);
         const nextIndex = nextIndexAfterEnemy >= 0
           ? nextIndexAfterEnemy
           : nextLivingTurnIndex(refreshedTurnActorUids, afterEnemy, 0);
@@ -183,7 +197,7 @@ export const useBattleStore = create<BattleState>((set, get) => ({
       log: [...get().log, ...roundLog],
       planned: [],
       lastAction: action,
-      turnActorUids: livingOf(working, 'ally').map((ally) => ally.uid),
+      turnActorUids: livingOf(working, 'ally').filter((ally)=>!ally.isPet).map((ally) => ally.uid),
       inputIndex: 0,
       phase,
     });
