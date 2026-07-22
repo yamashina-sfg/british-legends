@@ -660,6 +660,13 @@ export const useGameStore = create<GameState>((set, get) => ({
         const res = gainExp(owned, getCharacter(owned.characterId), totalExp);
         owned = res.owned;
         if (res.leveledUp) {
+          const maxStats = statsWithEquipment(
+            getCharacter(owned.characterId),
+            owned,
+            permanentStats(save),
+            save.equipmentLevels,
+          );
+          owned = { ...owned, currentHp: maxStats.hp, currentMp: maxStats.mp };
           levelUps.push(`${getCharacter(owned.characterId).name} は Lv${res.toLevel} になった！`);
         }
       }
