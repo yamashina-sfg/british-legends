@@ -70,6 +70,10 @@ describe('battle command input', () => {
     expect(useBattleStore.getState().log.map((entry)=>entry.text).join('\n')).toContain('沼頁の幼鬼');
   });
 
+  it('バリア破壊時は余剰ダメージをHPへ通さず、後発バリアで上書きする',()=>{
+    const hero=combatantFromOwned(beowulf);const enemy=combatantFromEnemy('dragon',0);hero.mp=100;resolveAction([hero,enemy],{actorUid:hero.uid,type:'skill',skillId:'story_barrier'});const first=hero.barrierHp;expect(first).toBeGreaterThan(0);hero.stats.int=50;resolveAction([hero,enemy],{actorUid:hero.uid,type:'skill',skillId:'story_barrier'});expect(hero.barrierHp).toBeGreaterThan(first);const hp=hero.hp;enemy.stats.atk=999;resolveAction([hero,enemy],{actorUid:enemy.uid,type:'skill',skillId:'dragon_tail_smash',targetUid:hero.uid});expect(hero.hp).toBe(hp);expect(hero.barrierHp).toBe(0);
+  });
+
   it('assigns unique combatant ids even when two party entries share a character id', () => {
     expect(combatantFromOwned(beowulf, 0).uid).not.toBe(combatantFromOwned(beowulf, 1).uid);
   });

@@ -44,7 +44,7 @@ export type Scene =
   | 'gameOver'
   | 'worldClear';
 
-export type Overlay = 'party' | 'character' | 'evolution' | 'blessing' | 'materials' | 'codex' | 'settings' | 'store' | 'fishing' | 'pets' | 'arenaReception' | 'constellations' | 'skins' | null;
+export type Overlay = 'party' | 'character' | 'evolution' | 'blessing' | 'materials' | 'codex' | 'settings' | 'store' | 'fishing' | 'pets' | 'arenaReception' | 'constellations' | 'skins' | 'skillLoadout' | null;
 
 interface ArenaRun { currentWave:number; startWave:number; runStartedAt:number; waveStartedAt:number; deadline:number; lastRewardLabel?:string; lastWaveTime?:number }
 
@@ -126,6 +126,7 @@ interface GameState {
   exitArena: () => void;
   restoreConstellation: (worldId:string) => boolean;
   setCharacterSkin: (partyIndex:number, bodyWorldId:string|undefined, locked:boolean) => void;
+  setSkillSlot: (partyIndex:number, slot:number, skillId:string|null) => void;
   buyItem: (itemId: string) => void;
   consumeItem: (itemId: string) => boolean;
   setQuickSlot: (slotIndex: number, itemId: string | null) => void;
@@ -1019,6 +1020,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   exitArena:()=>{const save=get().save;if(!save)return;useBattleStore.getState().reset();const party=save.party.map((owned)=>{const stats=statsWithEquipment(getCharacter(owned.characterId),owned,permanentStats(save),save.equipmentLevels);return{...owned,currentHp:stats.hp,currentMp:stats.mp};});const pets=(save.pets??[]).map((pet)=>({...pet,currentHp:petStats(pet).hp}));const next={...save,party,pets};saveSlot(next);set({save:next,arenaRun:null,scene:'town',overlay:null,mapToast:'闘技場を退出した。'});},
   restoreConstellation:(worldId)=>{const save=get().save;if(!save)return false;const next=restoreConstellationStatue(save,worldId);if(!next)return false;saveSlot(next);set({save:next});emitNotification({type:'achievement',title:'CONSTELLATION RESTORED',message:`${getWorld(worldId).title} の文学星座と身体スキンを解放`,icon:'✦',rarity:'legendary',dedupeKey:`constellation:${worldId}`});return true;},
   setCharacterSkin:(partyIndex,bodyWorldId,locked)=>{const save=get().save;if(!save||bodyWorldId&&!save.ownedBodySkins?.includes(bodyWorldId))return;const party=save.party.map((owned,index)=>index===partyIndex?{...owned,bodySkinWorldId:bodyWorldId,skinLocked:locked}:owned);const next={...save,party};saveSlot(next);set({save:next});},
+  setSkillSlot:(partyIndex,slot,skillId)=>{const save=get().save,owned=save?.party[partyIndex];if(!save||!owned||slot<0||slot>=3||skillId&&!owned.learnedSkillIds.includes(skillId))return;const slots=Array.from({length:3},(_,index)=>owned.equippedSkillIds?.[index]??null);if(skillId){const previous=slots.indexOf(skillId);if(previous>=0)slots[previous]=slots[slot];}slots[slot]=skillId;const party=save.party.map((member,index)=>index===partyIndex?{...member,equippedSkillIds:slots}:member);const next={...save,party};saveSlot(next);set({save:next});},
 
   buyItem: (itemId) => {
     const save = get().save;

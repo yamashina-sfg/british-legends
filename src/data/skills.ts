@@ -15,6 +15,8 @@ export const SKILLS: Record<string, Skill> = {
   high_recovery_potion: { id: 'high_recovery_potion', name: '上級回復薬', type: 'heal', target: 'self', mpCost: 0, power: 70, description: 'HPを70回復する。' },
   phoenix_page: { id: 'phoenix_page', name: '蘇生薬', type: 'revive', target: 'single', mpCost: 0, power: 50, description: '戦闘不能の仲間をHP50%で復活させる。' },
   elixir: { id: 'elixir', name: '生命の霊薬', type: 'heal', target: 'self', mpCost: 0, power: 160, description: 'HPを160回復する。' },
+  arcane_burst: { id:'arcane_burst',name:'写本爆発',type:'attack',target:'all',mpCost:10,power:1.35,description:'指定した物語座標を中心に、回避不能の魔法爆発を起こす。' },
+  story_barrier: { id:'story_barrier',name:'物語障壁',type:'barrier',target:'self',mpCost:8,power:0.12,description:'3ターンの障壁を展開する。破壊時の余剰ダメージは無効。' },
 
   // --- Beowulf 系 ---
   mighty_grip: {

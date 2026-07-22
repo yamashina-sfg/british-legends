@@ -76,7 +76,7 @@ export function loadSlot(slotId: number): SaveData | null {
       constellations: parsed.constellations ?? Object.fromEntries((parsed.progress?.clearedWorldIds ?? []).map((id)=>[id,2])) as Record<string,2>,
       ownedBodySkins: parsed.ownedBodySkins ?? [...(parsed.progress?.clearedWorldIds ?? [])],
       ownedHeadStyles: parsed.ownedHeadStyles ?? [1,2,3,4],
-      party: (parsed.party ?? []).map((owned) => normalizeEquipmentSlots(normalizeOwnedGrowth(owned))),
+      party: (parsed.party ?? []).map((owned) => {const learned=[...new Set([...owned.learnedSkillIds,'arcane_burst','story_barrier'])];return normalizeEquipmentSlots(normalizeOwnedGrowth({...owned,learnedSkillIds:learned,equippedSkillIds:owned.equippedSkillIds??learned.filter((id)=>id!=='attack_basic').slice(0,3)}))}),
     });
   } catch {
     return null;
@@ -106,7 +106,8 @@ export function createOwnedCharacter(characterId: string): OwnedCharacter {
     exp: 0,
     currentHp: stats.hp,
     currentMp: stats.mp,
-    learnedSkillIds: char.skillIds,
+    learnedSkillIds: [...new Set([...char.skillIds,'arcane_burst','story_barrier'])],
+    equippedSkillIds: [...char.skillIds.filter((id)=>id!=='attack_basic'),'arcane_burst','story_barrier'].slice(0,3),
     allocatedStats: emptyAllocatedStats(),
     unspentStatusPoints: 0,
     levelStatusPoints: 0,
