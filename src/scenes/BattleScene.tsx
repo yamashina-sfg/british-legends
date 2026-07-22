@@ -13,6 +13,7 @@ import { meterPercent } from '@/engine/tragicFlaw';
 import { actionGaugeDurationMs, actionGaugePercent } from '@/engine/actionGauge';
 import { threatBand } from '@/engine/threat';
 import { useI18n } from '@/i18n';
+import { normalizeCommerce } from '@/engine/commerce';
 import beowulfAttackField from '@/assets/battle/beowulf-attack-field.png';
 import hamletAttackField from '@/assets/battle/hamlet-attack-field.png';
 import macbethAttackField from '@/assets/battle/macbeth-attack-field.png';
@@ -379,14 +380,14 @@ export function BattleScene() {
           )}
           {phase === 'input' && actor && visibleMode === 'command' && !autoMode && (
             <>
-              <div className="battle-quick-slots" aria-label="クイックスロット">
+              {save&&normalizeCommerce(save.commerce).entitlements.includes('quick_slots_5')&&<div className="battle-quick-slots" aria-label="クイックスロット">
                 {(save?.quickSlots ?? []).map((itemId, index) => {
                   const item = itemId ? STORE_ITEMS[itemId] : null;
                   const count = itemId ? save?.items[itemId] ?? 0 : 0;
                   const disabled = !item || count <= 0 || (item.skillId === 'phoenix_page' && !allies.some((ally) => !ally.alive));
                   return <button key={index} disabled={disabled} onClick={() => itemId && useBattleItem(itemId)}><small>{index + 1}</small><b>{item?.name ?? 'EMPTY'}</b><span>×{count}</span></button>;
                 })}
-              </div>
+              </div>}
               <div className="battle-command-grid">
                 <Button onClick={() => { setMode('target'); setModeActorUid(actor.uid); setTargetActorUid(actor.uid); }}>▶ {t('attack')}</Button>
                 <Button onClick={() => { setMode('skill'); setModeActorUid(actor.uid); }}>{t('skills')}</Button>

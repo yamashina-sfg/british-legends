@@ -33,7 +33,7 @@ import { useBattleStore } from './useBattleStore';
 import { fragmentsForWorld } from '@/data/manuscripts';
 import { luckDropMultiplier } from '@/engine/damage';
 import { playGameSfx } from '@/audio/sfx';
-import { grantSandboxDiamonds as grantSandboxDiamondsEngine, normalizeCommerce, purchaseProduct, useTimedBoost } from '@/engine/commerce';
+import { grantSandboxDiamonds as grantSandboxDiamondsEngine, normalizeCommerce, purchaseProduct, unlockedMagicSlotCount, useTimedBoost } from '@/engine/commerce';
 import { recoverPartyAfterDefeat } from '@/engine/defeat';
 import { advancePlayTime } from '@/engine/autosave';
 
@@ -154,6 +154,14 @@ function discover(save: SaveData, ids: string[]): string[] {
   const set = new Set(save.codex.discoveredIds);
   ids.forEach((id) => set.add(id));
   return [...set];
+}
+
+function battleParty(save: SaveData): OwnedCharacter[] {
+  const unlockedSlots = unlockedMagicSlotCount(save);
+  return getActiveParty(save).map((member) => ({
+    ...member,
+    equippedSkillIds: (member.equippedSkillIds ?? []).slice(0, unlockedSlots),
+  }));
 }
 
 function rewardText(reward: RewardEntry): string {
@@ -579,7 +587,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           scene: 'battle',
         });
         useBattleStore.getState().start(
-          getActiveParty(save),
+          battleParty(save),
           e.enemyIds ?? [],
           e.kind === 'boss',
           permanentStats(save),
@@ -1045,11 +1053,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   evolvePet: (uid) => { const save=get().save;if(!save)return false;const next=evolvePetEngine(save,uid);if(!next)return false;set({save:next});saveSlot(next);return true; },
 
   enterArena:(startWave)=>{const save=get().save;if(!save||save.gold<ARENA_ENTRY_FEE)return false;const maxStart=Math.min(5,Math.max(1,(save.arena?.bestWave??0)+1));const selected=Math.max(1,Math.min(maxStart,startWave));const arena={...(save.arena??{bestWave:0,selectedStartWave:1,bestTimes:{},claimedFirstWaves:[],attempts:0}),selectedStartWave:selected,attempts:(save.arena?.attempts??0)+1};const next={...save,gold:save.gold-ARENA_ENTRY_FEE,arena};const now=Date.now();saveSlot(next);set({save:next,overlay:null,arenaRun:{currentWave:selected,startWave:selected,runStartedAt:now,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS},scene:'arena'});return true;},
-  startArenaWave:()=>{const {save,arenaRun}=get();if(!save||!arenaRun||arenaRun.currentWave>ARENA_MAX_WAVE)return;const enemyIds=ARENA_WAVES[arenaRun.currentWave];const now=Date.now();set({scene:'battle',arenaRun:{...arenaRun,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS}});useBattleStore.getState().start(getActiveParty(save),enemyIds,false,permanentStats(save),save.equipmentLevels,(save.pets??[]).filter((pet)=>save.petSlots?.includes(pet.uid)),save.inventory);},
+  startArenaWave:()=>{const {save,arenaRun}=get();if(!save||!arenaRun||arenaRun.currentWave>ARENA_MAX_WAVE)return;const enemyIds=ARENA_WAVES[arenaRun.currentWave];const now=Date.now();set({scene:'battle',arenaRun:{...arenaRun,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS}});useBattleStore.getState().start(battleParty(save),enemyIds,false,permanentStats(save),save.equipmentLevels,(save.pets??[]).filter((pet)=>save.petSlots?.includes(pet.uid)),save.inventory);},
   exitArena:()=>{const save=get().save;if(!save)return;useBattleStore.getState().reset();const party=save.party.map((owned)=>{const stats=statsWithEquipment(getCharacter(owned.characterId),owned,permanentStats(save),save.equipmentLevels);return{...owned,currentHp:stats.hp,currentMp:stats.mp};});const pets=(save.pets??[]).map((pet)=>({...pet,currentHp:petStats(pet).hp}));const next={...save,party,pets};saveSlot(next);set({save:next,arenaRun:null,scene:'town',overlay:null,mapToast:'闘技場を退出した。'});},
   restoreConstellation:(worldId)=>{const save=get().save;if(!save)return false;const next=restoreConstellationStatue(save,worldId);if(!next)return false;saveSlot(next);set({save:next});playGameSfx('blessing');emitNotification({type:'achievement',title:'CONSTELLATION RESTORED',message:`${getWorld(worldId).title} の文学星座と身体スキンを解放`,icon:'✦',rarity:'legendary',dedupeKey:`constellation:${worldId}`});return true;},
   setCharacterSkin:(partyIndex,bodyWorldId,locked,headStyle)=>{const save=get().save;if(!save||bodyWorldId&&!save.ownedBodySkins?.includes(bodyWorldId)||headStyle&&!save.ownedHeadStyles?.includes(headStyle))return;const party=save.party.map((owned,index)=>index===partyIndex?{...owned,bodySkinWorldId:bodyWorldId,headSkinStyle:headStyle,skinLocked:locked}:owned);const next={...save,party};saveSlot(next);set({save:next});playGameSfx('attachment');},
-  setSkillSlot:(partyIndex,slot,skillId)=>{const save=get().save,owned=save?.party[partyIndex];if(!save||!owned||slot<0||slot>=3||skillId&&!owned.learnedSkillIds.includes(skillId))return;const slots=Array.from({length:3},(_,index)=>owned.equippedSkillIds?.[index]??null);if(skillId){const previous=slots.indexOf(skillId);if(previous>=0)slots[previous]=slots[slot];}slots[slot]=skillId;const party=save.party.map((member,index)=>index===partyIndex?{...member,equippedSkillIds:slots}:member);const next={...save,party};saveSlot(next);set({save:next});},
+  setSkillSlot:(partyIndex,slot,skillId)=>{const save=get().save,owned=save?.party[partyIndex];if(!save||!owned||slot<0||slot>=unlockedMagicSlotCount(save)||skillId&&!owned.learnedSkillIds.includes(skillId))return;const slots=Array.from({length:3},(_,index)=>owned.equippedSkillIds?.[index]??null);if(skillId){const previous=slots.indexOf(skillId);if(previous>=0)slots[previous]=slots[slot];}slots[slot]=skillId;const party=save.party.map((member,index)=>index===partyIndex?{...member,equippedSkillIds:slots}:member);const next={...save,party};saveSlot(next);set({save:next});},
   setSkipBlessingCinematics:(enabled)=>{const save=get().save;if(!save)return;const next={...save,settings:{...save.settings,skipBlessingCinematics:enabled,blessingCinematicsSeen:save.settings?.blessingCinematicsSeen??false}};saveSlot(next);set({save:next});},
   setGameSettings:(settings)=>{const save=get().save;if(!save)return;const next={...save,settings:{skipBlessingCinematics:false,blessingCinematicsSeen:false,...save.settings,...settings}};saveSlot(next);set({save:next});localStorage.setItem('british-legends:se-volume',String(next.settings.seVolume??.8));},
   travelPortal:(id)=>{const save=get().save;if(!save||!save.adventure?.openPortals.includes(id))return false;const [worldId,floorText]=id.split(':');const floorIndex=Number(floorText);const soul=Math.max(0,...save.party.map((member)=>member.soulLevel??0));if(!save.progress.unlockedWorldIds.includes(worldId)||!Number.isInteger(floorIndex)||soul<floorIndex)return false;const next={...save,progress:{...save.progress,currentWorldId:worldId}};saveSlot(next);set({save:next,worldId,map:generateDungeonMap(worldId,floorIndex),scene:'dungeon',overlay:null,mapToast:`ポータルから第${floorIndex+1}層へ転移した。`});playGameSfx('portal');return true;},
@@ -1075,16 +1083,26 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   consumeItem: (itemId) => {
-    const save = get().save;
-    if (!save || (save.items[itemId] ?? 0) <= 0) return false;
+    const {save,scene}=get();
+    const item=STORE_ITEMS[itemId];
+    if (!save || !item?.skillId || (save.items[itemId] ?? 0) <= 0) return false;
     const items = { ...save.items, [itemId]: save.items[itemId] - 1 };
-    const nextSave = { ...save, items };
+    let party=save.party;
+    if(scene!=='battle'){
+      const active=new Set(getActivePartyIds(save));
+      const targets=save.party.map((member,index)=>({member,index,maxHp:statsWithEquipment(getCharacter(member.characterId),member,permanentStats(save),save.equipmentLevels).hp})).filter(({member})=>active.has(member.characterId));
+      const target=item.skillId==='phoenix_page'?targets.find(({member})=>(member.currentHp??0)<=0):targets.find(({member,maxHp})=>(member.currentHp??maxHp)>0&&(member.currentHp??maxHp)<maxHp);
+      if(!target)return false;
+      const amount=item.skillId==='phoenix_page'?Math.ceil(target.maxHp*.5):getSkill(item.skillId).power;
+      party=save.party.map((member,index)=>index===target.index?{...member,currentHp:Math.min(target.maxHp,Math.max(0,member.currentHp??target.maxHp)+amount)}:member);
+    }
+    const nextSave = { ...save, items,party };
     set({ save: nextSave });
     saveSlot(nextSave);
     emitNotification({
       type: 'success',
       title: STORE_ITEMS[itemId]?.name ?? 'アイテム使用',
-      message: 'どうぐを使用',
+      message: scene==='battle'?'どうぐを使用':'探索中のパーティに使用',
       icon: itemId.includes('potion') || itemId === 'elixir' ? '♥' : '✚',
       dedupeKey: `consume:${itemId}:${Date.now()}`,
     });
@@ -1093,7 +1111,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   setQuickSlot: (slotIndex, itemId) => {
     const save = get().save;
-    if (!save || (itemId && !STORE_ITEMS[itemId])) return;
+    if (!save || !normalizeCommerce(save.commerce).entitlements.includes('quick_slots_5') || (itemId && !STORE_ITEMS[itemId]?.skillId)) return;
     const quickSlots = assignQuickSlot(save.quickSlots ?? [], slotIndex, itemId);
     const nextSave = { ...save, quickSlots };
     set({ save: nextSave });

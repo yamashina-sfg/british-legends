@@ -6,6 +6,7 @@ import { explorationRate } from '@/engine/mapgen';
 import { DungeonMap } from '@/components/dungeon/DungeonMap';
 import { PartyStatusBar } from '@/components/common/PartyStatusBar';
 import { MenuBar } from '@/components/common/MenuBar';
+import { normalizeCommerce } from '@/engine/commerce';
 
 const FLOOR_ATMOSPHERE: Record<string, string[]> = {
   beowulf: ['ヘオロットの酒宴場', 'グレンデル母の沼', '竜の塚・灼熱の回廊'],
@@ -39,7 +40,7 @@ function codexFoundForWorld(worldId: string, discoveredIds: string[] = []) {
 }
 
 export function DungeonScene() {
-  const { map, worldId, movePlayer, retreatToMap, lastReward, mapToast, save,collectFieldLoot } = useGameStore();
+  const { map, worldId, movePlayer, retreatToMap, lastReward, mapToast, save,collectFieldLoot,consumeItem } = useGameStore();
 
   useEffect(()=>{if(!map?.entities.some(entity=>entity.kind==='loot'))return;const paid=save?.commerce?.entitlements.includes('auto_pickup')??false;const timer=window.setTimeout(()=>collectFieldLoot(paid),paid?1000:250);return()=>window.clearTimeout(timer)},[map?.entities,save?.commerce?.entitlements,collectFieldLoot]);
 
@@ -127,6 +128,7 @@ export function DungeonScene() {
           <aside className="dungeon-stage__sidebar rpg-window">
             <span className="dungeon-sidebar__label">PARTY</span>
             <PartyStatusBar />
+            {normalizeCommerce(save.commerce).entitlements.includes('quick_slots_5')&&<><span className="dungeon-sidebar__label">QUICK ITEM</span><div className="field-quick-slots">{save.quickSlots.map((itemId,index)=>{const item=itemId?STORE_ITEMS[itemId]:null;const count=itemId?save.items[itemId]??0:0;return <button key={index} disabled={!item||count<1} onClick={()=>itemId&&consumeItem(itemId)}><small>{index+1}</small><b>{item?.name??'EMPTY'}</b><span>×{count}</span></button>})}</div></>}
             <span className="dungeon-sidebar__label">ENCOUNTER</span>
             <div className="dungeon-enemy-list">{enemyIds.length > 0 ? enemyIds.map((id) => <span key={id}>{getEnemy(id).name}</span>) : <span>静寂</span>}</div>
             <span className="dungeon-sidebar__label">TREASURE</span>
