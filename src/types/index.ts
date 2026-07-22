@@ -328,6 +328,7 @@ export interface PlayerAvatar {
 }
 
 export interface SaveData {
+  dataVersion?: number;
   slotId: number;
   lastSavedAt: number;
   playTimeSec: number;

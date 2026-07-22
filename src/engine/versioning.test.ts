@@ -1,0 +1,2 @@
+import{describe,expect,it}from'vitest';import{compareVersions,requiresForcedUpdate}from'./versioning';
+describe('バージョン管理',()=>{it('セマンティック版を数値比較する',()=>{expect(compareVersions('1.10.0','1.9.9')).toBe(1);expect(compareVersions('1.2','1.2.0')).toBe(0)});it('最低対応版未満だけ強制更新する',()=>{expect(requiresForcedUpdate({appVersion:'2.0.0',minimumAppVersion:'1.5.0',dataVersion:2},'1.4.0')).toBe(true);expect(requiresForcedUpdate({appVersion:'2.0.0',minimumAppVersion:'1.4.0',dataVersion:2},'1.4.0')).toBe(false)})});

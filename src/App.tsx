@@ -15,6 +15,7 @@ import { ArenaScene } from '@/scenes/ArenaScene';
 import { OverlayHost } from '@/overlays/OverlayHost';
 import { AudioManager } from '@/components/common/AudioManager';
 import { NotificationProvider } from '@/notifications/NotificationProvider';
+import { VersionGate } from '@/components/common/VersionGate';
 
 interface AppErrorBoundaryProps {
   children: ReactNode;
@@ -63,7 +64,7 @@ export default function App() {
 
   return (
     <AppErrorBoundary>
-      <NotificationProvider>
+      <VersionGate><NotificationProvider>
         <div className="game-frame">
           {scene === 'title' && <TitleScene />}
           {scene === 'opening' && <OpeningScene />}
@@ -80,7 +81,7 @@ export default function App() {
           <OverlayHost />
           <AudioManager />
         </div>
-      </NotificationProvider>
+      </NotificationProvider></VersionGate>
     </AppErrorBoundary>
   );
 }
