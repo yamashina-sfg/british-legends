@@ -10,6 +10,8 @@ import { BlessingOverlay } from './BlessingOverlay';
 import { FishingOverlay } from './FishingOverlay';
 import { PetsOverlay } from './PetsOverlay';
 import { ArenaReceptionOverlay } from './ArenaReceptionOverlay';
+import { ConstellationsOverlay } from './ConstellationsOverlay';
+import { SkinsOverlay } from './SkinsOverlay';
 
 export function OverlayHost() {
   const overlay = useGameStore((s) => s.overlay);
@@ -30,6 +32,8 @@ export function OverlayHost() {
         {overlay === 'fishing' && <FishingOverlay />}
         {overlay === 'pets' && <PetsOverlay />}
         {overlay === 'arenaReception' && <ArenaReceptionOverlay />}
+        {overlay === 'constellations' && <ConstellationsOverlay />}
+        {overlay === 'skins' && <SkinsOverlay />}
       </div>
     </div>
   );

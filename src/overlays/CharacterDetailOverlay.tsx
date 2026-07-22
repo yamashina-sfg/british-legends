@@ -11,6 +11,7 @@ import { Sprite } from '@/components/ui/Sprite';
 import { permanentStats } from '@/engine/permanentStats';
 import type { AllocatableStat, AllocatedStats } from '@/types';
 import { allocationCap, maxCharacterLevel, normalizeOwnedGrowth } from '@/engine/characterGrowth';
+import { unlockedConstellationIds } from '@/engine/constellations';
 
 export function CharacterDetailOverlay() {
   const { save, selectedCharIndex, openOverlay, commitStatusAllocation } = useGameStore();
@@ -139,9 +140,10 @@ export function CharacterDetailOverlay() {
       <Button primary center disabled={!evo.hasEvolution} onClick={() => openOverlay('evolution', selectedCharIndex)}>
         {evo.hasEvolution ? (evo.canEvolve ? '進化できる！' : '進化') : '最終進化に到達'}
       </Button>
-      <Button center disabled={owned.level < maxCharacterLevel(growth) || save.progress.clearedWorldIds.length === 0} onClick={() => openOverlay('blessing', selectedCharIndex)}>
+      <Button center disabled={owned.level < maxCharacterLevel(growth) || unlockedConstellationIds(save).length === 0} onClick={() => openOverlay('blessing', selectedCharIndex)}>
         星辰の祝福 {owned.level < maxCharacterLevel(growth) ? `（Lv${maxCharacterLevel(growth)}で解放）` : ''}
       </Button>
+      <Button center onClick={() => openOverlay('skins', selectedCharIndex)}>頭・身体スキン</Button>
       <Button center onClick={() => openOverlay('party')}>
         パーティへ戻る
       </Button>

@@ -7,6 +7,7 @@ const ITEMS: { key: 'lodge' | Exclude<Overlay, 'character' | 'evolution' | null>
   { key: 'store', label: 'ストア' },
   { key: 'materials', label: '素材' },
   { key: 'codex', label: '図鑑' },
+  { key: 'constellations', label: '星神' },
   { key: 'fishing', label: '釣り' },
   { key: 'arenaReception', label: '闘技場' },
   { key: 'settings', label: '設定' },

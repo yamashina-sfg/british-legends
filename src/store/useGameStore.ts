@@ -16,6 +16,7 @@ import { resolveFishing, type FishingReward } from '@/engine/fishing';
 import { permanentStats } from '@/engine/permanentStats';
 import { getPet } from '@/data/pets';
 import { applyArenaReward, ARENA_ENTRY_FEE, ARENA_MAX_WAVE, ARENA_WAVE_LIMIT_MS, ARENA_WAVES } from '@/engine/arena';
+import { awakenConstellation, restoreConstellationStatue, unlockedConstellationIds } from '@/engine/constellations';
 import { awardSummonedPetExp, evolvePet as evolvePetEngine, petStats, setPetSlot as setPetSlotEngine, trainPet as trainPetEngine, tryCapturePet } from '@/engine/pets';
 import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
 import {
@@ -43,7 +44,7 @@ export type Scene =
   | 'gameOver'
   | 'worldClear';
 
-export type Overlay = 'party' | 'character' | 'evolution' | 'blessing' | 'materials' | 'codex' | 'settings' | 'store' | 'fishing' | 'pets' | 'arenaReception' | null;
+export type Overlay = 'party' | 'character' | 'evolution' | 'blessing' | 'materials' | 'codex' | 'settings' | 'store' | 'fishing' | 'pets' | 'arenaReception' | 'constellations' | 'skins' | null;
 
 interface ArenaRun { currentWave:number; startWave:number; runStartedAt:number; waveStartedAt:number; deadline:number; lastRewardLabel?:string; lastWaveTime?:number }
 
@@ -123,6 +124,8 @@ interface GameState {
   enterArena: (startWave:number) => boolean;
   startArenaWave: () => void;
   exitArena: () => void;
+  restoreConstellation: (worldId:string) => boolean;
+  setCharacterSkin: (partyIndex:number, bodyWorldId:string|undefined, locked:boolean) => void;
   buyItem: (itemId: string) => void;
   consumeItem: (itemId: string) => boolean;
   setQuickSlot: (slotIndex: number, itemId: string | null) => void;
@@ -673,6 +676,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       ? updateExploration(applyRewards(nextSaveBase, bonusRewards), worldId, nextMap)
       : applyRewards(nextSaveBase, bonusRewards);
     nextSave = awardSummonedPetExp(nextSave, totalExp);
+    if(encounter.isBoss)nextSave=awakenConstellation(nextSave,worldId);
     const capture = tryCapturePet(nextSave, enemyIds);
     nextSave = capture.save;
     if (capture.captured) emitNotification({ type:'achievement', title:'NEW FAMILIAR', message:`${getPet(capture.captured.petId).name} が仲間になった`, icon:'◉', rarity:'epic', dedupeKey:`pet-capture:${capture.captured.petId}` });
@@ -897,7 +901,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   blessCharacter: (partyIndex, patronWorldId) => {
     const save = get().save;
     const owned = save?.party[partyIndex];
-    const patrons = save?.progress.clearedWorldIds ?? [];
+    const patrons = save ? unlockedConstellationIds(save) : [];
     if (!save || !owned || !patrons.includes(patronWorldId)) return false;
     const blessed = blessCharacterEngine(owned, patronWorldId, patrons.length);
     if (!blessed) return false;
@@ -1013,6 +1017,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   enterArena:(startWave)=>{const save=get().save;if(!save||save.gold<ARENA_ENTRY_FEE)return false;const maxStart=Math.min(5,Math.max(1,(save.arena?.bestWave??0)+1));const selected=Math.max(1,Math.min(maxStart,startWave));const arena={...(save.arena??{bestWave:0,selectedStartWave:1,bestTimes:{},claimedFirstWaves:[],attempts:0}),selectedStartWave:selected,attempts:(save.arena?.attempts??0)+1};const next={...save,gold:save.gold-ARENA_ENTRY_FEE,arena};const now=Date.now();saveSlot(next);set({save:next,overlay:null,arenaRun:{currentWave:selected,startWave:selected,runStartedAt:now,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS},scene:'arena'});return true;},
   startArenaWave:()=>{const {save,arenaRun}=get();if(!save||!arenaRun||arenaRun.currentWave>ARENA_MAX_WAVE)return;const enemyIds=ARENA_WAVES[arenaRun.currentWave];const now=Date.now();set({scene:'battle',arenaRun:{...arenaRun,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS}});useBattleStore.getState().start(getActiveParty(save),enemyIds,false,permanentStats(save),save.equipmentLevels,(save.pets??[]).filter((pet)=>save.petSlots?.includes(pet.uid)));},
   exitArena:()=>{const save=get().save;if(!save)return;useBattleStore.getState().reset();const party=save.party.map((owned)=>{const stats=statsWithEquipment(getCharacter(owned.characterId),owned,permanentStats(save),save.equipmentLevels);return{...owned,currentHp:stats.hp,currentMp:stats.mp};});const pets=(save.pets??[]).map((pet)=>({...pet,currentHp:petStats(pet).hp}));const next={...save,party,pets};saveSlot(next);set({save:next,arenaRun:null,scene:'town',overlay:null,mapToast:'闘技場を退出した。'});},
+  restoreConstellation:(worldId)=>{const save=get().save;if(!save)return false;const next=restoreConstellationStatue(save,worldId);if(!next)return false;saveSlot(next);set({save:next});emitNotification({type:'achievement',title:'CONSTELLATION RESTORED',message:`${getWorld(worldId).title} の文学星座と身体スキンを解放`,icon:'✦',rarity:'legendary',dedupeKey:`constellation:${worldId}`});return true;},
+  setCharacterSkin:(partyIndex,bodyWorldId,locked)=>{const save=get().save;if(!save||bodyWorldId&&!save.ownedBodySkins?.includes(bodyWorldId))return;const party=save.party.map((owned,index)=>index===partyIndex?{...owned,bodySkinWorldId:bodyWorldId,skinLocked:locked}:owned);const next={...save,party};saveSlot(next);set({save:next});},
 
   buyItem: (itemId) => {
     const save = get().save;

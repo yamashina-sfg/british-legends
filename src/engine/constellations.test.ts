@@ -1,0 +1,2 @@
+import{describe,expect,it}from'vitest';import{createNewSave}from'./save';import{awakenConstellation,restoreConstellationStatue,unlockedConstellationIds}from'./constellations';
+describe('文学星座',()=>{it('ボス討伐の第1段階後、作品クリア済みなら星像対話で第2段階と身体を解放',()=>{let save=createNewSave(1);save=awakenConstellation(save,'beowulf');expect(restoreConstellationStatue(save,'beowulf')).toBeNull();save.progress.clearedWorldIds=['beowulf'];save=restoreConstellationStatue(save,'beowulf')!;expect(unlockedConstellationIds(save)).toEqual(['beowulf']);expect(save.ownedBodySkins).toContain('beowulf')})});
