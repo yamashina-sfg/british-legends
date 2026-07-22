@@ -31,6 +31,7 @@ import { emitNotification } from '@/notifications/notificationBus';
 import { activatePortal, applyBossSoulFlags, claimOneTimeEvent, tradeAdventureItem } from '@/engine/adventure';
 import { useBattleStore } from './useBattleStore';
 import { fragmentsForWorld } from '@/data/manuscripts';
+import { luckDropMultiplier } from '@/engine/damage';
 import { grantSandboxDiamonds as grantSandboxDiamondsEngine, normalizeCommerce, purchaseProduct, useTimedBoost } from '@/engine/commerce';
 
 export type Scene =
@@ -623,11 +624,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       return sum + Math.ceil(baseGold * (1 + research.goldRate));
     }, 0);
 
-    const drops: Record<string, number> = {};
+    const drops: Record<string, number> = {};const partyLuk=Math.max(0,...getActiveParty(save).map(member=>statsWithEquipment(getCharacter(member.characterId),member,permanentStats(save),save.equipmentLevels).luk??0));const lukDrop=luckDropMultiplier(partyLuk);
     for (const id of enemyIds) {
       const research = enemyResearchBenefit(save.defeatCounts?.[id] ?? 0);
       for (const d of getEnemy(id).dropTable) {
-        if (Math.random() < Math.min(1, (d.rate + research.dropRateBonus)*dropMultiplier)) {
+        if (Math.random() < Math.min(1, (d.rate + research.dropRateBonus)*dropMultiplier*lukDrop)) {
           drops[d.materialId] = (drops[d.materialId] ?? 0) + 1;
         }
       }

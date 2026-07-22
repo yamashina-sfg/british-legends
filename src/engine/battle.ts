@@ -1,7 +1,7 @@
 import type { Enemy, OwnedCharacter, OwnedPet, Skill, Stats } from '@/types';
 import { getCharacter, getEnemy, getSkill } from '@/data';
 import { statsWithEquipment } from './equipment';
-import { calcDamage, calcHeal } from './damage';
+import { calcDamage, calcHeal, resolveLuckHit } from './damage';
 import {
   applyHpCost,
   createFlawRuntime,
@@ -432,13 +432,15 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
       maybeLogAwakening(actor, logs);
       for (const t of targets) {
         const targetStats = effectiveStats(statsWithTimedBuffs(t), t.tragicFlaw, t.hp, t.maxHp);
+        const luck=resolveLuckHit(actorStats.luk??0,targetStats.luk??0,skill.id==='arcane_burst');
+        if(luck.evaded){logs.push({text:`${t.name} は攻撃を回避した！`,feedback:{targetUid:t.uid,text:'Evade!',kind:'evade',priority:6}});continue;}
         const boostedSkill = { ...skill, power: skill.power * skillBookMultiplier(skill, actor.skillBookCounts) };
         const baseDmg = calcDamage({ attackerAtk: actorStats.atk, defenderDef: targetStats.def, skill: boostedSkill, atkBuff: actor.atkBuff });
-        const dmg = Math.max(1, Math.floor(baseDmg * flawDamage.multiplier));
+        const dmg = Math.max(1, Math.floor(baseDmg * flawDamage.multiplier*(luck.critical?1.5:1)));
         const dealt = applyDamage(t, dmg);
         logs.push({
-          text: `${t.name} に ${dealt} のダメージ！`,
-          feedback: { targetUid: t.uid, text: `${dealt}`, kind: 'damage', priority: 4 },
+          text: `${luck.critical?'会心！ ':''}${t.name} に ${dealt} のダメージ！`,
+          feedback: { targetUid: t.uid, text: luck.critical?`CRITICAL ${dealt}`:`${dealt}`, kind: luck.critical?'critical':'damage', priority: luck.critical?7:4 },
         });
         if (t.sourceId === 'dragon' && !t.rageTriggered && t.hp > 0 && t.hp <= t.maxHp / 2) {
           t.rageTriggered = true;
