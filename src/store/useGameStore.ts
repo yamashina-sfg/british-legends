@@ -6,7 +6,7 @@ import { gainExp } from '@/engine/leveling';
 import { evolve as evolveEngine } from '@/engine/evolution';
 import { generateDungeonMap } from '@/engine/mapgen';
 import { resolveMove, removeEntity } from '@/engine/mapmove';
-import { statsWithEquipment } from '@/engine/equipment';
+import { equipItem, statsWithEquipment } from '@/engine/equipment';
 import { addDefeats, crossedResearchLevels, enemyResearchBenefit } from '@/engine/research';
 import { manuscriptStats } from '@/data/manuscripts';
 import { forgeCost, MAX_EQUIPMENT_LEVEL } from '@/engine/forging';
@@ -908,17 +908,14 @@ export const useGameStore = create<GameState>((set, get) => ({
     const item = getEquipment(equipmentId);
     const equippedId = item.slot === 'weapon'
       ? owned.equippedWeaponId
-      : item.slot === 'armor'
-        ? owned.equippedArmorId
-        : owned.equippedAccessoryId;
+      : item.slot === 'head' ? owned.equippedHeadId
+        : item.slot === 'armor' ? owned.equippedArmorId
+          : item.slot === 'arms' ? owned.equippedArmsId
+            : item.slot === 'shield' ? owned.equippedShieldId : owned.equippedLegsId;
     const equippedAlready = equippedId === item.id;
     const ownedLoot = (save.equipmentInventory ?? []).includes(item.id);
     if (equippedAlready || (!ownedLoot && save.gold < item.price)) return;
-    const nextOwned = item.slot === 'weapon'
-      ? { ...owned, equippedWeaponId: item.id }
-      : item.slot === 'armor'
-        ? { ...owned, equippedArmorId: item.id }
-        : { ...owned, equippedAccessoryId: item.id };
+    const nextOwned = equipItem(owned, item.slot, item.id);
     const party = save.party.map((p, index) => index === partyIndex ? nextOwned : p);
     const equipmentInventory = ownedLoot ? save.equipmentInventory : [...new Set([...(save.equipmentInventory ?? []), item.id])];
     const nextSave = { ...save, party, equipmentInventory, gold: ownedLoot ? save.gold : save.gold - item.price };

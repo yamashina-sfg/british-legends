@@ -69,7 +69,11 @@ export function blessCharacter(owned: OwnedCharacter, patronWorldId: string, unl
     levelStatusPoints: 0,
     bonusStatusPoints: (normalized.bonusStatusPoints ?? 0) + 9 + unlockedPatronCount,
     equippedWeaponId: undefined,
+    equippedHeadId: undefined,
     equippedArmorId: undefined,
+    equippedArmsId: undefined,
+    equippedShieldId: undefined,
+    equippedLegsId: undefined,
     equippedAccessoryId: undefined,
   });
 }
