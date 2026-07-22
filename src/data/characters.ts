@@ -131,7 +131,7 @@ export const CHARACTERS: Record<string, Character> = {
     stageName: 'Hero Beowulf',
     baseStats: { hp: 140, mp: 24, atk: 32, def: 20, spd: 13 },
     growthRate: { hp: 16, mp: 3, atk: 5, def: 3, spd: 1 },
-    skillIds: ['attack_basic', 'mighty_grip', 'shield_oath', 'hero_roar'],
+    skillIds: ['attack_basic', 'mighty_grip', 'shield_oath', 'hero_roar','bibliotheca_rally'],
     role: 'Tank',
     tragicFlaw: HEROISM,
     evolution: {
@@ -151,7 +151,7 @@ export const CHARACTERS: Record<string, Character> = {
     stageName: 'Dragon Slayer',
     baseStats: { hp: 220, mp: 40, atk: 48, def: 30, spd: 16 },
     growthRate: { hp: 20, mp: 4, atk: 6, def: 4, spd: 2 },
-    skillIds: ['attack_basic', 'mighty_grip', 'shield_oath', 'hero_roar', 'dragon_slash'],
+    skillIds: ['attack_basic', 'mighty_grip', 'shield_oath', 'hero_roar', 'dragon_slash','bibliotheca_rally'],
     role: 'Tank',
     tragicFlaw: HEROISM,
     evolution: {
@@ -168,7 +168,7 @@ export const CHARACTERS: Record<string, Character> = {
     stageName: 'Legendary King',
     baseStats: { hp: 340, mp: 60, atk: 66, def: 42, spd: 20 },
     growthRate: { hp: 26, mp: 5, atk: 8, def: 5, spd: 2 },
-    skillIds: ['attack_basic', 'mighty_grip', 'shield_oath', 'hero_roar', 'dragon_slash'],
+    skillIds: ['attack_basic', 'mighty_grip', 'shield_oath', 'hero_roar', 'dragon_slash','bibliotheca_rally'],
     role: 'Tank',
     tragicFlaw: HEROISM,
     evolution: null,
