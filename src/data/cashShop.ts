@@ -16,8 +16,8 @@ export const CASH_SHOP_PRODUCTS:CashProduct[]=[
   ...Array.from({length:18},(_,i)=>p({id:`head_style_${i+5}`,name:`装飾ヘッド ${String(i+1).padStart(2,'0')}`,description:'外見変更で使用できる限定ヘッド',category:'appearance',diamondCost:40,purchaseLimit:1,grant:{kind:'head',style:i+5}})),
   p({id:'auto_fishing',name:'自動釣り',description:'釣りの自動実行機能を解放',category:'convenience',diamondCost:20,purchaseLimit:1,grant:{kind:'entitlement',id:'auto_fishing'}}),
   p({id:'auto_pickup',name:'自動取得',description:'戦闘報酬を自動回収',category:'convenience',diamondCost:10,purchaseLimit:1,grant:{kind:'entitlement',id:'auto_pickup'}}),
-  p({id:'quick_slots_5',name:'クイックスロット5枠',description:'British Legends標準版に付属',category:'convenience',diamondCost:5,purchaseLimit:1,grant:{kind:'entitlement',id:'quick_slots_5'}}),
-  p({id:'magic_slot_2',name:'魔法スロット 第2枠',description:'British Legends標準版に付属',category:'convenience',diamondCost:100,purchaseLimit:1,grant:{kind:'entitlement',id:'magic_slot_2'}}),
+  p({id:'quick_slots_5',name:'クイックスロット5枠',description:'フィールドと戦闘で使える5枠を解放',category:'convenience',diamondCost:5,purchaseLimit:1,grant:{kind:'entitlement',id:'quick_slots_5'}}),
+  p({id:'magic_slot_2',name:'魔法スロット 第2枠',description:'2つ目の装着魔法枠を解放',category:'convenience',diamondCost:100,purchaseLimit:1,grant:{kind:'entitlement',id:'magic_slot_2'}}),
   p({id:'magic_slot_3',name:'魔法スロット 第3枠',description:'第2枠の解放が必要',category:'convenience',diamondCost:300,purchaseLimit:1,prerequisiteId:'magic_slot_2',grant:{kind:'entitlement',id:'magic_slot_3'}}),
 ];
 export const CASH_CATEGORY_LABELS:Record<CashShopCategory,string>={currency:'通貨',status:'能力',boost:'ブースト',pet:'ペット',equipment:'装備',appearance:'外見',convenience:'便利'};

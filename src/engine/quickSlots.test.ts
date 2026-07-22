@@ -4,7 +4,7 @@ import { assignQuickSlot, normalizeQuickSlots } from './quickSlots';
 describe('quick slots', () => {
   it('migrates missing and short saves to five slots', () => {
     expect(normalizeQuickSlots()).toHaveLength(5);
-    expect(normalizeQuickSlots(['field_ration'])).toEqual(['field_ration', 'high_recovery_potion', 'phoenix_page', 'elixir', null]);
+    expect(normalizeQuickSlots(['field_ration'])).toEqual(['field_ration', null, null, null, null]);
   });
 
   it('swaps items when assigning one that is already in another slot', () => {

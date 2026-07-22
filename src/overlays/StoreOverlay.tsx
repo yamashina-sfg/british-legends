@@ -37,6 +37,7 @@ export function StoreOverlay() {
   if (!save) return null;
 
   const commerce=normalizeCommerce(save.commerce);
+  const quickSlotsUnlocked=commerce.entitlements.includes('quick_slots_5');
   const equipment = tab === 'item' || tab === 'forge' || tab === 'craft' || tab==='premium' ? [] : Object.values(EQUIPMENT).filter((item) => item.slot === tab);
   const ownedEquipment = [...new Set([
     ...(save.equipmentInventory ?? []),
@@ -66,8 +67,8 @@ export function StoreOverlay() {
         </section>}
         {tab === 'item' && (
           <section className="quick-slot-settings" aria-label="クイックスロット設定">
-            <header><strong>クイックスロット設定</strong><span>枠を選び、道具の「登録」を押す</span></header>
-            <div>
+            <header><strong>クイックスロット設定</strong><span>{quickSlotsUnlocked?'枠を選び、回復道具の「登録」を押す':'便利タブの商品購入で5枠を解放'}</span></header>
+            {quickSlotsUnlocked?<><div>
               {save.quickSlots.map((itemId, index) => (
                 <button key={index} className={selectedQuickSlot === index ? 'is-selected' : ''} onClick={() => setSelectedQuickSlot(index)}>
                   <small>SLOT {index + 1}</small>
@@ -76,7 +77,7 @@ export function StoreOverlay() {
                 </button>
               ))}
             </div>
-            <button className="quick-slot-clear" onClick={() => setQuickSlot(selectedQuickSlot, null)}>選択枠を解除</button>
+            <button className="quick-slot-clear" onClick={() => setQuickSlot(selectedQuickSlot, null)}>選択枠を解除</button></>:<div className="quick-slot-locked"><b>◇ LOCKED</b><span>戦闘・探索中に使える回復道具を5つ登録できます。</span><Button onClick={()=>{setTab('premium');setCashCategory('convenience')}}>便利タブで解放</Button></div>}
           </section>
         )}
         {tab === 'forge' && ownedEquipment.length === 0 && (
@@ -112,7 +113,7 @@ export function StoreOverlay() {
           <article className={`store-item ${save.gold < item.price ? 'is-unaffordable' : ''}`} key={item.id}>
             <div className="store-item__art"><img className="store-item__icon" src={STORE_ICON_BY_ID[item.id]} alt="" aria-hidden="true" /><span>ITEM</span></div>
             <div><strong>{item.name} <small>×{save.items[item.id] ?? 0}</small></strong><p>{item.description}</p></div>
-            <div className="store-item__buy"><b><i>G</i> {item.price}</b><Button onClick={() => setQuickSlot(selectedQuickSlot, item.id)}>登録</Button><Button disabled={save.gold < item.price} onClick={() => buyItem(item.id)}>購入</Button></div>
+            <div className="store-item__buy"><b><i>G</i> {item.price}</b>{item.skillId&&<Button disabled={!quickSlotsUnlocked} onClick={() => setQuickSlot(selectedQuickSlot, item.id)}>{quickSlotsUnlocked?'登録':'枠未解放'}</Button>}<Button disabled={save.gold < item.price} onClick={() => buyItem(item.id)}>購入</Button></div>
           </article>
         )) : equipment.map((item) => (
           <article className={`store-item ${save.gold < item.price ? 'is-unaffordable' : ''} ${equippedIds.has(item.id) ? 'is-equipped' : ''}`} key={item.id}>

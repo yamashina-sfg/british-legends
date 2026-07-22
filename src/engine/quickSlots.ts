@@ -1,11 +1,7 @@
 export const QUICK_SLOT_COUNT = 5;
 
 export const DEFAULT_QUICK_SLOTS: (string | null)[] = [
-  'recovery_potion',
-  'high_recovery_potion',
-  'phoenix_page',
-  'elixir',
-  null,
+  null,null,null,null,null,
 ];
 
 export function normalizeQuickSlots(slots?: (string | null)[]): (string | null)[] {

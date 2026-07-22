@@ -1,8 +1,9 @@
 import type { CommerceState, SaveData } from '@/types';
 import { getCashProduct } from '@/data/cashShop';
 
-export const defaultCommerce=():CommerceState=>({diamonds:0,purchaseCounts:{},purchaseHistory:[],entitlements:['quick_slots_5','magic_slot_2','magic_slot_3'],activeBoosts:{expUntil:0,dropUntil:0},sandboxGrantClaimed:false});
+export const defaultCommerce=():CommerceState=>({diamonds:0,purchaseCounts:{},purchaseHistory:[],entitlements:[],activeBoosts:{expUntil:0,dropUntil:0},sandboxGrantClaimed:false});
 export function normalizeCommerce(value?:Partial<CommerceState>):CommerceState{const d=defaultCommerce();return {...d,...value,purchaseCounts:value?.purchaseCounts??{},purchaseHistory:value?.purchaseHistory??[],entitlements:[...new Set([...d.entitlements,...(value?.entitlements??[])])],activeBoosts:{...d.activeBoosts,...value?.activeBoosts}}}
+export function unlockedMagicSlotCount(save:SaveData):number{const e=normalizeCommerce(save.commerce).entitlements;return e.includes('magic_slot_3')?3:e.includes('magic_slot_2')?2:1}
 export function purchaseProduct(save:SaveData,productId:string,partyIndex=0):{ok:boolean;message:string;save:SaveData}{
   const product=getCashProduct(productId),commerce=normalizeCommerce(save.commerce);
   if(!product)return {ok:false,message:'商品が見つかりません',save};
