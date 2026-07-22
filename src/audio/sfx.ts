@@ -1,4 +1,5 @@
 export type BattleSfx = 'attack' | 'skill' | 'defend' | 'item';
+export type GameSfx='click'|'confirm'|'cancel'|'item_buy'|'item_get'|'attachment'|'reinforce'|'craft'|'pet_summon'|'pet_return'|'portal'|'levelup'|'chest'|'unique_get'|'blessing'|'barrier'|'before_explosion'|'after_explosion'|'recovery';
 
 const SFX_PATHS: Record<BattleSfx | 'hit', string> = {
   attack: '/audio/sfx/attack-slash.wav',
@@ -50,3 +51,6 @@ export function playBattleSfx(type: BattleSfx) {
     window.setTimeout(() => play(SFX_PATHS.hit, VOLUME.hit), 95);
   }
 }
+
+const GAME_SFX:Record<GameSfx,{path:string;volume:number}>={click:{path:SFX_PATHS.item,volume:.18},confirm:{path:SFX_PATHS.item,volume:.3},cancel:{path:SFX_PATHS.defend,volume:.2},item_buy:{path:SFX_PATHS.item,volume:.42},item_get:{path:SFX_PATHS.item,volume:.48},attachment:{path:SFX_PATHS.defend,volume:.34},reinforce:{path:SFX_PATHS.skill,volume:.42},craft:{path:SFX_PATHS.skill,volume:.5},pet_summon:{path:SFX_PATHS.skill,volume:.36},pet_return:{path:SFX_PATHS.defend,volume:.3},portal:{path:SFX_PATHS.skill,volume:.45},levelup:{path:SFX_PATHS.skill,volume:.52},chest:{path:SFX_PATHS.item,volume:.5},unique_get:{path:SFX_PATHS.skill,volume:.55},blessing:{path:SFX_PATHS.skill,volume:.55},barrier:{path:SFX_PATHS.defend,volume:.5},before_explosion:{path:SFX_PATHS.skill,volume:.28},after_explosion:{path:SFX_PATHS.hit,volume:.58},recovery:{path:SFX_PATHS.item,volume:.4}};
+export function playGameSfx(type:GameSfx){const cue=GAME_SFX[type];play(cue.path,cue.volume)}

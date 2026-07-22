@@ -25,6 +25,8 @@ function entityGlyph(e: MapEntity): { glyph: string; cls: string } {
       return { glyph: e.opened ? '' : '▣', cls: e.opened ? 'ent-door-open' : 'ent-locked-door' };
     case 'secretDoor':
       return { glyph: e.opened ? '!' : ' ', cls: e.opened ? 'ent-secret-open' : 'ent-secret-hidden' };
+    case 'loot':
+      return { glyph: e.rewards?.[0]?.kind==='equipment'?'⚔':e.rewards?.[0]?.kind==='item'?'✚':'◆', cls:'ent-loot' };
   }
 }
 

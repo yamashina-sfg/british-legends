@@ -39,7 +39,9 @@ function codexFoundForWorld(worldId: string, discoveredIds: string[] = []) {
 }
 
 export function DungeonScene() {
-  const { map, worldId, movePlayer, retreatToMap, lastReward, mapToast, save } = useGameStore();
+  const { map, worldId, movePlayer, retreatToMap, lastReward, mapToast, save,collectFieldLoot } = useGameStore();
+
+  useEffect(()=>{if(!map?.entities.some(entity=>entity.kind==='loot'))return;const paid=save?.commerce?.entitlements.includes('auto_pickup')??false;const timer=window.setTimeout(()=>collectFieldLoot(paid),paid?1000:250);return()=>window.clearTimeout(timer)},[map?.entities,save?.commerce?.entitlements,collectFieldLoot]);
 
   // キーボード操作（矢印 / WASD）
   useEffect(() => {
@@ -114,6 +116,7 @@ export function DungeonScene() {
               <span><i className="legend-boss" /> ボス</span>
               <span><i className="legend-key" /> 鍵</span>
               <span><i className="legend-door" /> 扉</span>
+              <span><i className="legend-loot" /> 戦利品</span>
             </div>
             <div className="dpad" aria-label="移動操作">
               <div className="dpad-empty" /><button aria-label="上へ移動" onClick={() => movePlayer(0, -1)}>▲</button><div className="dpad-empty" />

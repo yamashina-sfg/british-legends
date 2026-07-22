@@ -218,7 +218,7 @@ export interface Dungeon {
 // --- タイルマップ（自動生成・移動可能） ----------------------
 export type TileType = 'floor' | 'wall' | 'water';
 
-export type MapEntityKind = 'enemy' | 'boss' | 'chest' | 'stairs' | 'rest' | 'memory' | 'key' | 'lockedDoor' | 'secretDoor';
+export type MapEntityKind = 'enemy' | 'boss' | 'chest' | 'stairs' | 'rest' | 'memory' | 'key' | 'lockedDoor' | 'secretDoor' | 'loot';
 
 export interface MapEntity {
   id: string;
@@ -237,6 +237,7 @@ export interface MapEntity {
   /** 表示用ラベル（スプライト未実装のため頭文字を使う） */
   label?: string;
   eventText?: string;
+  droppedAt?: number;
 }
 
 /** 1フロア分の生成済みマップ。tiles と entities は純粋データなので動かせる。 */

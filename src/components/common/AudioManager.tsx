@@ -11,6 +11,7 @@ const STORAGE_KEY = 'british-legends:bgm-enabled';
 
 const FILE_TRACKS: Partial<Record<TrackName, { src: string; volume: number; loop: boolean }>> = {
   opening: { src: '/audio/opening-suite.wav', volume: 0.72, loop: true },
+  lodge:{src:'/audio/town-theme-rpg.mp3',volume:.34,loop:true},dungeon:{src:'/audio/dungeon-theme.mp3',volume:.3,loop:true},battle:{src:'/audio/medieval-battle.mp3',volume:.32,loop:true},boss:{src:'/audio/boss-battle-theme.mp3',volume:.36,loop:true},
 };
 
 const fileBufferCache = new Map<string, Promise<AudioBuffer>>();
