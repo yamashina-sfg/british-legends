@@ -325,6 +325,7 @@ export function BattleScene() {
               <div key={a.uid} className={`battle-status ${!a.alive ? 'is-fainted' : ''}`}>
                 <div className="row"><strong>{a.name}</strong><span className="spacer" />{actor?.uid === a.uid && phase === 'input' && <span className="cursor">▶</span>}</div>
                 {(() => {
+                  if (a.isPet) return <div className="battle-role-line"><span>Familiar / 自動戦闘</span><b>召喚中</b></div>;
                   const character = getCharacter(a.sourceId);
                   return (
                     <div className="battle-role-line">

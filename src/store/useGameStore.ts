@@ -15,7 +15,7 @@ import { craftEquipment as craftEquipmentEngine, EQUIPMENT_RECIPES } from '@/eng
 import { resolveFishing, type FishingReward } from '@/engine/fishing';
 import { permanentStats } from '@/engine/permanentStats';
 import { getPet } from '@/data/pets';
-import { awardSummonedPetExp, evolvePet as evolvePetEngine, setPetSlot as setPetSlotEngine, trainPet as trainPetEngine, tryCapturePet } from '@/engine/pets';
+import { awardSummonedPetExp, evolvePet as evolvePetEngine, petStats, setPetSlot as setPetSlotEngine, trainPet as trainPetEngine, tryCapturePet } from '@/engine/pets';
 import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
 import {
   createNewSave,
@@ -550,6 +550,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           e.kind === 'boss',
           permanentStats(save),
           save.equipmentLevels ?? {},
+          (save.pets ?? []).filter((pet) => save.petSlots?.includes(pet.uid)),
         );
         return;
       }
@@ -644,6 +645,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       gold: save.gold + totalGold,
       codex: { discoveredIds: discover(save, codexIds) },
       defeatCounts,
+      pets: (save.pets ?? []).map((pet) => {
+        const combatant=allCombatants.find((entry)=>entry.uid===pet.uid);
+        return combatant?{...pet,currentHp:combatant.hp}:pet;
+      }),
     };
 
     // 倒した敵をマップから除去
@@ -714,6 +719,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       party,
       gold: save.gold - lostGold,
       progress: { ...save.progress, currentWorldId: worldId },
+      pets: (save.pets ?? []).map((pet)=>({...pet,currentHp:petStats(pet).hp})),
     };
     set({
       save: nextSave,
