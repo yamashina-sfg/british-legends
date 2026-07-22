@@ -304,6 +304,8 @@ export interface OwnedCharacter {
   paidStatusPoints?: number;
   blessingCount?: number;
   patronWorldId?: string;
+  bodySkinWorldId?: string;
+  skinLocked?: boolean;
   equippedWeaponId?: string;
   equippedHeadId?: string;
   equippedArmorId?: string;
@@ -377,6 +379,9 @@ export interface SaveData {
     claimedFirstWaves:number[];
     attempts:number;
   };
+  constellations?: Record<string, 1 | 2>;
+  ownedBodySkins?: string[];
+  ownedHeadStyles?: number[];
 }
 
 export interface OwnedPet {

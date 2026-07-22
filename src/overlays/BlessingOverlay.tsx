@@ -4,16 +4,17 @@ import { getCharacter, getWorld } from '@/data';
 import { normalizeOwnedGrowth } from '@/engine/characterGrowth';
 import { Window } from '@/components/ui/Window';
 import { Button } from '@/components/ui/Button';
+import { unlockedConstellationIds } from '@/engine/constellations';
 
 export function BlessingOverlay() {
   const { save, selectedCharIndex, blessCharacter, openOverlay } = useGameStore();
-  const [selectedWorldId, setSelectedWorldId] = useState<string | null>(save?.progress.clearedWorldIds[0] ?? null);
+  const [selectedWorldId, setSelectedWorldId] = useState<string | null>(save ? unlockedConstellationIds(save)[0] ?? null : null);
   if (!save) return null;
   const owned = save.party[selectedCharIndex];
   if (!owned) return null;
   const growth = normalizeOwnedGrowth(owned);
   const hero = getCharacter(owned.characterId);
-  const unlocked = save.progress.clearedWorldIds;
+  const unlocked = unlockedConstellationIds(save);
   const bonus = 9 + unlocked.length;
 
   return (

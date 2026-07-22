@@ -66,6 +66,7 @@ export function blessCharacter(owned: OwnedCharacter, patronWorldId: string, unl
     exp: 0,
     blessingCount,
     patronWorldId,
+    bodySkinWorldId: normalized.skinLocked ? normalized.bodySkinWorldId : patronWorldId,
     levelStatusPoints: 0,
     bonusStatusPoints: (normalized.bonusStatusPoints ?? 0) + 9 + unlockedPatronCount,
     equippedWeaponId: undefined,

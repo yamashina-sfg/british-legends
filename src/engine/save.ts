@@ -45,6 +45,9 @@ export function createNewSave(slotId: number): SaveData {
     pets: [],
     petSlots: [null, null, null],
     arena: { bestWave: 0, selectedStartWave: 1, bestTimes: {}, claimedFirstWaves: [], attempts: 0 },
+    constellations: {},
+    ownedBodySkins: [],
+    ownedHeadStyles: [1, 2, 3, 4],
   };
 }
 
@@ -70,6 +73,9 @@ export function loadSlot(slotId: number): SaveData | null {
       pets: parsed.pets ?? [],
       petSlots: Array.from({ length: 3 }, (_, index) => parsed.petSlots?.[index] ?? null),
       arena: parsed.arena ?? { bestWave: 0, selectedStartWave: 1, bestTimes: {}, claimedFirstWaves: [], attempts: 0 },
+      constellations: parsed.constellations ?? Object.fromEntries((parsed.progress?.clearedWorldIds ?? []).map((id)=>[id,2])) as Record<string,2>,
+      ownedBodySkins: parsed.ownedBodySkins ?? [...(parsed.progress?.clearedWorldIds ?? [])],
+      ownedHeadStyles: parsed.ownedHeadStyles ?? [1,2,3,4],
       party: (parsed.party ?? []).map((owned) => normalizeEquipmentSlots(normalizeOwnedGrowth(owned))),
     });
   } catch {
