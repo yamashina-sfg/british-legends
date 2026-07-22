@@ -35,6 +35,7 @@ import { luckDropMultiplier } from '@/engine/damage';
 import { playGameSfx } from '@/audio/sfx';
 import { grantSandboxDiamonds as grantSandboxDiamondsEngine, normalizeCommerce, purchaseProduct, useTimedBoost } from '@/engine/commerce';
 import { recoverPartyAfterDefeat } from '@/engine/defeat';
+import { advancePlayTime } from '@/engine/autosave';
 
 export type Scene =
   | 'title'
@@ -104,6 +105,7 @@ interface GameState {
   continueGame: (slotId: number) => void;
   eraseGame: (slotId: number) => void;
   persist: () => void;
+  autosave: (elapsedSeconds:number) => void;
 
   // ダンジョン（タイルマップ）
   enterWorld: (worldId: string) => void;
@@ -456,6 +458,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { save } = get();
     if (save) saveSlot(save);
   },
+  autosave: (elapsedSeconds) => {const save=get().save;if(!save)return;const next=advancePlayTime(save,elapsedSeconds);set({save:next});saveSlot(next);},
 
   enterWorld: (worldId) => {
     const save = get().save;
