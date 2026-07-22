@@ -6,6 +6,7 @@ import { DEFAULT_QUICK_SLOTS, normalizeQuickSlots } from './quickSlots';
 import { emptyAllocatedStats, normalizeOwnedGrowth } from './characterGrowth';
 import { normalizeEquipmentSlots } from './equipment';
 import { DATA_VERSION } from './versioning';
+import { defaultCommerce, normalizeCommerce } from './commerce';
 
 const STORAGE_PREFIX = 'british-legends:slot:';
 export const SAVE_SLOTS = [1, 2, 3];
@@ -50,6 +51,7 @@ export function createNewSave(slotId: number): SaveData {
     ownedHeadStyles: [1, 2, 3, 4],
     settings: { skipBlessingCinematics: false, blessingCinematicsSeen: false },
     adventure: { flags: [], openPortals: [], completedEventIds: [], tradeCounts: {} },
+    commerce: defaultCommerce(),
   };
 }
 
@@ -80,6 +82,7 @@ export function loadSlot(slotId: number): SaveData | null {
       ownedHeadStyles: parsed.ownedHeadStyles ?? [1,2,3,4],
       settings: { skipBlessingCinematics: parsed.settings?.skipBlessingCinematics ?? false, blessingCinematicsSeen: parsed.settings?.blessingCinematicsSeen ?? false },
       adventure: { flags:parsed.adventure?.flags??[], openPortals:parsed.adventure?.openPortals??[], completedEventIds:parsed.adventure?.completedEventIds??[], tradeCounts:parsed.adventure?.tradeCounts??{} },
+      commerce: normalizeCommerce(parsed.commerce),
       party: (parsed.party ?? []).map((owned) => {const learned=[...new Set([...owned.learnedSkillIds,'arcane_burst','story_barrier'])];return normalizeEquipmentSlots(normalizeOwnedGrowth({...owned,soulLevel:owned.soulLevel??0,learnedSkillIds:learned,equippedSkillIds:owned.equippedSkillIds??learned.filter((id)=>id!=='attack_basic').slice(0,3)}))}),
     });
   } catch {

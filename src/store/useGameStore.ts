@@ -31,6 +31,7 @@ import { emitNotification } from '@/notifications/notificationBus';
 import { activatePortal, applyBossSoulFlags, claimOneTimeEvent, tradeAdventureItem } from '@/engine/adventure';
 import { useBattleStore } from './useBattleStore';
 import { fragmentsForWorld } from '@/data/manuscripts';
+import { grantSandboxDiamonds as grantSandboxDiamondsEngine, normalizeCommerce, purchaseProduct, useTimedBoost } from '@/engine/commerce';
 
 export type Scene =
   | 'title'
@@ -137,6 +138,9 @@ interface GameState {
   consumeItem: (itemId: string) => boolean;
   setQuickSlot: (slotIndex: number, itemId: string | null) => void;
   toggleActiveParty: (partyIndex: number) => void;
+  purchaseCashProduct: (productId:string,partyIndex?:number) => {ok:boolean;message:string};
+  grantSandboxDiamonds: () => void;
+  activateBoost: (itemId:'exp_boost'|'drop_boost') => boolean;
 }
 
 function discover(save: SaveData, ids: string[]): string[] {
@@ -605,11 +609,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!encounter || !worldId || !save) return;
     const enemyIds = encounter.enemyIds;
 
+    const commerce=normalizeCommerce(save.commerce);const expMultiplier=commerce.activeBoosts.expUntil>Date.now()?10:1;const dropMultiplier=commerce.activeBoosts.dropUntil>Date.now()?10:1;
     const totalExp = enemyIds.reduce((sum, id) => {
       const enemy = getEnemy(id);
       const research = enemyResearchBenefit(save.defeatCounts?.[id] ?? 0);
       return sum + Math.ceil(enemy.exp * (1 + research.expRate));
-    }, 0);
+    }, 0)*expMultiplier;
     const totalGold = enemyIds.reduce((sum, id) => {
       const enemy = getEnemy(id);
       const baseGold = enemy.gold ?? Math.max(4, Math.floor(enemy.exp / 3));
@@ -621,7 +626,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     for (const id of enemyIds) {
       const research = enemyResearchBenefit(save.defeatCounts?.[id] ?? 0);
       for (const d of getEnemy(id).dropTable) {
-        if (Math.random() < Math.min(1, d.rate + research.dropRateBonus)) {
+        if (Math.random() < Math.min(1, (d.rate + research.dropRateBonus)*dropMultiplier)) {
           drops[d.materialId] = (drops[d.materialId] ?? 0) + 1;
         }
       }
@@ -1093,4 +1098,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ save: nextSave });
     saveSlot(nextSave);
   },
+  purchaseCashProduct:(productId,partyIndex=0)=>{const save=get().save;if(!save)return {ok:false,message:'セーブデータがありません'};const result=purchaseProduct(save,productId,partyIndex);if(result.ok){saveSlot(result.save);set({save:result.save,mapToast:result.message});emitNotification({type:'item',title:'SHOP PURCHASE',message:result.message,icon:'♦',rarity:'rare',dedupeKey:`cash:${productId}:${Date.now()}`});}return {ok:result.ok,message:result.message};},
+  grantSandboxDiamonds:()=>{const save=get().save;if(!save)return;const next=grantSandboxDiamondsEngine(save);saveSlot(next);set({save:next,mapToast:next===save?'テストダイヤは受取済みです':'テストダイヤ500個を受け取りました'});},
+  activateBoost:(itemId)=>{const save=get().save;if(!save)return false;const next=useTimedBoost(save,itemId);if(!next)return false;saveSlot(next);set({save:next,mapToast:'30分ブーストを開始しました'});return true;},
 }));
