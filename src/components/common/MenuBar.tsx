@@ -3,6 +3,7 @@ import { useGameStore, type Overlay } from '@/store/useGameStore';
 const ITEMS: { key: 'lodge' | Exclude<Overlay, 'character' | 'evolution' | null>; label: string }[] = [
   { key: 'lodge', label: 'ロビー' },
   { key: 'party', label: 'パーティ' },
+  { key: 'pets', label: '使い魔' },
   { key: 'store', label: 'ストア' },
   { key: 'materials', label: '素材' },
   { key: 'codex', label: '図鑑' },

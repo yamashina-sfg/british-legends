@@ -40,6 +40,8 @@ export function createNewSave(slotId: number): SaveData {
     codex: { discoveredIds: [] },
     defeatCounts: {},
     fishing: { count: 0, autoUnlocked: false, claimedMilestones: [] },
+    pets: [],
+    petSlots: [null, null, null],
   };
 }
 
@@ -61,6 +63,8 @@ export function loadSlot(slotId: number): SaveData | null {
       exploration: parsed.exploration ?? {},
       defeatCounts: parsed.defeatCounts ?? {},
       fishing: parsed.fishing ?? { count: 0, autoUnlocked: false, claimedMilestones: [] },
+      pets: parsed.pets ?? [],
+      petSlots: Array.from({ length: 3 }, (_, index) => parsed.petSlots?.[index] ?? null),
       party: (parsed.party ?? []).map((owned) => normalizeEquipmentSlots(normalizeOwnedGrowth(owned))),
     });
   } catch {

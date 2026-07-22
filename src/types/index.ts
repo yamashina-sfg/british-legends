@@ -367,4 +367,15 @@ export interface SaveData {
     autoUnlocked: boolean;
     claimedMilestones: number[];
   };
+  pets?: OwnedPet[];
+  petSlots?: (string | null)[];
+}
+
+export interface OwnedPet {
+  uid: string;
+  petId: string;
+  level: number;
+  exp: number;
+  enhance: number;
+  currentHp: number;
 }
