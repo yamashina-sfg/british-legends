@@ -15,8 +15,8 @@ export const SKILLS: Record<string, Skill> = {
   high_recovery_potion: { id: 'high_recovery_potion', name: '上級回復薬', type: 'heal', target: 'self', mpCost: 0, power: 70, description: 'HPを70回復する。' },
   phoenix_page: { id: 'phoenix_page', name: '蘇生薬', type: 'revive', target: 'single', mpCost: 0, power: 50, description: '戦闘不能の仲間をHP50%で復活させる。' },
   elixir: { id: 'elixir', name: '生命の霊薬', type: 'heal', target: 'self', mpCost: 0, power: 160, description: 'HPを160回復する。' },
-  arcane_burst: { id:'arcane_burst',name:'写本爆発',type:'attack',target:'all',mpCost:10,power:1.35,description:'指定した物語座標を中心に、回避不能の魔法爆発を起こす。' },
-  story_barrier: { id:'story_barrier',name:'物語障壁',type:'barrier',target:'self',mpCost:8,power:0.12,description:'3ターンの障壁を展開する。破壊時の余剰ダメージは無効。' },
+  arcane_burst: { id:'arcane_burst',name:'写本爆発',type:'attack',target:'all',mpCost:10,power:1.35,targetBookItemId:'witch_scroll',itemMultiBase:1,itemMultiAdd:0.05,description:'指定した物語座標を中心に、回避不能の魔法爆発を起こす。予言の写本で威力上昇。' },
+  story_barrier: { id:'story_barrier',name:'物語障壁',type:'barrier',target:'self',mpCost:8,power:0.12,targetBookItemId:'research_notes',itemMultiBase:1,itemMultiAdd:0.05,durationTurns:3,description:'3ターンの障壁を展開する。破壊時の余剰ダメージは無効。研究手記で強度上昇。' },
 
   // --- Beowulf 系 ---
   mighty_grip: {
@@ -35,6 +35,10 @@ export const SKILLS: Record<string, Skill> = {
     target: 'self',
     mpCost: 6,
     power: 8,
+    buffIndex: 202,
+    buffStatus: 'atk',
+    buffTarget: 'self',
+    durationTurns: 3,
     description: '己を鼓舞し、攻撃力を高める。',
   },
   shield_oath: {
@@ -44,6 +48,10 @@ export const SKILLS: Record<string, Skill> = {
     target: 'self',
     mpCost: 5,
     power: 6,
+    buffIndex: 202,
+    buffStatus: 'def',
+    buffTarget: 'self',
+    durationTurns: 2,
     description: '守りを固めながら敵の視線を引く。Beowulfを前線の支柱にする。',
   },
   last_stand: {

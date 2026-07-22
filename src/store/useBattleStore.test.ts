@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { combatantFromEnemy, combatantFromOwned, decideEnemyAction, resolveAction } from '@/engine/battle';
+import { combatantFromEnemy, combatantFromOwned, decideEnemyAction, resetRoundFlags, resolveAction } from '@/engine/battle';
 import { effectiveStats } from '@/engine/tragicFlaw';
 import { expForLevel, gainExp, requiredExpForNextLevel } from '@/engine/leveling';
 import { getCharacter } from '@/data';
@@ -72,6 +72,14 @@ describe('battle command input', () => {
 
   it('バリア破壊時は余剰ダメージをHPへ通さず、後発バリアで上書きする',()=>{
     const hero=combatantFromOwned(beowulf);const enemy=combatantFromEnemy('dragon',0);hero.mp=100;resolveAction([hero,enemy],{actorUid:hero.uid,type:'skill',skillId:'story_barrier'});const first=hero.barrierHp;expect(first).toBeGreaterThan(0);hero.stats.int=50;resolveAction([hero,enemy],{actorUid:hero.uid,type:'skill',skillId:'story_barrier'});expect(hero.barrierHp).toBeGreaterThan(first);const hp=hero.hp;enemy.stats.atk=999;resolveAction([hero,enemy],{actorUid:enemy.uid,type:'skill',skillId:'dragon_tail_smash',targetUid:hero.uid});expect(hero.hp).toBe(hp);expect(hero.barrierHp).toBe(0);
+  });
+
+  it('本の所持数に応じて爆発とバリアの効果倍率が上がる',()=>{
+    const plain=combatantFromOwned(beowulf);const boosted=combatantFromOwned(beowulf,0,false,undefined,{}, {witch_scroll:4,research_notes:4});const enemyA=combatantFromEnemy('dragon',0);const enemyB=combatantFromEnemy('dragon',0);plain.mp=boosted.mp=100;vi.spyOn(Math,'random').mockReturnValue(0.5);resolveAction([plain,enemyA],{actorUid:plain.uid,type:'skill',skillId:'arcane_burst'});resolveAction([boosted,enemyB],{actorUid:boosted.uid,type:'skill',skillId:'arcane_burst'});expect(enemyB.hp).toBeLessThan(enemyA.hp);resolveAction([plain,enemyA],{actorUid:plain.uid,type:'skill',skillId:'story_barrier'});resolveAction([boosted,enemyB],{actorUid:boosted.uid,type:'skill',skillId:'story_barrier'});expect(boosted.barrierHp).toBeGreaterThan(plain.barrierHp);
+  });
+
+  it('同系列バフは強い値を優先し、同値なら長い残り時間へ更新する',()=>{
+    const hero=combatantFromOwned(beowulf);hero.mp=100;resolveAction([hero],{actorUid:hero.uid,type:'skill',skillId:'hero_roar'});expect(hero.activeBuffs).toHaveLength(1);expect(hero.activeBuffs[0].remainingTurns).toBe(3);const ticked=resetRoundFlags([hero])[0];expect(ticked.activeBuffs[0].remainingTurns).toBe(2);resolveAction([ticked],{actorUid:ticked.uid,type:'skill',skillId:'hero_roar'});expect(ticked.activeBuffs).toHaveLength(1);expect(ticked.activeBuffs[0].remainingTurns).toBe(3);
   });
 
   it('assigns unique combatant ids even when two party entries share a character id', () => {

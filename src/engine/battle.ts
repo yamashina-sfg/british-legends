@@ -21,6 +21,19 @@ import { petStats } from './pets';
 
 export type Side = 'ally' | 'enemy';
 
+export interface ActiveBuff {
+  key: string;
+  sourceSkillId: string;
+  buffIndex: 101 | 201 | 202;
+  attribute?: string;
+  status?: keyof Stats;
+  value: number;
+  remainingTurns: number;
+  totalTurns: number;
+  label: string;
+  icon: string;
+}
+
 export interface Combatant {
   /** 戦闘内インスタンスID（敵が複数いても一意） */
   uid: string;
@@ -57,6 +70,8 @@ export interface Combatant {
   barrierHp:number;
   barrierMax:number;
   barrierTurns:number;
+  activeBuffs: ActiveBuff[];
+  skillBookCounts: Record<string, number>;
 }
 
 export type CommandType = 'attack' | 'skill' | 'defend';
@@ -95,7 +110,7 @@ export interface BattleFeedbackEvent {
 }
 
 // --- コンバタント生成 ----------------------------------------
-export function combatantFromOwned(owned: OwnedCharacter, partyIndex = 0, isBossBattle = false, permanentBonus?: Partial<Stats>, equipmentLevels: Record<string, number> = {}): Combatant {
+export function combatantFromOwned(owned: OwnedCharacter, partyIndex = 0, isBossBattle = false, permanentBonus?: Partial<Stats>, equipmentLevels: Record<string, number> = {}, skillBookCounts: Record<string, number> = {}): Combatant {
   const char = getCharacter(owned.characterId);
   const stats = statsWithEquipment(char, owned, permanentBonus, equipmentLevels);
   return {
@@ -125,7 +140,7 @@ export function combatantFromOwned(owned: OwnedCharacter, partyIndex = 0, isBoss
     passiveTriggered: false,
     tragicFlaw: createFlawRuntime(char, isBossBattle),
     alive: owned.currentHp > 0,
-    barrierHp:0,barrierMax:0,barrierTurns:0,
+    barrierHp:0,barrierMax:0,barrierTurns:0,activeBuffs:[],skillBookCounts,
   };
 }
 
@@ -156,13 +171,39 @@ export function combatantFromEnemy(enemyId: string, index: number): Combatant {
     cursed: 0,
     passiveTriggered: false,
     alive: true,
-    barrierHp:0,barrierMax:0,barrierTurns:0,
+    barrierHp:0,barrierMax:0,barrierTurns:0,activeBuffs:[],skillBookCounts:{},
   };
 }
 
 export function combatantFromPet(owned: OwnedPet, index: number): Combatant {
   const pet=getPet(owned.petId); const stats=petStats(owned);
-  return { uid:owned.uid,side:'ally',name:pet.name,spriteId:pet.sourceEnemyId,sourceId:owned.petId,level:owned.level,stats,maxHp:stats.hp,maxMp:stats.mp,hp:Math.min(owned.currentHp,stats.hp),mp:stats.mp,skillIds:pet.skillIds,atkBuff:0,tragicCharge:0,actionCount:0,defending:false,rageTriggered:false,phaseTwoTriggered:false,finalTriggered:false,summonedGuard:false,poison:0,cursed:0,passiveTriggered:false,alive:owned.currentHp>0,isPet:true,barrierHp:0,barrierMax:0,barrierTurns:0 };
+  return { uid:owned.uid,side:'ally',name:pet.name,spriteId:pet.sourceEnemyId,sourceId:owned.petId,level:owned.level,stats,maxHp:stats.hp,maxMp:stats.mp,hp:Math.min(owned.currentHp,stats.hp),mp:stats.mp,skillIds:pet.skillIds,atkBuff:0,tragicCharge:0,actionCount:0,defending:false,rageTriggered:false,phaseTwoTriggered:false,finalTriggered:false,summonedGuard:false,poison:0,cursed:0,passiveTriggered:false,alive:owned.currentHp>0,isPet:true,barrierHp:0,barrierMax:0,barrierTurns:0,activeBuffs:[],skillBookCounts:{} };
+}
+
+export function skillBookMultiplier(skill: Skill, counts: Record<string, number>): number {
+  if (!skill.targetBookItemId) return 1;
+  return (skill.itemMultiBase ?? 1) + (skill.itemMultiAdd ?? 0) * (counts[skill.targetBookItemId] ?? 0);
+}
+
+function applyTimedBuff(target: Combatant, skill: Skill, value: number): 'applied' | 'replaced' | 'kept' {
+  const buffIndex = skill.buffIndex ?? 202;
+  const key = `${buffIndex}:${skill.buffAttribute ?? ''}:${skill.buffStatus ?? ''}`;
+  const duration = skill.durationTurns ?? 3;
+  const existing = target.activeBuffs.find((buff) => buff.key === key);
+  if (existing && (existing.value > value || (existing.value === value && existing.remainingTurns >= duration))) return 'kept';
+  const next: ActiveBuff = { key, sourceSkillId: skill.id, buffIndex, attribute: skill.buffAttribute, status: skill.buffStatus, value, remainingTurns: duration, totalTurns: duration, label: `${skill.buffStatus?.toUpperCase() ?? skill.buffAttribute ?? '効果'} ${buffIndex === 201 ? `${Math.round(value * 100)}%` : value}`, icon: skill.buffStatus === 'def' ? '◈' : '⚔' };
+  if (existing) { Object.assign(existing, next); return 'replaced'; }
+  target.activeBuffs.push(next); return 'applied';
+}
+
+function statsWithTimedBuffs(combatant: Combatant): Stats {
+  const stats = { ...combatant.stats };
+  for (const buff of combatant.activeBuffs) {
+    if (!buff.status) continue;
+    const base = stats[buff.status] ?? 0;
+    stats[buff.status] = buff.buffIndex === 201 ? Math.floor(base * (1 + buff.value)) : base + buff.value;
+  }
+  return stats;
 }
 
 /** 敵IDリスト（同一IDが並ぶと A/B で区別）からコンバタント生成 */
@@ -359,7 +400,7 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
 
   switch (skill.type) {
     case 'barrier':{
-      const amount=Math.max(1,Math.floor(((actor.stats.int??0)+actor.stats.atk/10)*11*skill.power));actor.barrierHp=amount;actor.barrierMax=amount;actor.barrierTurns=3;logs.push({text:`${actor.name} に ${amount} の文学障壁が展開された！`,feedback:{targetUid:actor.uid,text:`BARRIER ${amount}`,kind:'status',priority:7}});break;
+      const amount=Math.max(1,Math.floor(((actor.stats.int??0)+actor.stats.atk/10)*11*skill.power*skillBookMultiplier(skill,actor.skillBookCounts)));actor.barrierHp=amount;actor.barrierMax=amount;actor.barrierTurns=skill.durationTurns??3;logs.push({text:`${actor.name} に ${amount} の文学障壁が展開された！`,feedback:{targetUid:actor.uid,text:`BARRIER ${amount}`,kind:'status',priority:7}});break;
     }
     case 'charge': {
       const flawLog = onDefend(actor.tragicFlaw);
@@ -384,14 +425,15 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
     case 'attack': {
       const targets =
         skill.target === 'all' ? livingOf(working, enemySide) : [pickAliveTarget(working, action.targetUid, enemySide)].filter(Boolean) as Combatant[];
-      const actorStats = effectiveStats(actor.stats, actor.tragicFlaw, actor.hp, actor.maxHp);
+      const actorStats = effectiveStats(statsWithTimedBuffs(actor), actor.tragicFlaw, actor.hp, actor.maxHp);
       const flawDamage = damageMultiplier(actor.tragicFlaw, { command: action.type, skillId: skill.id }, actor.hp, actor.maxHp);
       if (flawDamage.text) logs.push({ text: flawDamage.text });
       actor.tragicCharge = Math.floor((actor.tragicFlaw?.state.meter ?? 0) / 34);
       maybeLogAwakening(actor, logs);
       for (const t of targets) {
-        const targetStats = effectiveStats(t.stats, t.tragicFlaw, t.hp, t.maxHp);
-        const baseDmg = calcDamage({ attackerAtk: actorStats.atk, defenderDef: targetStats.def, skill, atkBuff: actor.atkBuff });
+        const targetStats = effectiveStats(statsWithTimedBuffs(t), t.tragicFlaw, t.hp, t.maxHp);
+        const boostedSkill = { ...skill, power: skill.power * skillBookMultiplier(skill, actor.skillBookCounts) };
+        const baseDmg = calcDamage({ attackerAtk: actorStats.atk, defenderDef: targetStats.def, skill: boostedSkill, atkBuff: actor.atkBuff });
         const dmg = Math.max(1, Math.floor(baseDmg * flawDamage.multiplier));
         const dealt = applyDamage(t, dmg);
         logs.push({
@@ -454,13 +496,10 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
       }
       if (skill.id === 'shield_oath') {
         actor.defending = true;
-        actor.stats = { ...actor.stats, def: actor.stats.def + skill.power };
-        logs.push({ text: `宿命「英雄」: ${actor.name} は仲間を守る誓いを立てた。` });
-        logs.push({ text: `${actor.name} の防御力が上がり、このターン受けるダメージを抑える。` });
-        break;
       }
-      actor.atkBuff += skill.power;
-      logs.push({ text: `${actor.name} の攻撃力が上がった！` });
+      const value = skill.power * skillBookMultiplier(skill, actor.skillBookCounts);
+      const result = applyTimedBuff(actor, skill, value);
+      logs.push({ text: result === 'kept' ? `${actor.name} には、より強い同系列バフが適用中だ。` : `${actor.name} に「${skill.name}」の効果（${value} / ${skill.durationTurns ?? 3}T）が適用された！`, feedback: { targetUid: actor.uid, text: skill.buffStatus?.toUpperCase() ?? 'BUFF', kind: 'status', priority: 6 } });
       break;
     }
     case 'debuff': {
@@ -517,5 +556,5 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
 
 /** ラウンド冒頭：防御フラグをリセット */
 export function resetRoundFlags(combatants: Combatant[]): Combatant[] {
-  return combatants.map((c) => {const turns=Math.max(0,c.barrierTurns-1);return{...c,defending:false,barrierTurns:turns,barrierHp:turns?c.barrierHp:0,barrierMax:turns?c.barrierMax:0}});
+  return combatants.map((c) => {const turns=Math.max(0,c.barrierTurns-1);return{...c,defending:false,barrierTurns:turns,barrierHp:turns?c.barrierHp:0,barrierMax:turns?c.barrierMax:0,activeBuffs:c.activeBuffs.map((buff)=>({...buff,remainingTurns:buff.remainingTurns-1})).filter((buff)=>buff.remainingTurns>0)}});
 }
