@@ -330,7 +330,7 @@ export interface SaveData {
   inventory: Record<string, number>;
   /** 回復薬など、素材とは別に消費する道具 */
   items: Record<string, number>;
-  /** 戦闘画面へ表示する消費アイテムID。常に4枠へ正規化する。 */
+  /** 戦闘画面へ表示する消費アイテムID。最終仕様どおり常に5枠へ正規化する。 */
   quickSlots: (string | null)[];
   equipmentInventory: string[];
   /** equipmentId -> 強化値（0〜5）。装備はID単位で一意に所持する。 */
