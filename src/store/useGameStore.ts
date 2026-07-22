@@ -34,6 +34,7 @@ import { fragmentsForWorld } from '@/data/manuscripts';
 import { luckDropMultiplier } from '@/engine/damage';
 import { playGameSfx } from '@/audio/sfx';
 import { grantSandboxDiamonds as grantSandboxDiamondsEngine, normalizeCommerce, purchaseProduct, useTimedBoost } from '@/engine/commerce';
+import { recoverPartyAfterDefeat } from '@/engine/defeat';
 
 export type Scene =
   | 'title'
@@ -746,14 +747,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     const lostGold = Math.min(save.gold, Math.floor(save.gold * 0.1));
-    const party = save.party.map((p) => {
-      const stats = statsWithEquipment(getCharacter(p.characterId), p);
-      return {
-        ...p,
-        currentHp: Math.max(1, Math.ceil(stats.hp * 0.5)),
-        currentMp: Math.ceil(stats.mp * 0.5),
-      };
-    });
+    const party = recoverPartyAfterDefeat(save);
     const nextSave: SaveData = {
       ...save,
       party,
