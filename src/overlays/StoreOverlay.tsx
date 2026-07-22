@@ -16,6 +16,8 @@ const TAB_LABELS: Record<StoreTab, string> = {
   forge: '鍛造',
 };
 
+const TAB_ICONS: Record<StoreTab, string> = { weapon: '⚔', armor: '◆', accessory: '✦', item: '▣', forge: '♨' };
+
 function bonusLabel(bonus: object) {
   return Object.entries(bonus).map(([stat, value]) => `${stat.toUpperCase()} +${value}`).join('  ');
 }
@@ -31,12 +33,18 @@ export function StoreOverlay() {
     ...(save.equipmentInventory ?? []),
     ...save.party.flatMap((member) => [member.equippedWeaponId, member.equippedArmorId, member.equippedAccessoryId].filter(Boolean) as string[]),
   ])].map((id) => EQUIPMENT[id]).filter(Boolean);
+  const ownedIds = new Set(ownedEquipment.map((item) => item.id));
+  const equippedIds = new Set(save.party.flatMap((member) => [member.equippedWeaponId, member.equippedArmorId, member.equippedAccessoryId].filter(Boolean)));
 
   return (
     <Window title="BIBLIOTHECA STORE" className="store-overlay">
-      <div className="store-header"><div><span>所持 Gold</span><strong>G {save.gold}</strong></div><Button center onClick={closeOverlay}>閉じる</Button></div>
+      <div className="store-header">
+        <div className="store-keeper"><i>♜</i><div><span>MASTER OF RELICS</span><strong>失われた物語の武具を、あなたへ。</strong></div></div>
+        <div className="store-wallet"><span>YOUR GOLD</span><strong><i>G</i> {save.gold}</strong></div>
+        <Button center onClick={closeOverlay}>閉じる</Button>
+      </div>
       <div className="store-tabs" role="tablist">
-        {(Object.keys(TAB_LABELS) as StoreTab[]).map((key) => <button key={key} className={tab === key ? 'is-active' : ''} onClick={() => setTab(key)}>{TAB_LABELS[key]}</button>)}
+        {(Object.keys(TAB_LABELS) as StoreTab[]).map((key) => <button key={key} className={tab === key ? 'is-active' : ''} onClick={() => setTab(key)}><i>{TAB_ICONS[key]}</i><span>{TAB_LABELS[key]}</span></button>)}
       </div>
       <div className="store-items">
         {tab === 'item' && (
@@ -62,8 +70,8 @@ export function StoreOverlay() {
           const cost = forgeCost(item, level);
           const canForge = Boolean(cost && save.gold >= cost.gold && (save.inventory[cost.materialId] ?? 0) >= cost.materialQty);
           return (
-            <article className="store-item forge-item" key={item.id}>
-              <img className="store-item__icon" src={STORE_ICON_BY_ID[item.id]} alt="" aria-hidden="true" />
+            <article className={`store-item forge-item ${level >= MAX_EQUIPMENT_LEVEL ? 'is-max' : ''}`} key={item.id}>
+              <div className="store-item__art"><img className="store-item__icon" src={STORE_ICON_BY_ID[item.id]} alt="" aria-hidden="true" /><span>FORGE</span></div>
               <div><strong>{item.name} <small>+{level}</small></strong><p>{level >= MAX_EQUIPMENT_LEVEL ? '最大強化に到達。物語の力が完全に定着している。' : '装備固有ステータスを10%強化する。'}</p><em>{bonusLabel(item.bonus)}</em></div>
               <div className="store-item__buy">
                 {cost ? <b>{cost.gold}G / {getMaterial(cost.materialId).name} ×{cost.materialQty}</b> : <b>MAX</b>}
@@ -72,16 +80,16 @@ export function StoreOverlay() {
             </article>
           );
         }) : tab === 'item' ? Object.values(STORE_ITEMS).map((item) => (
-          <article className="store-item" key={item.id}>
-            <img className="store-item__icon" src={STORE_ICON_BY_ID[item.id]} alt="" aria-hidden="true" />
+          <article className={`store-item ${save.gold < item.price ? 'is-unaffordable' : ''}`} key={item.id}>
+            <div className="store-item__art"><img className="store-item__icon" src={STORE_ICON_BY_ID[item.id]} alt="" aria-hidden="true" /><span>ITEM</span></div>
             <div><strong>{item.name} <small>×{save.items[item.id] ?? 0}</small></strong><p>{item.description}</p></div>
-            <div className="store-item__buy"><b>{item.price}G</b><Button onClick={() => setQuickSlot(selectedQuickSlot, item.id)}>登録</Button><Button disabled={save.gold < item.price} onClick={() => buyItem(item.id)}>買う</Button></div>
+            <div className="store-item__buy"><b><i>G</i> {item.price}</b><Button onClick={() => setQuickSlot(selectedQuickSlot, item.id)}>登録</Button><Button disabled={save.gold < item.price} onClick={() => buyItem(item.id)}>購入</Button></div>
           </article>
         )) : equipment.map((item) => (
-          <article className="store-item" key={item.id}>
-            <img className="store-item__icon" src={STORE_ICON_BY_ID[item.id]} alt="" aria-hidden="true" />
-            <div><strong>{item.name}</strong><p>{item.description}</p><em>{bonusLabel(item.bonus)}</em></div>
-            <div className="store-item__buy"><b>{item.price}G</b><Button disabled={save.gold < item.price} onClick={() => buyEquipment(0, item.id)}>買って装備</Button></div>
+          <article className={`store-item ${save.gold < item.price ? 'is-unaffordable' : ''} ${equippedIds.has(item.id) ? 'is-equipped' : ''}`} key={item.id}>
+            <div className="store-item__art"><img className="store-item__icon" src={STORE_ICON_BY_ID[item.id]} alt="" aria-hidden="true" /><span>{item.slot.toUpperCase()}</span></div>
+            <div><div className="store-item__name"><strong>{item.name}</strong>{equippedIds.has(item.id) ? <small>装備中</small> : ownedIds.has(item.id) ? <small>所持済</small> : null}</div><p>{item.description}</p><em>{bonusLabel(item.bonus)}</em></div>
+            <div className="store-item__buy"><b><i>G</i> {item.price}</b><Button disabled={save.gold < item.price} onClick={() => buyEquipment(0, item.id)}>{ownedIds.has(item.id) ? '装備する' : '購入して装備'}</Button></div>
           </article>
         ))}
       </div>
