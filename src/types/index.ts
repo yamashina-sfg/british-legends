@@ -324,4 +324,6 @@ export interface SaveData {
   }>;
   gold: number;
   codex: { discoveredIds: string[] };
+  /** enemyId -> 累計討伐数。図鑑の伝承研究と研究ボーナスに使用する。 */
+  defeatCounts: Record<string, number>;
 }

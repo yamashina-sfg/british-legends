@@ -5,6 +5,7 @@ import { CORE_WORLD_IDS, CORE_WORLD_META, LONG_TERM_FOUNDATIONS, type CoreWorldI
 import type { CodexEntry, CodexType } from '@/types';
 import { Window } from '@/components/ui/Window';
 import { Button } from '@/components/ui/Button';
+import { enemyResearchBenefit } from '@/engine/research';
 
 const TABS: { type: CodexType; label: string }[] = [
   { type: 'world', label: '作品' },
@@ -105,6 +106,8 @@ export function CodexOverlay() {
       <div className="codex-collection-grid">
         {entries.map((e) => {
           const found = isDiscovered(e);
+          const defeatCount = e.type === 'enemy' ? (save.defeatCounts?.[e.refId] ?? 0) : 0;
+          const research = enemyResearchBenefit(defeatCount);
           const worldId = getEntryWorldId(e);
           const meta = worldId && CORE_WORLD_IDS.includes(worldId as CoreWorldId)
             ? CORE_WORLD_META[worldId as CoreWorldId]
@@ -120,6 +123,18 @@ export function CodexOverlay() {
                     <span>{meta.year}</span>
                     <span>{meta.period}</span>
                     {e.type === 'world' && <span>解放率 {worldRate(e.refId as CoreWorldId)}%</span>}
+                  </div>
+                )}
+                {found && e.type === 'enemy' && (
+                  <div className="codex-research">
+                    <span>討伐 {defeatCount}</span>
+                    <span>研究 Rank {research.level}/3</span>
+                    <span>{research.nextThreshold ? `次の記録まで ${research.nextThreshold - defeatCount}` : '研究完了'}</span>
+                    <div className="codex-research__bonuses">
+                      <i className={research.level >= 1 ? 'is-unlocked' : ''}>I EXP +5%</i>
+                      <i className={research.level >= 2 ? 'is-unlocked' : ''}>II Gold +10%</i>
+                      <i className={research.level >= 3 ? 'is-unlocked' : ''}>III Drop +5pt</i>
+                    </div>
                   </div>
                 )}
                 <p>{found ? e.loreText : 'まだ発見していない。作品を修復し、仲間と戦い、断片を集めると余白が埋まる。'}</p>

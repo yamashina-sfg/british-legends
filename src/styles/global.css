@@ -576,6 +576,37 @@
   font-size: 10px;
   line-height: 1.58;
 }
+
+.codex-research {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px 8px;
+  margin: 7px 0;
+  color: var(--accent);
+  font-size: 10px;
+  letter-spacing: .4px;
+}
+
+.codex-research__bonuses {
+  display: flex;
+  flex-basis: 100%;
+  gap: 5px;
+}
+
+.codex-research__bonuses i {
+  padding: 3px 5px;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-style: normal;
+  opacity: .45;
+}
+
+.codex-research__bonuses i.is-unlocked {
+  color: #f0dc99;
+  border-color: #8d7749;
+  background: rgba(183, 144, 62, .12);
+  opacity: 1;
+}
 .codex-pixel {
   width: 52px;
   height: 52px;

@@ -7,6 +7,7 @@ import { evolve as evolveEngine } from '@/engine/evolution';
 import { generateDungeonMap } from '@/engine/mapgen';
 import { resolveMove, removeEntity } from '@/engine/mapmove';
 import { statsWithEquipment } from '@/engine/equipment';
+import { addDefeats, crossedResearchLevels, enemyResearchBenefit } from '@/engine/research';
 import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
 import {
   createNewSave,
@@ -530,16 +531,25 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (!encounter || !worldId || !save) return;
     const enemyIds = encounter.enemyIds;
 
-    const totalExp = enemyIds.reduce((sum, id) => sum + getEnemy(id).exp, 0);
+    const totalExp = enemyIds.reduce((sum, id) => {
+      const enemy = getEnemy(id);
+      const research = enemyResearchBenefit(save.defeatCounts?.[id] ?? 0);
+      return sum + Math.ceil(enemy.exp * (1 + research.expRate));
+    }, 0);
     const totalGold = enemyIds.reduce((sum, id) => {
       const enemy = getEnemy(id);
-      return sum + (enemy.gold ?? Math.max(4, Math.floor(enemy.exp / 3)));
+      const baseGold = enemy.gold ?? Math.max(4, Math.floor(enemy.exp / 3));
+      const research = enemyResearchBenefit(save.defeatCounts?.[id] ?? 0);
+      return sum + Math.ceil(baseGold * (1 + research.goldRate));
     }, 0);
 
     const drops: Record<string, number> = {};
     for (const id of enemyIds) {
+      const research = enemyResearchBenefit(save.defeatCounts?.[id] ?? 0);
       for (const d of getEnemy(id).dropTable) {
-        if (Math.random() < d.rate) drops[d.materialId] = (drops[d.materialId] ?? 0) + 1;
+        if (Math.random() < Math.min(1, d.rate + research.dropRateBonus)) {
+          drops[d.materialId] = (drops[d.materialId] ?? 0) + 1;
+        }
       }
     }
     const bonusItems: Record<string, number> = {};
@@ -580,6 +590,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       ...Object.keys(drops).map((id) => `codex_material_${id}`),
     ];
     const bonusRewards = battleBonusRewards(worldId, enemyIds, encounter.isBoss);
+    const defeatCounts = addDefeats(save.defeatCounts ?? {}, enemyIds);
 
     const nextSaveBase: SaveData = {
       ...save,
@@ -588,6 +599,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       items,
       gold: save.gold + totalGold,
       codex: { discoveredIds: discover(save, codexIds) },
+      defeatCounts,
     };
 
     // 倒した敵をマップから除去
@@ -597,6 +609,21 @@ export const useGameStore = create<GameState>((set, get) => ({
       : applyRewards(nextSaveBase, bonusRewards);
 
     notifyBattleResult(enemyIds, totalExp, totalGold, drops, bonusItems, bonusRewards, levelUps, encounter.isBoss);
+    for (const id of new Set(enemyIds)) {
+      const before = save.defeatCounts?.[id] ?? 0;
+      const after = defeatCounts[id] ?? before;
+      for (const level of crossedResearchLevels(before, after)) {
+        emitNotification({
+          type: 'achievement',
+          channel: 'achievement',
+          title: '伝承研究が進展',
+          message: `${getEnemy(id).name} 研究 Rank ${level} を解放`,
+          icon: '§',
+          rarity: level === 3 ? 'epic' : 'rare',
+          dedupeKey: `research:${id}:${level}`,
+        });
+      }
+    }
 
     set({
       save: nextSave,

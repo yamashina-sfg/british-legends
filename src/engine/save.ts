@@ -33,6 +33,7 @@ export function createNewSave(slotId: number): SaveData {
     exploration: {},
     gold: 36,
     codex: { discoveredIds: [] },
+    defeatCounts: {},
   };
 }
 
@@ -50,6 +51,7 @@ export function loadSlot(slotId: number): SaveData | null {
       storyFragments: parsed.storyFragments ?? [],
       learnedSkillBooks: parsed.learnedSkillBooks ?? [],
       exploration: parsed.exploration ?? {},
+      defeatCounts: parsed.defeatCounts ?? {},
     });
   } catch {
     return null;
