@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { allocationCap, blessCharacter, commitStatusAllocation, criticalChance, emptyAllocatedStats, evasionChance, luckDropMultiplier, maxCharacterLevel, normalizeOwnedGrowth } from './characterGrowth';
+import { allocationCap, blessCharacter, commitStatusAllocation, criticalChance, emptyAllocatedStats, evasionChance, luckDropMultiplier, MAX_BLESSING_COUNT, maxCharacterLevel, normalizeOwnedGrowth } from './characterGrowth';
 import type { OwnedCharacter } from '@/types';
 
 const hero: OwnedCharacter = {
@@ -26,6 +26,10 @@ describe('仕様書準拠のキャラクター成長', () => {
     expect(blessed?.equippedWeaponId).toBeUndefined();
     expect(allocationCap(blessed!)).toBe(109);
     expect(maxCharacterLevel(blessed!)).toBe(51);
+  });
+
+  it('婚姻上限に達したキャラクターは追加の祝福を受けられない',()=>{
+    expect(blessCharacter({...hero,level:60,blessingCount:MAX_BLESSING_COUNT},'beowulf',3)).toBeNull();
   });
 
   it('LUKの確率とドロップ倍率を上限付きで計算する', () => {

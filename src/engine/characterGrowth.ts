@@ -3,6 +3,7 @@ import type { AllocatableStat, AllocatedStats, OwnedCharacter } from '@/types';
 export const STATUS_POINTS_PER_LEVEL = 3;
 export const BASE_STAT_ALLOCATION_CAP = 99;
 export const BASE_MAX_LEVEL = 50;
+export const MAX_BLESSING_COUNT = 10;
 
 export const ALLOCATABLE_STATS: AllocatableStat[] = ['atk', 'int', 'def', 'mdef', 'spd', 'luk'];
 
@@ -58,7 +59,7 @@ export function commitStatusAllocation(owned: OwnedCharacter, draft: AllocatedSt
 
 export function blessCharacter(owned: OwnedCharacter, patronWorldId: string, unlockedPatronCount: number): OwnedCharacter | null {
   const normalized = normalizeOwnedGrowth(owned);
-  if (normalized.level < maxCharacterLevel(normalized) || unlockedPatronCount < 1) return null;
+  if (normalized.level < maxCharacterLevel(normalized) || unlockedPatronCount < 1 || (normalized.blessingCount ?? 0) >= MAX_BLESSING_COUNT) return null;
   const blessingCount = (normalized.blessingCount ?? 0) + 1;
   return normalizeOwnedGrowth({
     ...normalized,

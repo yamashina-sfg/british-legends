@@ -392,6 +392,10 @@ export interface SaveData {
   constellations?: Record<string, 1 | 2>;
   ownedBodySkins?: string[];
   ownedHeadStyles?: number[];
+  settings?: {
+    skipBlessingCinematics: boolean;
+    blessingCinematicsSeen: boolean;
+  };
 }
 
 export interface OwnedPet {
