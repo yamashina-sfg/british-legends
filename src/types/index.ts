@@ -362,4 +362,9 @@ export interface SaveData {
   codex: { discoveredIds: string[] };
   /** enemyId -> 累計討伐数。図鑑の伝承研究と研究ボーナスに使用する。 */
   defeatCounts: Record<string, number>;
+  fishing?: {
+    count: number;
+    autoUnlocked: boolean;
+    claimedMilestones: number[];
+  };
 }

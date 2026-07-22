@@ -39,6 +39,7 @@ export function createNewSave(slotId: number): SaveData {
     gold: 36,
     codex: { discoveredIds: [] },
     defeatCounts: {},
+    fishing: { count: 0, autoUnlocked: false, claimedMilestones: [] },
   };
 }
 
@@ -59,6 +60,7 @@ export function loadSlot(slotId: number): SaveData | null {
       learnedSkillBooks: parsed.learnedSkillBooks ?? [],
       exploration: parsed.exploration ?? {},
       defeatCounts: parsed.defeatCounts ?? {},
+      fishing: parsed.fishing ?? { count: 0, autoUnlocked: false, claimedMilestones: [] },
       party: (parsed.party ?? []).map((owned) => normalizeEquipmentSlots(normalizeOwnedGrowth(owned))),
     });
   } catch {

@@ -6,6 +6,7 @@ const ITEMS: { key: 'lodge' | Exclude<Overlay, 'character' | 'evolution' | null>
   { key: 'store', label: 'ストア' },
   { key: 'materials', label: '素材' },
   { key: 'codex', label: '図鑑' },
+  { key: 'fishing', label: '釣り' },
   { key: 'settings', label: '設定' },
 ];
 
