@@ -404,6 +404,24 @@ export interface SaveData {
     completedEventIds: string[];
     tradeCounts: Record<string, number>;
   };
+  commerce?: CommerceState;
+}
+
+export interface PurchaseHistoryEntry {
+  id: string;
+  productId: string;
+  purchasedAt: number;
+  diamondSpent: number;
+  grantLabel: string;
+}
+
+export interface CommerceState {
+  diamonds: number;
+  purchaseCounts: Record<string, number>;
+  purchaseHistory: PurchaseHistoryEntry[];
+  entitlements: string[];
+  activeBoosts: { expUntil: number; dropUntil: number };
+  sandboxGrantClaimed: boolean;
 }
 
 export interface OwnedPet {
