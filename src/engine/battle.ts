@@ -89,9 +89,9 @@ export interface BattleFeedbackEvent {
 }
 
 // --- コンバタント生成 ----------------------------------------
-export function combatantFromOwned(owned: OwnedCharacter, partyIndex = 0, isBossBattle = false): Combatant {
+export function combatantFromOwned(owned: OwnedCharacter, partyIndex = 0, isBossBattle = false, permanentBonus?: Partial<Stats>): Combatant {
   const char = getCharacter(owned.characterId);
-  const stats = statsWithEquipment(char, owned);
+  const stats = statsWithEquipment(char, owned, permanentBonus);
   return {
     // characterId は仲間の種類なので、同じ仲間が編成されても戦闘内IDは必ず分ける。
     uid: `ally_${owned.characterId}_${partyIndex}`,

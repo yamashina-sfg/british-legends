@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
-import { CODEX, getCharacter, getEnemy, getWorld } from '@/data';
+import { CODEX, getCharacter, getEnemy, getWorld, WORLDS } from '@/data';
 import { CORE_WORLD_IDS, CORE_WORLD_META, LONG_TERM_FOUNDATIONS, type CoreWorldId } from '@/data/literaryProgress';
 import type { CodexEntry, CodexType } from '@/types';
 import { Window } from '@/components/ui/Window';
 import { Button } from '@/components/ui/Button';
 import { enemyResearchBenefit } from '@/engine/research';
+import { fragmentsForWorld, MANUSCRIPT_BLESSING_THRESHOLDS, manuscriptBlessingLevel, manuscriptStats } from '@/data/manuscripts';
 
 const TABS: { type: CodexType; label: string }[] = [
   { type: 'world', label: '作品' },
@@ -38,7 +39,10 @@ export function CodexOverlay() {
 
   const titleOf = (entry: CodexEntry): string => {
     if (entry.type === 'world') return getWorld(entry.refId).title;
-    if (entry.type === 'story') return `物語の断片: ${getWorld(entry.refId).title}`;
+    if (entry.type === 'story') {
+      const worldId = getEntryWorldId(entry);
+      return worldId ? `物語の断片: ${getWorld(worldId).title}` : 'Lost Page';
+    }
     if (entry.type === 'enemy') return getEnemy(entry.refId).name;
     return getCharacter(entry.refId).name;
   };
@@ -49,6 +53,8 @@ export function CodexOverlay() {
   const allDiscoveredCount = allEntries.filter(isDiscovered).length;
   const totalRate = Math.round((allDiscoveredCount / Math.max(allEntries.length, 1)) * 100);
   const coreRestored = CORE_WORLD_IDS.filter((id) => save.progress.clearedWorldIds.includes(id)).length;
+  const manuscriptBonus = manuscriptStats(save.storyFragments ?? []);
+  const manuscriptLevel = manuscriptBlessingLevel(save.storyFragments ?? []);
 
   const worldRate = (worldId: CoreWorldId) => {
     const related = allEntries.filter((entry) => entry.refId === worldId || getEntryWorldId(entry) === worldId);
@@ -103,6 +109,48 @@ export function CodexOverlay() {
         収集 {discoveredCount}/{entries.length}
       </div>
 
+      {tab === 'story' && (
+        <section className="manuscript-album" aria-label="写本アルバム">
+          <header>
+            <div>
+              <span>MANUSCRIPT ALBUM</span>
+              <strong>Bibliothecaの祝福 Rank {manuscriptLevel}/4</strong>
+            </div>
+            <p>HP +{manuscriptBonus.hp} / MP +{manuscriptBonus.mp} / ATK +{manuscriptBonus.atk} / DEF +{manuscriptBonus.def}</p>
+          </header>
+          <div className="manuscript-blessings">
+            {MANUSCRIPT_BLESSING_THRESHOLDS.map((threshold, index) => (
+              <i key={threshold} className={manuscriptLevel > index ? 'is-unlocked' : ''}>
+                {threshold}片
+              </i>
+            ))}
+          </div>
+          {CORE_WORLD_IDS.map((worldId) => {
+            const fragments = fragmentsForWorld(worldId);
+            const owned = fragments.filter((fragment) => save.storyFragments.includes(fragment.id)).length;
+            return (
+              <article key={worldId} className="manuscript-volume">
+                <div className="manuscript-volume__title">
+                  <strong>{getWorld(worldId).title}</strong>
+                  <span>復元 {owned}/{fragments.length}</span>
+                </div>
+                <div className="manuscript-fragments">
+                  {fragments.map((fragment) => {
+                    const hasFragment = save.storyFragments.includes(fragment.id);
+                    return (
+                      <div key={fragment.id} className={hasFragment ? 'is-found' : ''}>
+                        <b>{hasFragment ? fragment.name : '未復元の断片'}</b>
+                        <small>{hasFragment ? 'Bibliothecaに収蔵済み' : fragment.hint}</small>
+                      </div>
+                    );
+                  })}
+                </div>
+              </article>
+            );
+          })}
+        </section>
+      )}
+
       <div className="codex-collection-grid">
         {entries.map((e) => {
           const found = isDiscovered(e);
@@ -152,7 +200,11 @@ export function CodexOverlay() {
 }
 
 function getEntryWorldId(entry: CodexEntry): string | null {
-  if (entry.type === 'world' || entry.type === 'story') return entry.refId;
+  if (entry.type === 'world') return entry.refId;
+  if (entry.type === 'story') {
+    if (WORLDS[entry.refId]) return entry.refId;
+    return Object.keys(WORLDS).find((worldId) => entry.refId.startsWith(`${worldId}_`)) ?? null;
+  }
   if (entry.type === 'character') return getCharacter(entry.refId).worldId;
   if (entry.type === 'enemy') return getEnemy(entry.refId).worldId;
   return null;

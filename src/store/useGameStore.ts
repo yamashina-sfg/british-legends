@@ -8,6 +8,7 @@ import { generateDungeonMap } from '@/engine/mapgen';
 import { resolveMove, removeEntity } from '@/engine/mapmove';
 import { statsWithEquipment } from '@/engine/equipment';
 import { addDefeats, crossedResearchLevels, enemyResearchBenefit } from '@/engine/research';
+import { manuscriptStats } from '@/data/manuscripts';
 import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
 import {
   createNewSave,
@@ -506,7 +507,12 @@ export const useGameStore = create<GameState>((set, get) => ({
           encounter: { entityId: e.id, enemyIds: e.enemyIds ?? [], isBoss: e.kind === 'boss' },
           scene: 'battle',
         });
-        useBattleStore.getState().start(getActiveParty(save), e.enemyIds ?? [], e.kind === 'boss');
+        useBattleStore.getState().start(
+          getActiveParty(save),
+          e.enemyIds ?? [],
+          e.kind === 'boss',
+          manuscriptStats(save.storyFragments ?? []),
+        );
         return;
       }
     }
