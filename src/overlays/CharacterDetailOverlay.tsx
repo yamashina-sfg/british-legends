@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { getCharacter, getEquipment, getSkill } from '@/data';
 import { expForLevel } from '@/engine/leveling';
-import { statsWithEquipment } from '@/engine/equipment';
+import { equippedItemIds, statsWithEquipment } from '@/engine/equipment';
 import { checkEvolution } from '@/engine/evolution';
 import { Window } from '@/components/ui/Window';
 import { Button } from '@/components/ui/Button';
@@ -84,7 +84,7 @@ export function CharacterDetailOverlay() {
         <div className="tiny dim">レベル {growth.levelStatusPoints ?? 0} / 祝福 {growth.bonusStatusPoints ?? 0} / 有料 {growth.paidStatusPoints ?? 0}</div>
       </div>
       <div className="tiny dim">
-        装備: {equipmentName(owned.equippedWeaponId, save.equipmentLevels)} / {equipmentName(owned.equippedArmorId, save.equipmentLevels)} / {equipmentName(owned.equippedAccessoryId, save.equipmentLevels)}
+        装備6部位: {equippedItemIds(owned).length ? equippedItemIds(owned).map((id) => equipmentName(id, save.equipmentLevels)).join(' / ') : 'なし'}
       </div>
 
       {char.tragicFlaw && (

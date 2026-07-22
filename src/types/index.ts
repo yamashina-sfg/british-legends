@@ -305,7 +305,12 @@ export interface OwnedCharacter {
   blessingCount?: number;
   patronWorldId?: string;
   equippedWeaponId?: string;
+  equippedHeadId?: string;
   equippedArmorId?: string;
+  equippedArmsId?: string;
+  equippedShieldId?: string;
+  equippedLegsId?: string;
+  /** @deprecated 旧3部位セーブの移行専用 */
   equippedAccessoryId?: string;
 }
 

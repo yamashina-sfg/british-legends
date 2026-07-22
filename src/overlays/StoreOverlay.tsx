@@ -1,22 +1,23 @@
 import { useState } from 'react';
 import { EQUIPMENT, getMaterial, STORE_ITEMS } from '@/data';
+import type { EquipmentSlot } from '@/data/equipment';
 import { STORE_ICON_BY_ID } from '@/data/storeIcons';
 import { useGameStore } from '@/store/useGameStore';
 import { Button } from '@/components/ui/Button';
 import { Window } from '@/components/ui/Window';
 import { forgeCost, MAX_EQUIPMENT_LEVEL } from '@/engine/forging';
+import { equippedItemIds } from '@/engine/equipment';
 
-type StoreTab = 'weapon' | 'armor' | 'accessory' | 'item' | 'forge';
+type StoreTab = EquipmentSlot | 'item' | 'forge';
 
 const TAB_LABELS: Record<StoreTab, string> = {
   weapon: '武器',
-  armor: '防具',
-  accessory: '装飾品',
+  head: '頭', armor: '鎧', arms: '腕', shield: '盾', legs: '脚',
   item: '道具',
   forge: '鍛造',
 };
 
-const TAB_ICONS: Record<StoreTab, string> = { weapon: '⚔', armor: '◆', accessory: '✦', item: '▣', forge: '♨' };
+const TAB_ICONS: Record<StoreTab, string> = { weapon: '⚔', head: '♛', armor: '◆', arms: '❖', shield: '◈', legs: '♟', item: '▣', forge: '♨' };
 
 function bonusLabel(bonus: object) {
   return Object.entries(bonus).map(([stat, value]) => `${stat.toUpperCase()} +${value}`).join('  ');
@@ -31,10 +32,10 @@ export function StoreOverlay() {
   const equipment = tab === 'item' || tab === 'forge' ? [] : Object.values(EQUIPMENT).filter((item) => item.slot === tab);
   const ownedEquipment = [...new Set([
     ...(save.equipmentInventory ?? []),
-    ...save.party.flatMap((member) => [member.equippedWeaponId, member.equippedArmorId, member.equippedAccessoryId].filter(Boolean) as string[]),
+    ...save.party.flatMap(equippedItemIds),
   ])].map((id) => EQUIPMENT[id]).filter(Boolean);
   const ownedIds = new Set(ownedEquipment.map((item) => item.id));
-  const equippedIds = new Set(save.party.flatMap((member) => [member.equippedWeaponId, member.equippedArmorId, member.equippedAccessoryId].filter(Boolean)));
+  const equippedIds = new Set(save.party.flatMap(equippedItemIds));
 
   return (
     <Window title="BIBLIOTHECA STORE" className="store-overlay">
@@ -63,7 +64,7 @@ export function StoreOverlay() {
           </section>
         )}
         {tab === 'forge' && ownedEquipment.length === 0 && (
-          <div className="store-empty">鍛造できる装備がない。武器・防具・装飾品を購入するか、探索で発見しよう。</div>
+          <div className="store-empty">鍛造できる装備がない。6部位の武具を購入するか、探索で発見しよう。</div>
         )}
         {tab === 'forge' ? ownedEquipment.map((item) => {
           const level = save.equipmentLevels?.[item.id] ?? 0;

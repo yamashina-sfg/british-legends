@@ -1,6 +1,10 @@
 import type { Stats } from '@/types';
 
-export type EquipmentSlot = 'weapon' | 'armor' | 'accessory';
+export type EquipmentSlot = 'weapon' | 'head' | 'armor' | 'arms' | 'shield' | 'legs';
+
+export const EQUIPMENT_SLOT_LABELS: Record<EquipmentSlot, string> = {
+  weapon: '武器', head: '頭', armor: '鎧', arms: '腕', shield: '盾', legs: '脚',
+};
 
 export interface Equipment {
   id: string;
@@ -25,15 +29,15 @@ export const EQUIPMENT: Record<string, Equipment> = {
   scale_mail: { id: 'scale_mail', name: '鱗の胸当て', slot: 'armor', price: 94, bonus: { hp: 12, def: 10 }, worldId: 'beowulf', description: '水棲の怪物の鱗を重ねた胸当て。' },
   hero_armor: { id: 'hero_armor', name: '英雄鎧', slot: 'armor', price: 132, bonus: { hp: 24, def: 13 }, worldId: 'beowulf', description: '英雄の誓いを宿す、古い鎧。' },
   rune_plate: { id: 'rune_plate', name: 'ルーンの鎧', slot: 'armor', price: 190, bonus: { hp: 30, mp: 5, def: 16 }, worldId: 'beowulf', description: '言葉そのものを刻んだ、重厚な胸甲。' },
-  scholar_seal: { id: 'scholar_seal', name: '書記の印章', slot: 'accessory', price: 24, bonus: { mp: 8 }, worldId: 'beowulf', description: '失われた文節を読むための、古い印章。' },
-  wanderer_charm: { id: 'wanderer_charm', name: '旅人の護符', slot: 'accessory', price: 48, bonus: { hp: 12, mp: 4 }, worldId: 'beowulf', description: '遠い道を歩く者を守る、小さな護符。' },
-  wolf_token: { id: 'wolf_token', name: '狼の牙飾り', slot: 'accessory', price: 78, bonus: { hp: 18, atk: 3 }, worldId: 'beowulf', description: '夜の森を越えた者に渡される牙飾り。' },
-  king_ring: { id: 'king_ring', name: '王の指輪', slot: 'accessory', price: 160, bonus: { hp: 28, mp: 10, def: 4 }, worldId: 'beowulf', description: '物語を取り戻した王の、静かな加護。' },
+  scholar_seal: { id: 'scholar_seal', name: '書記のサークレット', slot: 'head', price: 24, bonus: { mp: 8 }, worldId: 'beowulf', description: '失われた文節を読むための額冠。' },
+  wanderer_charm: { id: 'wanderer_charm', name: '旅人の腕輪', slot: 'arms', price: 48, bonus: { hp: 12, mp: 4 }, worldId: 'beowulf', description: '遠い道を歩く者を守る腕輪。' },
+  wolf_token: { id: 'wolf_token', name: '狼革の脚甲', slot: 'legs', price: 78, bonus: { hp: 18, atk: 3 }, worldId: 'beowulf', description: '夜の森を越えた者の脚甲。' },
+  king_ring: { id: 'king_ring', name: '王誓の盾', slot: 'shield', price: 160, bonus: { hp: 28, mp: 10, def: 4 }, worldId: 'beowulf', description: '物語を取り戻した王の加護を宿す盾。' },
   grendel_fang_blade: { id: 'grendel_fang_blade', name: 'グレンデル牙剣', slot: 'weapon', price: 0, bonus: { atk: 22, spd: 4 }, worldId: 'beowulf', description: '隠し部屋で見つかる怪物牙の刃。素早い重撃を可能にする。' },
   dragon_heart_mail: { id: 'dragon_heart_mail', name: '竜心の鎧', slot: 'armor', price: 0, bonus: { hp: 42, mp: 8, def: 18 }, worldId: 'beowulf', description: 'Dragon Heartで熱を循環させる伝説の鎧。' },
-  royal_ring: { id: 'royal_ring', name: 'Royal Ring', slot: 'accessory', price: 0, bonus: { mp: 18, def: 5, spd: 3 }, worldId: 'hamlet', description: '毒と謀略を見抜く王家の指輪。Claudiusの希少戦利品。' },
+  royal_ring: { id: 'royal_ring', name: 'Royal Buckler', slot: 'shield', price: 0, bonus: { mp: 18, def: 5, spd: 3 }, worldId: 'hamlet', description: '毒と謀略を見抜く王家の小盾。Claudiusの希少戦利品。' },
   glass_rapier: { id: 'glass_rapier', name: '割れた硝子のレイピア', slot: 'weapon', price: 0, bonus: { atk: 16, spd: 8 }, worldId: 'hamlet', description: '割れたステンドグラスの光を宿した細剣。' },
-  cursed_crown: { id: 'cursed_crown', name: 'Cursed Crown', slot: 'accessory', price: 0, bonus: { atk: 8, mp: 16, spd: 4 }, worldId: 'macbeth', description: '野心を力に変える王冠。HPが削れた戦いで真価を発揮する。' },
+  cursed_crown: { id: 'cursed_crown', name: 'Cursed Crown', slot: 'head', price: 0, bonus: { atk: 8, mp: 16, spd: 4 }, worldId: 'macbeth', description: '野心を力に変える王冠。HPが削れた戦いで真価を発揮する。' },
   witchfire_dagger: { id: 'witchfire_dagger', name: '魔女火の短剣', slot: 'weapon', price: 0, bonus: { atk: 18, mp: 8, spd: 5 }, worldId: 'macbeth', description: '雷雨の祭壇で燃える青い火を鍛え込んだ短剣。' },
 };
 
