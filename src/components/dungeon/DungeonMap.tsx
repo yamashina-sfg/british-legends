@@ -59,7 +59,7 @@ export function DungeonMap({ map }: Props) {
         return (
           <div
             key={e.id}
-            className={`map-entity ${cls} ${enemyData ? 'map-entity--sprite' : ''}`}
+            className={`map-entity ${cls} ${enemyData ? 'map-entity--sprite' : ''} ${e.aiState==='chase'?'is-chasing':''} ${e.invincible?'is-returning':''}`}
             style={{ transform: `translate(${e.x * TILE}px, ${e.y * TILE}px)`, width: TILE, height: TILE }}
           >
             {enemyData ? (

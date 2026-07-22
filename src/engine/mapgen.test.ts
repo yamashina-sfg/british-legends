@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { generateDungeonMap } from './mapgen';
-import { resolveMove } from './mapmove';
+import { resolveMove, stepEnemies } from './mapmove';
 import type { DungeonMap } from '@/types';
 
 function canReach(map: DungeonMap, target: { x: number; y: number }): boolean {
@@ -166,5 +166,11 @@ describe('dungeon accessibility', () => {
     const boss = result.map.entities.find((entity) => entity.id === 'boss');
     expect(enemy).toMatchObject({ x: 3, y: 2 });
     expect(boss).toMatchObject({ x: 4, y: 3 });
+  });
+
+  it('returns enemies that reach their spawn boundary with invincibility',()=>{
+    const map:DungeonMap={worldId:'beowulf',floorIndex:0,floorName:'test',width:8,height:3,tiles:[Array(8).fill('wall'),['wall','floor','floor','floor','floor','floor','floor','wall'],Array(8).fill('wall')],player:{x:6,y:1},entities:[{id:'enemy',kind:'enemy',x:4,y:1,spawnX:1,spawnY:1,spawnRange:3,searchRange:5,attackRange:1,aiState:'chase',enemyIds:['grendel']}],foundKeyIds:[],discoveredSecretIds:[],visited:Array.from({length:3},()=>Array(8).fill(false)),isBossFloor:false};
+    stepEnemies(map);const enemy=map.entities[0];expect(enemy).toMatchObject({x:3,y:1,aiState:'return',invincible:true});
+    const collision=resolveMove({...map,player:{x:2,y:1}},1,0);expect(collision.type).toBe('blocked');
   });
 });

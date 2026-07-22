@@ -46,7 +46,7 @@ function cloneMap(map: DungeonMap): DungeonMap {
 }
 
 /** ボス以外の敵だけが1歩動く。階段・宝箱・休息碑などのイベント地点は塞がない。 */
-function stepEnemies(map: DungeonMap): MapEntity | null {
+export function stepEnemies(map: DungeonMap): MapEntity | null {
   let collided: MapEntity | null = null;
   const reserved = (x: number, y: number) =>
     map.entities.some((entity) => {
@@ -63,9 +63,12 @@ function stepEnemies(map: DungeonMap): MapEntity | null {
 
   for (const enemy of map.entities) {
     if (enemy.kind !== 'enemy') continue;
+    enemy.spawnX ??= enemy.x;enemy.spawnY ??= enemy.y;enemy.spawnRange ??= 5;enemy.searchRange ??= 5;enemy.attackRange ??= 1;enemy.aiState ??= 'idle';
     const px = map.player.x;
     const py = map.player.y;
     const distance = Math.abs(px - enemy.x) + Math.abs(py - enemy.y);
+    const originDistance=Math.abs(enemy.x-enemy.spawnX)+Math.abs(enemy.y-enemy.spawnY);
+    const mustReturn=originDistance>=(enemy.spawnRange??5);
     let dirs: [number, number][] = [
       [1, 0],
       [-1, 0],
@@ -73,13 +76,18 @@ function stepEnemies(map: DungeonMap): MapEntity | null {
       [0, -1],
     ];
 
-    if (distance <= 5) {
+    if(mustReturn){enemy.aiState='return';enemy.invincible=true;dirs.sort((a,b)=>Math.abs(enemy.spawnX!-(enemy.x+a[0]))+Math.abs(enemy.spawnY!-(enemy.y+a[1]))-(Math.abs(enemy.spawnX!-(enemy.x+b[0]))+Math.abs(enemy.spawnY!-(enemy.y+b[1]))));}
+    else if (distance <= (enemy.searchRange??5)) {
+      enemy.aiState='chase';enemy.invincible=false;
       dirs.sort((a, b) => {
         const da = Math.abs(px - (enemy.x + a[0])) + Math.abs(py - (enemy.y + a[1]));
         const db = Math.abs(px - (enemy.x + b[0])) + Math.abs(py - (enemy.y + b[1]));
         return da - db;
       });
-    } else if (Math.random() < 0.55) {
+    } else if(enemy.aiState==='chase'){enemy.aiState='idle';enemy.idleWait=1;enemy.invincible=false;continue;}
+    else if((enemy.idleWait??0)>0){enemy.idleWait=(enemy.idleWait??0)-1;continue;}
+    else if (Math.random() < 0.55) {
+      enemy.aiState='idle';enemy.invincible=false;
       dirs = shuffle(dirs);
     } else {
       continue;
@@ -88,6 +96,7 @@ function stepEnemies(map: DungeonMap): MapEntity | null {
     for (const [dx, dy] of dirs) {
       const nx = enemy.x + dx;
       const ny = enemy.y + dy;
+      if(Math.abs(nx-enemy.spawnX!)+Math.abs(ny-enemy.spawnY!)>(enemy.spawnRange??5))continue;
       if (nx === px && ny === py) {
         collided = enemy;
         break;
@@ -95,6 +104,7 @@ function stepEnemies(map: DungeonMap): MapEntity | null {
       if (!blocked(nx, ny)) {
         enemy.x = nx;
         enemy.y = ny;
+        if(enemy.aiState==='return'&&enemy.x===enemy.spawnX&&enemy.y===enemy.spawnY){enemy.aiState='idle';enemy.invincible=false;enemy.idleWait=1;}
         break;
       }
     }
@@ -127,7 +137,7 @@ export function resolveMove(prev: DungeonMap, dx: number, dy: number): MoveResul
   const target = entityAt(map, tx, ty);
   if (target) {
     if (target.kind === 'stairs') return { map, type: 'stairs', entity: target };
-    if (target.kind === 'enemy' || target.kind === 'boss') return { map, type: 'encounter', entity: target };
+    if (target.kind === 'enemy' || target.kind === 'boss') return target.invincible?{map:prev,type:'blocked',entity:target}:{ map, type: 'encounter', entity: target };
     if (target.kind === 'key') {
       map.player.x = tx;
       map.player.y = ty;
