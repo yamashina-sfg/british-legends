@@ -17,6 +17,7 @@ import { AudioManager } from '@/components/common/AudioManager';
 import { NotificationProvider } from '@/notifications/NotificationProvider';
 import { VersionGate } from '@/components/common/VersionGate';
 import { playGameSfx } from '@/audio/sfx';
+import { AutoSaveManager } from '@/components/common/AutoSaveManager';
 
 interface AppErrorBoundaryProps {
   children: ReactNode;
@@ -81,6 +82,7 @@ export default function App() {
           {scene === 'worldClear' && <WorldClearScene />}
           <OverlayHost />
           <AudioManager />
+          <AutoSaveManager />
         </div>
       </NotificationProvider></VersionGate>
     </AppErrorBoundary>
