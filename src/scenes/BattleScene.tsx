@@ -252,6 +252,18 @@ export function BattleScene() {
     );
   };
 
+  const statusChips = (combatant: Combatant) => {
+    const chips = [
+      combatant.atkBuff > 0 ? { key: 'atk', icon: '⚔', label: `ATK +${combatant.atkBuff}`, tone: 'buff' } : null,
+      combatant.defending ? { key: 'guard', icon: '◈', label: '防御', tone: 'buff' } : null,
+      combatant.tragicCharge > 0 ? { key: 'charge', icon: '✦', label: `蓄積 ${combatant.tragicCharge}`, tone: 'buff' } : null,
+      combatant.poison > 0 ? { key: 'poison', icon: '☠', label: `毒 ${combatant.poison}T`, tone: 'debuff' } : null,
+      combatant.cursed > 0 ? { key: 'curse', icon: '◆', label: `呪い ${combatant.cursed}T`, tone: 'debuff' } : null,
+    ].filter(Boolean) as { key: string; icon: string; label: string; tone: string }[];
+    if (chips.length === 0) return null;
+    return <div className="battle-effect-chips" aria-label={`${combatant.name}の状態効果`}>{chips.map((chip) => <span key={chip.key} className={`is-${chip.tone}`} title={chip.label}><i>{chip.icon}</i>{chip.label}</span>)}</div>;
+  };
+
   return (
     <div className="battle-scene fade-in">
       <div className={`battle-arena battle-arena--${battlefieldWorld}`} aria-label="battlefield">
@@ -299,6 +311,7 @@ export function BattleScene() {
                 <BattleFloatingTexts effects={floatingTexts.filter((effect) => effect.targetUid === e.uid)} />
                 <span>{e.name}</span>
                 {e.alive && <Gauge value={e.hp} max={e.maxHp} type="hp" />}
+                {statusChips(e)}
               </button>
             );
           })}
@@ -321,6 +334,7 @@ export function BattleScene() {
                   );
                 })()}
                 {flawChip(a)}
+                {statusChips(a)}
                 <div className="battle-stat-line"><span>HP {a.hp}/{a.maxHp}</span><Gauge value={a.hp} max={a.maxHp} type="hp" /></div>
                 <div className="battle-stat-line"><span>MP {a.mp}/{a.maxMp}</span><Gauge value={a.mp} max={a.maxMp} type="mp" /></div>
               </div>
