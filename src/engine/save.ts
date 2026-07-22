@@ -5,6 +5,7 @@ import { normalizeActiveParty } from './party';
 import { DEFAULT_QUICK_SLOTS, normalizeQuickSlots } from './quickSlots';
 import { emptyAllocatedStats, normalizeOwnedGrowth } from './characterGrowth';
 import { normalizeEquipmentSlots } from './equipment';
+import { DATA_VERSION } from './versioning';
 
 const STORAGE_PREFIX = 'british-legends:slot:';
 export const SAVE_SLOTS = [1, 2, 3];
@@ -17,6 +18,7 @@ export function slotKey(slotId: number): string {
 export function createNewSave(slotId: number): SaveData {
   const firstWorldId = WORLD_ORDER[0];
   return {
+    dataVersion: DATA_VERSION,
     slotId,
     lastSavedAt: Date.now(),
     playTimeSec: 0,
@@ -53,6 +55,7 @@ export function loadSlot(slotId: number): SaveData | null {
     const parsed = JSON.parse(raw) as SaveData;
     return normalizeActiveParty({
       ...parsed,
+      dataVersion: DATA_VERSION,
       openingWatched: parsed.openingWatched ?? true,
       gold: parsed.gold ?? 36,
       items: parsed.items ?? {},
