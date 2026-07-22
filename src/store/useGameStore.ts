@@ -127,6 +127,7 @@ interface GameState {
   restoreConstellation: (worldId:string) => boolean;
   setCharacterSkin: (partyIndex:number, bodyWorldId:string|undefined, locked:boolean) => void;
   setSkillSlot: (partyIndex:number, slot:number, skillId:string|null) => void;
+  setSkipBlessingCinematics: (enabled:boolean) => void;
   buyItem: (itemId: string) => void;
   consumeItem: (itemId: string) => boolean;
   setQuickSlot: (slotIndex: number, itemId: string | null) => void;
@@ -910,7 +911,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const stats = statsWithEquipment(getCharacter(blessed.characterId), blessed);
     blessed.currentHp = stats.hp;
     blessed.currentMp = stats.mp;
-    const nextSave = { ...save, party: save.party.map((member, index) => index === partyIndex ? blessed : member) };
+    const nextSave = { ...save, party: save.party.map((member, index) => index === partyIndex ? blessed : member), settings:{skipBlessingCinematics:save.settings?.skipBlessingCinematics??false,blessingCinematicsSeen:true} };
     set({ save: nextSave, overlay: 'character' });
     saveSlot(nextSave);
     emitNotification({ type: 'achievement', channel: 'achievement', title: 'CONSTELLATION BLESSING', message: `${getCharacter(blessed.characterId).name} 祝福 ${blessed.blessingCount}回`, icon: '✦', rarity: 'legendary' });
@@ -1022,6 +1023,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   restoreConstellation:(worldId)=>{const save=get().save;if(!save)return false;const next=restoreConstellationStatue(save,worldId);if(!next)return false;saveSlot(next);set({save:next});emitNotification({type:'achievement',title:'CONSTELLATION RESTORED',message:`${getWorld(worldId).title} の文学星座と身体スキンを解放`,icon:'✦',rarity:'legendary',dedupeKey:`constellation:${worldId}`});return true;},
   setCharacterSkin:(partyIndex,bodyWorldId,locked)=>{const save=get().save;if(!save||bodyWorldId&&!save.ownedBodySkins?.includes(bodyWorldId))return;const party=save.party.map((owned,index)=>index===partyIndex?{...owned,bodySkinWorldId:bodyWorldId,skinLocked:locked}:owned);const next={...save,party};saveSlot(next);set({save:next});},
   setSkillSlot:(partyIndex,slot,skillId)=>{const save=get().save,owned=save?.party[partyIndex];if(!save||!owned||slot<0||slot>=3||skillId&&!owned.learnedSkillIds.includes(skillId))return;const slots=Array.from({length:3},(_,index)=>owned.equippedSkillIds?.[index]??null);if(skillId){const previous=slots.indexOf(skillId);if(previous>=0)slots[previous]=slots[slot];}slots[slot]=skillId;const party=save.party.map((member,index)=>index===partyIndex?{...member,equippedSkillIds:slots}:member);const next={...save,party};saveSlot(next);set({save:next});},
+  setSkipBlessingCinematics:(enabled)=>{const save=get().save;if(!save)return;const next={...save,settings:{skipBlessingCinematics:enabled,blessingCinematicsSeen:save.settings?.blessingCinematicsSeen??false}};saveSlot(next);set({save:next});},
 
   buyItem: (itemId) => {
     const save = get().save;

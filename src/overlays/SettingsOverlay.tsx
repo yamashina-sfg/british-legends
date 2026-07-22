@@ -3,7 +3,7 @@ import { Window } from '@/components/ui/Window';
 import { Button } from '@/components/ui/Button';
 
 export function SettingsOverlay() {
-  const { closeOverlay, persist, goTitle } = useGameStore();
+  const { closeOverlay, persist, goTitle, save, setSkipBlessingCinematics } = useGameStore();
 
   return (
     <Window title="設定" className="col">
@@ -16,6 +16,9 @@ export function SettingsOverlay() {
         }}
       >
         いまセーブする
+      </Button>
+      <Button center onClick={() => setSkipBlessingCinematics(!(save?.settings?.skipBlessingCinematics ?? false))}>
+        既読の祝福演出を自動スキップ：{save?.settings?.skipBlessingCinematics ? 'ON' : 'OFF'}
       </Button>
       <Button
         center

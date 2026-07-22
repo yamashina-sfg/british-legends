@@ -48,6 +48,7 @@ export function createNewSave(slotId: number): SaveData {
     constellations: {},
     ownedBodySkins: [],
     ownedHeadStyles: [1, 2, 3, 4],
+    settings: { skipBlessingCinematics: false, blessingCinematicsSeen: false },
   };
 }
 
@@ -76,6 +77,7 @@ export function loadSlot(slotId: number): SaveData | null {
       constellations: parsed.constellations ?? Object.fromEntries((parsed.progress?.clearedWorldIds ?? []).map((id)=>[id,2])) as Record<string,2>,
       ownedBodySkins: parsed.ownedBodySkins ?? [...(parsed.progress?.clearedWorldIds ?? [])],
       ownedHeadStyles: parsed.ownedHeadStyles ?? [1,2,3,4],
+      settings: { skipBlessingCinematics: parsed.settings?.skipBlessingCinematics ?? false, blessingCinematicsSeen: parsed.settings?.blessingCinematicsSeen ?? false },
       party: (parsed.party ?? []).map((owned) => {const learned=[...new Set([...owned.learnedSkillIds,'arcane_burst','story_barrier'])];return normalizeEquipmentSlots(normalizeOwnedGrowth({...owned,learnedSkillIds:learned,equippedSkillIds:owned.equippedSkillIds??learned.filter((id)=>id!=='attack_basic').slice(0,3)}))}),
     });
   } catch {
