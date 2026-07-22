@@ -3,6 +3,7 @@ import { getCharacter, getWorld, WORLD_ORDER } from '@/data';
 import { statsAtLevel } from './leveling';
 import { normalizeActiveParty } from './party';
 import { DEFAULT_QUICK_SLOTS, normalizeQuickSlots } from './quickSlots';
+import { emptyAllocatedStats, normalizeOwnedGrowth } from './characterGrowth';
 
 const STORAGE_PREFIX = 'british-legends:slot:';
 export const SAVE_SLOTS = [1, 2, 3];
@@ -57,6 +58,7 @@ export function loadSlot(slotId: number): SaveData | null {
       learnedSkillBooks: parsed.learnedSkillBooks ?? [],
       exploration: parsed.exploration ?? {},
       defeatCounts: parsed.defeatCounts ?? {},
+      party: (parsed.party ?? []).map(normalizeOwnedGrowth),
     });
   } catch {
     return null;
@@ -87,6 +89,8 @@ export function createOwnedCharacter(characterId: string): OwnedCharacter {
     currentHp: stats.hp,
     currentMp: stats.mp,
     learnedSkillIds: char.skillIds,
+    allocatedStats: emptyAllocatedStats(),
+    unspentStatusPoints: 0,
   };
 }
 

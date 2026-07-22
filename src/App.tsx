@@ -2,6 +2,7 @@ import { Component, type ErrorInfo, type ReactNode } from 'react';
 import { useGameStore } from '@/store/useGameStore';
 import { TitleScene } from '@/scenes/TitleScene';
 import { OpeningScene } from '@/scenes/OpeningScene';
+import { CharacterCreateScene } from '@/scenes/CharacterCreateScene';
 import { SaveSelectScene } from '@/scenes/SaveSelectScene';
 import { WorldMapScene } from '@/scenes/WorldMapScene';
 import { WorldSelectScene } from '@/scenes/WorldSelectScene';
@@ -65,6 +66,7 @@ export default function App() {
         <div className="game-frame">
           {scene === 'title' && <TitleScene />}
           {scene === 'opening' && <OpeningScene />}
+          {scene === 'characterCreate' && <CharacterCreateScene />}
           {scene === 'saveSelect' && <SaveSelectScene />}
           {scene === 'worldMap' && <WorldMapScene />}
           {scene === 'worldSelect' && <WorldSelectScene />}

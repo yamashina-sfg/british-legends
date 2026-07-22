@@ -8,9 +8,18 @@ export interface Stats {
   hp: number;
   mp: number;
   atk: number;
+  /** 魔法攻撃。旧データは engine 側で 0 に正規化する。 */
+  int?: number;
   def: number;
+  /** 魔法防御。旧データは engine 側で 0 に正規化する。 */
+  mdef?: number;
   spd: number;
+  /** 運。会心・回避・ドロップ倍率に使用する。 */
+  luk?: number;
 }
+
+export type AllocatableStat = 'atk' | 'int' | 'def' | 'mdef' | 'spd' | 'luk';
+export type AllocatedStats = Record<AllocatableStat, number>;
 
 // --- スキル -------------------------------------------------
 export type SkillType = 'attack' | 'heal' | 'revive' | 'buff' | 'debuff' | 'charge' | 'sacrifice';
@@ -285,6 +294,10 @@ export interface OwnedCharacter {
   currentHp: number;
   currentMp: number;
   learnedSkillIds: string[];
+  /** レベルポイントで振り分けた能力値。英雄固有の基礎値とは別枠。 */
+  allocatedStats?: AllocatedStats;
+  /** 未使用のレベルポイント。Lv1は0、レベルアップごとに3。 */
+  unspentStatusPoints?: number;
   equippedWeaponId?: string;
   equippedArmorId?: string;
   equippedAccessoryId?: string;
@@ -296,11 +309,19 @@ export interface SaveProgress {
   currentWorldId: string | null;
 }
 
+export interface PlayerAvatar {
+  name: string;
+  /** 仕様書の「女神が決める身体」。Bibliothecaでは司書の選定として表現する。 */
+  bodyType: 'guardian' | 'scholar' | 'wanderer';
+  headStyle: 1 | 2 | 3 | 4;
+}
+
 export interface SaveData {
   slotId: number;
   lastSavedAt: number;
   playTimeSec: number;
   openingWatched: boolean;
+  playerAvatar?: PlayerAvatar;
   progress: SaveProgress;
   /** 戦闘に出る最大3人の characterId。未設定の旧セーブは先頭3人を使う。 */
   activePartyIds?: string[];

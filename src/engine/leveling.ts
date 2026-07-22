@@ -1,4 +1,5 @@
 import type { Character, OwnedCharacter, Stats } from '@/types';
+import { normalizeOwnedGrowth, STATUS_POINTS_PER_LEVEL } from './characterGrowth';
 
 /** レベルnに到達するための累積必要経験値（n=1なら0） */
 export function requiredExpForNextLevel(level: number): number {
@@ -56,13 +57,14 @@ export function gainExp(owned: OwnedCharacter, char: Character, amount: number):
   const newExp = owned.exp + amount;
   const toLevel = levelFromExp(newExp);
 
-  const next: OwnedCharacter = { ...owned, exp: newExp, level: toLevel };
+  const normalized = normalizeOwnedGrowth(owned);
+  const next: OwnedCharacter = { ...normalized, exp: newExp, level: toLevel };
 
   if (toLevel > fromLevel) {
-    const before = statsAtLevel(char, fromLevel);
     const after = statsAtLevel(char, toLevel);
-    next.currentHp = Math.min(after.hp, owned.currentHp + (after.hp - before.hp));
-    next.currentMp = Math.min(after.mp, owned.currentMp + (after.mp - before.mp));
+    next.currentHp = after.hp;
+    next.currentMp = after.mp;
+    next.unspentStatusPoints = (next.unspentStatusPoints ?? 0) + (toLevel - fromLevel) * STATUS_POINTS_PER_LEVEL;
   }
 
   return { owned: next, leveledUp: toLevel > fromLevel, fromLevel, toLevel };
