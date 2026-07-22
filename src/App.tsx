@@ -16,6 +16,7 @@ import { OverlayHost } from '@/overlays/OverlayHost';
 import { AudioManager } from '@/components/common/AudioManager';
 import { NotificationProvider } from '@/notifications/NotificationProvider';
 import { VersionGate } from '@/components/common/VersionGate';
+import { playGameSfx } from '@/audio/sfx';
 
 interface AppErrorBoundaryProps {
   children: ReactNode;
@@ -65,7 +66,7 @@ export default function App() {
   return (
     <AppErrorBoundary>
       <VersionGate><NotificationProvider>
-        <div className="game-frame">
+        <div className="game-frame" onClick={(event)=>{const target=event.target as HTMLElement;if(target.closest('button')&&!target.closest('.audio-toggle'))playGameSfx('click')}}>
           {scene === 'title' && <TitleScene />}
           {scene === 'opening' && <OpeningScene />}
           {scene === 'characterCreate' && <CharacterCreateScene />}
