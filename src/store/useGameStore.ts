@@ -14,6 +14,8 @@ import { blessCharacter as blessCharacterEngine, commitStatusAllocation as commi
 import { craftEquipment as craftEquipmentEngine, EQUIPMENT_RECIPES } from '@/engine/equipmentCrafting';
 import { resolveFishing, type FishingReward } from '@/engine/fishing';
 import { permanentStats } from '@/engine/permanentStats';
+import { getPet } from '@/data/pets';
+import { awardSummonedPetExp, evolvePet as evolvePetEngine, setPetSlot as setPetSlotEngine, trainPet as trainPetEngine, tryCapturePet } from '@/engine/pets';
 import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
 import {
   createNewSave,
@@ -39,7 +41,7 @@ export type Scene =
   | 'gameOver'
   | 'worldClear';
 
-export type Overlay = 'party' | 'character' | 'evolution' | 'blessing' | 'materials' | 'codex' | 'settings' | 'store' | 'fishing' | null;
+export type Overlay = 'party' | 'character' | 'evolution' | 'blessing' | 'materials' | 'codex' | 'settings' | 'store' | 'fishing' | 'pets' | null;
 
 interface RewardSummary {
   exp: number;
@@ -110,6 +112,9 @@ interface GameState {
   forgeEquipment: (equipmentId: string) => void;
   craftEquipment: (recipeId: string) => void;
   completeFishing: () => FishingReward | null;
+  setPetSlot: (slot: number, uid: string | null) => void;
+  trainPet: (uid: string) => boolean;
+  evolvePet: (uid: string) => boolean;
   buyItem: (itemId: string) => void;
   consumeItem: (itemId: string) => boolean;
   setQuickSlot: (slotIndex: number, itemId: string | null) => void;
@@ -643,9 +648,13 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     // 倒した敵をマップから除去
     const nextMap = map ? removeEntity(map, encounter.entityId) : null;
-    const nextSave = nextMap
+    let nextSave = nextMap
       ? updateExploration(applyRewards(nextSaveBase, bonusRewards), worldId, nextMap)
       : applyRewards(nextSaveBase, bonusRewards);
+    nextSave = awardSummonedPetExp(nextSave, totalExp);
+    const capture = tryCapturePet(nextSave, enemyIds);
+    nextSave = capture.save;
+    if (capture.captured) emitNotification({ type:'achievement', title:'NEW FAMILIAR', message:`${getPet(capture.captured.petId).name} が仲間になった`, icon:'◉', rarity:'epic', dedupeKey:`pet-capture:${capture.captured.petId}` });
 
     notifyBattleResult(enemyIds, totalExp, totalGold, drops, bonusItems, bonusRewards, levelUps, encounter.isBoss);
     for (const id of new Set(enemyIds)) {
@@ -973,6 +982,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     emitNotification({ type: 'item', title: result.milestone ? 'FISHING MILESTONE' : 'FISHING', message: `${result.reward.label} ×${result.reward.qty}`, icon: '♒', rarity: result.milestone ? 'epic' : 'common', dedupeKey: `fishing:${result.save.fishing?.count}` });
     return result.reward;
   },
+
+  setPetSlot: (slot, uid) => { const save=get().save;if(!save)return;const next=setPetSlotEngine(save,slot,uid);set({save:next});saveSlot(next); },
+  trainPet: (uid) => { const save=get().save;if(!save)return false;const next=trainPetEngine(save,uid);if(!next)return false;set({save:next});saveSlot(next);return true; },
+  evolvePet: (uid) => { const save=get().save;if(!save)return false;const next=evolvePetEngine(save,uid);if(!next)return false;set({save:next});saveSlot(next);return true; },
 
   buyItem: (itemId) => {
     const save = get().save;
