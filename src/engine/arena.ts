@@ -4,6 +4,10 @@ export const ARENA_ENTRY_FEE=20;
 export const ARENA_WAVE_LIMIT_MS=60_000;
 export const ARENA_MAX_WAVE=10;
 export const ARENA_WAVES:Record<number,string[]>={1:['ghost'],2:['ghost','royal_guard'],3:['grendel'],4:['witch','banquos_ghost'],5:['grendels_mother'],6:['lilliput_soldier','giant_bird'],7:['wild_beast','pirate'],8:['failed_experiment','electric_spirit'],9:['vampire','zombie'],10:['dragon']};
+export interface ArenaRankingEntry{rank:number;name:string;timeMs:number;wave:number;isPlayer:boolean;partyLabel:string}
+const RIVAL_NAMES=['The Green Knight','Lady Macbeth','Artful Dodger','Ishmael','Mina Harker','Friday','White Rabbit','Inspector Lestrade','Clarissa','Winston'];
+export function arenaRanking(wave:number,playerName:string,playerTime?:number):ArenaRankingEntry[]{const rivals=Array.from({length:20},(_,index)=>({name:RIVAL_NAMES[index%RIVAL_NAMES.length]+(index>=10?` ${index-9}`:''),timeMs:9200+wave*1450+index*1730,wave,isPlayer:false,partyLabel:index%3===0?'Knight / Scholar / Familiar':'Hero / Wanderer'}));const rows=playerTime?[...rivals,{name:playerName,timeMs:playerTime,wave,isPlayer:true,partyLabel:'British Legends Party'}]:rivals;return rows.sort((a,b)=>a.timeMs-b.timeMs).map((entry,index)=>({...entry,rank:index+1}))}
+export function nearbyArenaRanking(rows:ArenaRankingEntry[],radius=2):ArenaRankingEntry[]{const index=rows.findIndex(row=>row.isPlayer);if(index<0)return rows.slice(0,5);return rows.slice(Math.max(0,index-radius),index+radius+1)}
 
 export interface ArenaReward { gold:number; itemId?:string; equipmentId?:string; label:string }
 export function arenaReward(wave:number,first:boolean):ArenaReward{
