@@ -8,11 +8,12 @@ import { generateDungeonMap } from '@/engine/mapgen';
 import { resolveMove, removeEntity } from '@/engine/mapmove';
 import { equipItem, statsWithEquipment } from '@/engine/equipment';
 import { addDefeats, crossedResearchLevels, enemyResearchBenefit } from '@/engine/research';
-import { manuscriptStats } from '@/data/manuscripts';
 import { forgeCost, MAX_EQUIPMENT_LEVEL } from '@/engine/forging';
 import { assignQuickSlot } from '@/engine/quickSlots';
 import { blessCharacter as blessCharacterEngine, commitStatusAllocation as commitStatusAllocationEngine } from '@/engine/characterGrowth';
 import { craftEquipment as craftEquipmentEngine, EQUIPMENT_RECIPES } from '@/engine/equipmentCrafting';
+import { resolveFishing, type FishingReward } from '@/engine/fishing';
+import { permanentStats } from '@/engine/permanentStats';
 import { getActiveParty, getActivePartyIds, normalizeActiveParty, toggleActivePartyMember } from '@/engine/party';
 import {
   createNewSave,
@@ -38,7 +39,7 @@ export type Scene =
   | 'gameOver'
   | 'worldClear';
 
-export type Overlay = 'party' | 'character' | 'evolution' | 'blessing' | 'materials' | 'codex' | 'settings' | 'store' | null;
+export type Overlay = 'party' | 'character' | 'evolution' | 'blessing' | 'materials' | 'codex' | 'settings' | 'store' | 'fishing' | null;
 
 interface RewardSummary {
   exp: number;
@@ -108,6 +109,7 @@ interface GameState {
   buyEquipment: (partyIndex: number, equipmentId: string) => void;
   forgeEquipment: (equipmentId: string) => void;
   craftEquipment: (recipeId: string) => void;
+  completeFishing: () => FishingReward | null;
   buyItem: (itemId: string) => void;
   consumeItem: (itemId: string) => boolean;
   setQuickSlot: (slotIndex: number, itemId: string | null) => void;
@@ -541,7 +543,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           getActiveParty(save),
           e.enemyIds ?? [],
           e.kind === 'boss',
-          manuscriptStats(save.storyFragments ?? []),
+          permanentStats(save),
           save.equipmentLevels ?? {},
         );
         return;
@@ -960,6 +962,16 @@ export const useGameStore = create<GameState>((set, get) => ({
     set({ save: nextSave, mapToast: `${item.name} の制作に成功した！` });
     saveSlot(nextSave);
     emitNotification({ type: 'item', title: 'CRAFT SUCCESS', message: item.name, icon: '⚒', rarity: 'epic', dedupeKey: `craft:${recipe.id}` });
+  },
+
+  completeFishing: () => {
+    const save = get().save;
+    if (!save) return null;
+    const result = resolveFishing(save);
+    set({ save: result.save, mapToast: `${result.reward.label} を釣り上げた！` });
+    saveSlot(result.save);
+    emitNotification({ type: 'item', title: result.milestone ? 'FISHING MILESTONE' : 'FISHING', message: `${result.reward.label} ×${result.reward.qty}`, icon: '♒', rarity: result.milestone ? 'epic' : 'common', dedupeKey: `fishing:${result.save.fishing?.count}` });
+    return result.reward;
   },
 
   buyItem: (itemId) => {

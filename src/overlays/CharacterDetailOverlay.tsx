@@ -8,7 +8,7 @@ import { Window } from '@/components/ui/Window';
 import { Button } from '@/components/ui/Button';
 import { Gauge } from '@/components/ui/Gauge';
 import { Sprite } from '@/components/ui/Sprite';
-import { manuscriptStats } from '@/data/manuscripts';
+import { permanentStats } from '@/engine/permanentStats';
 import type { AllocatableStat, AllocatedStats } from '@/types';
 import { allocationCap, maxCharacterLevel, normalizeOwnedGrowth } from '@/engine/characterGrowth';
 
@@ -19,7 +19,7 @@ export function CharacterDetailOverlay() {
   if (!owned) return null;
 
   const char = getCharacter(owned.characterId);
-  const stats = statsWithEquipment(char, owned, manuscriptStats(save.storyFragments ?? []), save.equipmentLevels ?? {});
+  const stats = statsWithEquipment(char, owned, permanentStats(save), save.equipmentLevels ?? {});
   const evo = checkEvolution(owned, char, save.inventory);
   const nextLvExp = expForLevel(owned.level + 1);
   const growth = normalizeOwnedGrowth(owned);
