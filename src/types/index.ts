@@ -397,6 +397,9 @@ export interface SaveData {
   settings?: {
     skipBlessingCinematics: boolean;
     blessingCinematicsSeen: boolean;
+    bgmVolume?: number;
+    seVolume?: number;
+    language?: 'ja' | 'en';
   };
   adventure?: {
     flags: string[];

@@ -131,6 +131,7 @@ interface GameState {
   setCharacterSkin: (partyIndex:number, bodyWorldId:string|undefined, locked:boolean) => void;
   setSkillSlot: (partyIndex:number, slot:number, skillId:string|null) => void;
   setSkipBlessingCinematics: (enabled:boolean) => void;
+  setGameSettings:(settings:Partial<NonNullable<SaveData['settings']>>)=>void;
   travelPortal: (portalId:string) => boolean;
   claimAdventureEvent: (eventId:string) => boolean;
   tradeAdventure: (tradeId:string,giveId:string,giveQty:number,getId:string,getQty:number) => boolean;
@@ -923,7 +924,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     const stats = statsWithEquipment(getCharacter(blessed.characterId), blessed);
     blessed.currentHp = stats.hp;
     blessed.currentMp = stats.mp;
-    const nextSave = { ...save, party: save.party.map((member, index) => index === partyIndex ? blessed : member), settings:{skipBlessingCinematics:save.settings?.skipBlessingCinematics??false,blessingCinematicsSeen:true} };
+    const nextSave = { ...save, party: save.party.map((member, index) => index === partyIndex ? blessed : member), settings:{...save.settings,skipBlessingCinematics:save.settings?.skipBlessingCinematics??false,blessingCinematicsSeen:true} };
     set({ save: nextSave, overlay: 'character' });
     saveSlot(nextSave);
     emitNotification({ type: 'achievement', channel: 'achievement', title: 'CONSTELLATION BLESSING', message: `${getCharacter(blessed.characterId).name} 祝福 ${blessed.blessingCount}回`, icon: '✦', rarity: 'legendary' });
@@ -1035,7 +1036,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   restoreConstellation:(worldId)=>{const save=get().save;if(!save)return false;const next=restoreConstellationStatue(save,worldId);if(!next)return false;saveSlot(next);set({save:next});emitNotification({type:'achievement',title:'CONSTELLATION RESTORED',message:`${getWorld(worldId).title} の文学星座と身体スキンを解放`,icon:'✦',rarity:'legendary',dedupeKey:`constellation:${worldId}`});return true;},
   setCharacterSkin:(partyIndex,bodyWorldId,locked)=>{const save=get().save;if(!save||bodyWorldId&&!save.ownedBodySkins?.includes(bodyWorldId))return;const party=save.party.map((owned,index)=>index===partyIndex?{...owned,bodySkinWorldId:bodyWorldId,skinLocked:locked}:owned);const next={...save,party};saveSlot(next);set({save:next});},
   setSkillSlot:(partyIndex,slot,skillId)=>{const save=get().save,owned=save?.party[partyIndex];if(!save||!owned||slot<0||slot>=3||skillId&&!owned.learnedSkillIds.includes(skillId))return;const slots=Array.from({length:3},(_,index)=>owned.equippedSkillIds?.[index]??null);if(skillId){const previous=slots.indexOf(skillId);if(previous>=0)slots[previous]=slots[slot];}slots[slot]=skillId;const party=save.party.map((member,index)=>index===partyIndex?{...member,equippedSkillIds:slots}:member);const next={...save,party};saveSlot(next);set({save:next});},
-  setSkipBlessingCinematics:(enabled)=>{const save=get().save;if(!save)return;const next={...save,settings:{skipBlessingCinematics:enabled,blessingCinematicsSeen:save.settings?.blessingCinematicsSeen??false}};saveSlot(next);set({save:next});},
+  setSkipBlessingCinematics:(enabled)=>{const save=get().save;if(!save)return;const next={...save,settings:{...save.settings,skipBlessingCinematics:enabled,blessingCinematicsSeen:save.settings?.blessingCinematicsSeen??false}};saveSlot(next);set({save:next});},
+  setGameSettings:(settings)=>{const save=get().save;if(!save)return;const next={...save,settings:{skipBlessingCinematics:false,blessingCinematicsSeen:false,...save.settings,...settings}};saveSlot(next);set({save:next});localStorage.setItem('british-legends:se-volume',String(next.settings.seVolume??.8));},
   travelPortal:(id)=>{const save=get().save;if(!save||!save.adventure?.openPortals.includes(id))return false;const [worldId,floorText]=id.split(':');const floorIndex=Number(floorText);const soul=Math.max(0,...save.party.map((member)=>member.soulLevel??0));if(!save.progress.unlockedWorldIds.includes(worldId)||!Number.isInteger(floorIndex)||soul<floorIndex)return false;const next={...save,progress:{...save.progress,currentWorldId:worldId}};saveSlot(next);set({save:next,worldId,map:generateDungeonMap(worldId,floorIndex),scene:'dungeon',overlay:null,mapToast:`ポータルから第${floorIndex+1}層へ転移した。`});return true;},
   claimAdventureEvent:(eventId)=>{const save=get().save;if(!save)return false;const result=claimOneTimeEvent(save,eventId);if(!result.first)return false;saveSlot(result.save);set({save:result.save,mapToast:'司書から回復薬を受け取った。'});return true;},
   tradeAdventure:(tradeId,giveId,giveQty,getId,getQty)=>{const save=get().save;if(!save)return false;const next=tradeAdventureItem(save,tradeId,giveId,giveQty,getId,getQty);if(!next)return false;saveSlot(next);set({save:next,mapToast:'交換が成立した。'});return true;},

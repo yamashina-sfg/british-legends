@@ -33,7 +33,8 @@ function createContext(): AudioContext | null {
 
 function makeGain(ctx: AudioContext, value: number, destination: AudioNode) {
   const gain = ctx.createGain();
-  gain.gain.value = value;
+  const setting=useGameStore.getState().save?.settings?.bgmVolume??.7;
+  gain.gain.value = value*setting;
   gain.connect(destination);
   return gain;
 }
@@ -112,7 +113,7 @@ async function startFileTrack(ctx: AudioContext, track: { src: string; volume: n
   source.buffer = buffer;
   source.loop = track.loop;
   gain.gain.setValueAtTime(0.0001, now);
-  gain.gain.exponentialRampToValueAtTime(track.volume, now + 1.1);
+  gain.gain.exponentialRampToValueAtTime(track.volume*(useGameStore.getState().save?.settings?.bgmVolume??.7), now + 1.1);
   source.connect(gain);
   gain.connect(ctx.destination);
   source.start(now);
@@ -220,6 +221,7 @@ function startTrack(ctx: AudioContext, scene: Scene) {
 
 export function AudioManager() {
   const scene = useGameStore((state) => state.scene);
+  const bgmVolume=useGameStore((state)=>state.save?.settings?.bgmVolume??.7);
   const [enabled, setEnabled] = useState(() => localStorage.getItem(STORAGE_KEY) !== 'off');
   const contextRef = useRef<AudioContext | null>(null);
   const activeTrackRef = useRef<TrackName | null>(null);
@@ -272,7 +274,7 @@ export function AudioManager() {
     }
 
     return stopCurrent;
-  }, [enabled, scene, startCurrent, stopCurrent]);
+  }, [enabled, scene, bgmVolume, startCurrent, stopCurrent]);
 
   useEffect(() => {
     if (!enabled) return undefined;
