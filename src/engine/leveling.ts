@@ -1,5 +1,5 @@
 import type { Character, OwnedCharacter, Stats } from '@/types';
-import { normalizeOwnedGrowth, STATUS_POINTS_PER_LEVEL } from './characterGrowth';
+import { maxCharacterLevel, normalizeOwnedGrowth, STATUS_POINTS_PER_LEVEL } from './characterGrowth';
 
 /** レベルnに到達するための累積必要経験値（n=1なら0） */
 export function requiredExpForNextLevel(level: number): number {
@@ -53,17 +53,21 @@ export interface ExpGainResult {
  * レベルアップ時は最大HP/MPの増加分だけ現在値も回復させる（DQ風）。
  */
 export function gainExp(owned: OwnedCharacter, char: Character, amount: number): ExpGainResult {
-  const fromLevel = owned.level;
-  const newExp = owned.exp + amount;
-  const toLevel = levelFromExp(newExp);
-
   const normalized = normalizeOwnedGrowth(owned);
+  const fromLevel = normalized.level;
+  const levelCap = maxCharacterLevel(normalized);
+  if (fromLevel >= levelCap) {
+    return { owned: normalized, leveledUp: false, fromLevel, toLevel: fromLevel };
+  }
+  const newExp = Math.min(normalized.exp + Math.max(0, amount), expForLevel(levelCap));
+  const toLevel = Math.min(levelFromExp(newExp), levelCap);
   const next: OwnedCharacter = { ...normalized, exp: newExp, level: toLevel };
 
   if (toLevel > fromLevel) {
     const after = statsAtLevel(char, toLevel);
     next.currentHp = after.hp;
     next.currentMp = after.mp;
+    next.levelStatusPoints = (next.levelStatusPoints ?? 0) + (toLevel - fromLevel) * STATUS_POINTS_PER_LEVEL;
     next.unspentStatusPoints = (next.unspentStatusPoints ?? 0) + (toLevel - fromLevel) * STATUS_POINTS_PER_LEVEL;
   }
 

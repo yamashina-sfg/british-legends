@@ -6,6 +6,7 @@ import { MaterialsOverlay } from './MaterialsOverlay';
 import { CodexOverlay } from './CodexOverlay';
 import { SettingsOverlay } from './SettingsOverlay';
 import { StoreOverlay } from './StoreOverlay';
+import { BlessingOverlay } from './BlessingOverlay';
 
 export function OverlayHost() {
   const overlay = useGameStore((s) => s.overlay);
@@ -18,6 +19,7 @@ export function OverlayHost() {
         {overlay === 'party' && <PartyOverlay />}
         {overlay === 'character' && <CharacterDetailOverlay />}
         {overlay === 'evolution' && <EvolutionOverlay />}
+        {overlay === 'blessing' && <BlessingOverlay />}
         {overlay === 'materials' && <MaterialsOverlay />}
         {overlay === 'codex' && <CodexOverlay />}
         {overlay === 'settings' && <SettingsOverlay />}
