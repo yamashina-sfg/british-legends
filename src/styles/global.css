@@ -2963,6 +2963,9 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
 .field-quick-slots button { display: grid; min-width: 0; padding: 4px 2px; color: #dfca87; border: 1px solid #776849; background: #1c2521; font: 8px var(--font); cursor: pointer; }
 .field-quick-slots button:disabled { opacity: .35; cursor: not-allowed; }
 .field-quick-slots b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 7px; }
+.arena-timer.is-normal { color: #d9e1cf; border-color: #738275; }
+.arena-timer.is-warning { color: #f1d36d; border-color: #a78843; }
+.arena-timer.is-danger { color: #ff7b7b; border-color: #a44f4f; }
 @media (max-width: 700px) { .quick-slot-settings header { flex-direction: column; gap: 3px; }.quick-slot-settings > div { gap: 3px; }.quick-slot-settings > div button { padding: 3px; }.battle-quick-slots button { min-height: 40px; padding-inline: 2px; } }
 
 /* Dungeon cockpit redesign: the map is the hero, controls stay within thumb reach. */
