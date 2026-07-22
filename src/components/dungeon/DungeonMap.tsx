@@ -2,7 +2,7 @@ import type { DungeonMap as MapData, MapEntity } from '@/types';
 import { getEnemy } from '@/data';
 import { Sprite } from '@/components/ui/Sprite';
 
-const TILE = 26; // px
+const TILE = 30; // px: 探索画面の主役として視認できる大きさ
 
 function entityGlyph(e: MapEntity): { glyph: string; cls: string } {
   const sym = e.enemyIds && e.enemyIds[0] ? ` ent-sym--${e.enemyIds[0]}` : '';
