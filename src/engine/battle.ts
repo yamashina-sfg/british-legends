@@ -1,5 +1,5 @@
-import type { Enemy, OwnedCharacter, OwnedPet, Skill, Stats } from '@/types';
-import { getCharacter, getEnemy, getSkill } from '@/data';
+import type { Element, Enemy, OwnedCharacter, OwnedPet, Skill, Stats } from '@/types';
+import { getCharacter, getEnemy, getEquipment, getSkill } from '@/data';
 import { statsWithEquipment } from './equipment';
 import { calcDamage, calcHeal, resolveLuckHit } from './damage';
 import {
@@ -14,6 +14,7 @@ import {
 } from './tragicFlaw';
 import { getPet } from '@/data/pets';
 import { petStats } from './pets';
+import { elementForWorld } from './attributes';
 
 // ============================================================
 // 戦闘エンジン（純粋ロジック・React非依存）
@@ -43,6 +44,7 @@ export interface Combatant {
   /** 参照元（ally=characterId, enemy=enemyId） */
   sourceId: string;
   level: number;
+  element?: Element;
   stats: Stats;
   maxHp: number;
   maxMp: number;
@@ -122,6 +124,7 @@ export function combatantFromOwned(owned: OwnedCharacter, partyIndex = 0, isBoss
     sourceId: owned.characterId,
     level: owned.level,
     stats,
+    element: owned.equippedWeaponId ? elementForWorld(getEquipment(owned.equippedWeaponId).worldId) : elementForWorld(char.worldId),
     maxHp: stats.hp,
     maxMp: stats.mp,
     hp: Math.min(owned.currentHp, stats.hp),
@@ -154,6 +157,7 @@ export function combatantFromEnemy(enemyId: string, index: number): Combatant {
     sourceId: enemyId,
     level: 1,
     stats: { ...enemy.stats },
+    element: elementForWorld(enemy.worldId),
     maxHp: enemy.stats.hp,
     maxMp: enemy.stats.mp,
     hp: enemy.stats.hp,
@@ -177,7 +181,7 @@ export function combatantFromEnemy(enemyId: string, index: number): Combatant {
 
 export function combatantFromPet(owned: OwnedPet, index: number): Combatant {
   const pet=getPet(owned.petId); const stats=petStats(owned);
-  return { uid:owned.uid,side:'ally',name:pet.name,spriteId:pet.sourceEnemyId,sourceId:owned.petId,level:owned.level,stats,maxHp:stats.hp,maxMp:stats.mp,hp:Math.min(owned.currentHp,stats.hp),mp:stats.mp,skillIds:pet.skillIds,atkBuff:0,tragicCharge:0,actionCount:0,defending:false,rageTriggered:false,phaseTwoTriggered:false,finalTriggered:false,summonedGuard:false,poison:0,cursed:0,passiveTriggered:false,alive:owned.currentHp>0,isPet:true,barrierHp:0,barrierMax:0,barrierTurns:0,activeBuffs:[],skillBookCounts:{} };
+  return { uid:owned.uid,side:'ally',name:pet.name,spriteId:pet.sourceEnemyId,sourceId:owned.petId,level:owned.level,stats,element:pet.element,maxHp:stats.hp,maxMp:stats.mp,hp:Math.min(owned.currentHp,stats.hp),mp:stats.mp,skillIds:pet.skillIds,atkBuff:0,tragicCharge:0,actionCount:0,defending:false,rageTriggered:false,phaseTwoTriggered:false,finalTriggered:false,summonedGuard:false,poison:0,cursed:0,passiveTriggered:false,alive:owned.currentHp>0,isPet:true,barrierHp:0,barrierMax:0,barrierTurns:0,activeBuffs:[],skillBookCounts:{} };
 }
 
 export function skillBookMultiplier(skill: Skill, counts: Record<string, number>): number {
@@ -437,7 +441,7 @@ export function resolveAction(working: Combatant[], action: BattleAction): LogEn
         const luck=resolveLuckHit(actorStats.luk??0,targetStats.luk??0,skill.id==='arcane_burst');
         if(luck.evaded){logs.push({text:`${t.name} は攻撃を回避した！`,feedback:{targetUid:t.uid,text:'Evade!',kind:'evade',priority:6}});continue;}
         const boostedSkill = { ...skill, power: skill.power * skillBookMultiplier(skill, actor.skillBookCounts) };
-        const baseDmg = calcDamage({ attackerAtk: actorStats.atk, defenderDef: targetStats.def, skill: boostedSkill, atkBuff: actor.atkBuff });
+        const baseDmg = calcDamage({ attackerAtk: actorStats.atk, attackerInt:actorStats.int, defenderDef: targetStats.def, defenderMdef:targetStats.mdef, skill: boostedSkill, atkBuff: actor.atkBuff, attackerElement:actor.element, defenderElement:t.element });
         const dmg = Math.max(1, Math.floor(baseDmg * flawDamage.multiplier*(luck.critical?1.5:1)));
         const dealt = applyDamage(t, dmg);
         logs.push({

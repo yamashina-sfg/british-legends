@@ -33,7 +33,8 @@ export function levelFromExp(exp: number): number {
 export function statsAtLevel(char: Character, level: number): Stats {
   const lv = Math.max(1, level) - 1;
   return {
-    hp: char.baseStats.hp + char.growthRate.hp * lv,
+    // 開発仕様のLv1 HP=約1000基準。既存マスターは表示用の1/10値なので戦闘値へ展開する。
+    hp: (char.baseStats.hp + char.growthRate.hp * lv) * 10,
     mp: char.baseStats.mp + char.growthRate.mp * lv,
     atk: char.baseStats.atk + char.growthRate.atk * lv,
     def: char.baseStats.def + char.growthRate.def * lv,
