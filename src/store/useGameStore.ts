@@ -125,8 +125,8 @@ interface GameState {
   healParty: () => void;
   restAtInn: () => void;
   buyEquipment: (partyIndex: number, equipmentId: string) => void;
-  forgeEquipment: (equipmentId: string) => void;
-  craftEquipment: (recipeId: string) => void;
+  forgeEquipment: (equipmentId: string) => boolean;
+  craftEquipment: (recipeId: string) => boolean;
   completeFishing: () => FishingReward | null;
   setPetSlot: (slot: number, uid: string | null) => void;
   trainPet: (uid: string) => boolean;
@@ -1017,12 +1017,12 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   forgeEquipment: (equipmentId) => {
     const save = get().save;
-    if (!save || !(save.equipmentInventory ?? []).includes(equipmentId)) return;
+    if (!save || !(save.equipmentInventory ?? []).includes(equipmentId)) return false;
     const item = getEquipment(equipmentId);
     const currentLevel = save.equipmentLevels?.[equipmentId] ?? 0;
     const cost = forgeCost(item, currentLevel);
-    if (!cost || currentLevel >= MAX_EQUIPMENT_LEVEL) return;
-    if (save.gold < cost.gold || (save.inventory[cost.materialId] ?? 0) < cost.materialQty) return;
+    if (!cost || currentLevel >= MAX_EQUIPMENT_LEVEL) return false;
+    if (save.gold < cost.gold || (save.inventory[cost.materialId] ?? 0) < cost.materialQty) return false;
     const inventory = { ...save.inventory, [cost.materialId]: (save.inventory[cost.materialId] ?? 0) - cost.materialQty };
     const equipmentLevels = { ...(save.equipmentLevels ?? {}), [equipmentId]: currentLevel + 1 };
     const nextSave = { ...save, inventory, equipmentLevels, gold: save.gold - cost.gold };
@@ -1030,19 +1030,21 @@ export const useGameStore = create<GameState>((set, get) => ({
     saveSlot(nextSave);
     playGameSfx('reinforce');
     emitNotification({ type: 'item', title: 'FORGE SUCCESS', message: `${item.name} +${currentLevel + 1}`, icon: '⚒', rarity: currentLevel + 1 >= MAX_EQUIPMENT_LEVEL ? 'epic' : 'rare', dedupeKey: `forge:${equipmentId}:${currentLevel + 1}` });
+    return true;
   },
 
   craftEquipment: (recipeId) => {
     const save = get().save;
     const recipe = EQUIPMENT_RECIPES.find((entry) => entry.id === recipeId);
-    if (!save || !recipe) return;
+    if (!save || !recipe) return false;
     const nextSave = craftEquipmentEngine(save, recipe);
-    if (!nextSave) return;
+    if (!nextSave) return false;
     const item = getEquipment(recipe.resultEquipmentId);
     set({ save: nextSave, mapToast: `${item.name} の制作に成功した！` });
     saveSlot(nextSave);
     playGameSfx('craft');
     emitNotification({ type: 'item', title: 'CRAFT SUCCESS', message: item.name, icon: '⚒', rarity: 'epic', dedupeKey: `craft:${recipe.id}` });
+    return true;
   },
 
   completeFishing: () => {
@@ -1058,7 +1060,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   setPetSlot: (slot, uid) => { const save=get().save;if(!save)return;const next=setPetSlotEngine(save,slot,uid);set({save:next});saveSlot(next);playGameSfx(uid?'pet_summon':'pet_return'); },
   trainPet: (uid) => { const save=get().save;if(!save)return false;const next=trainPetEngine(save,uid);if(!next)return false;set({save:next});saveSlot(next);playGameSfx('reinforce');return true; },
-  evolvePet: (uid) => { const save=get().save;if(!save)return false;const next=evolvePetEngine(save,uid);if(!next)return false;set({save:next});saveSlot(next);return true; },
+  evolvePet: (uid) => { const save=get().save;if(!save)return false;const next=evolvePetEngine(save,uid);if(!next)return false;set({save:next});saveSlot(next);playGameSfx('pet_summon');return true; },
 
   enterArena:(startWave)=>{const save=get().save;if(!save||save.gold<ARENA_ENTRY_FEE)return false;const maxStart=Math.min(10,Math.max(1,save.arena?.bestWave??0));const selected=Math.max(1,Math.min(maxStart,startWave));const arena={...(save.arena??{bestWave:0,selectedStartWave:1,bestTimes:{},claimedFirstWaves:[],attempts:0}),selectedStartWave:selected,attempts:(save.arena?.attempts??0)+1};const next={...save,gold:save.gold-ARENA_ENTRY_FEE,arena};const now=Date.now();saveSlot(next);set({save:next,overlay:null,arenaRun:{currentWave:selected,startWave:selected,runStartedAt:now,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS,waveTimes:{}},scene:'arena'});return true;},
   startArenaWave:()=>{const {save,arenaRun}=get();if(!save||!arenaRun||arenaRun.currentWave>ARENA_MAX_WAVE)return;const enemyIds=ARENA_WAVES[arenaRun.currentWave];const now=Date.now();set({scene:'battle',arenaRun:{...arenaRun,waveStartedAt:now,deadline:now+ARENA_WAVE_LIMIT_MS}});useBattleStore.getState().start(battleParty(save),enemyIds,false,permanentStats(save),save.equipmentLevels,(save.pets??[]).filter((pet)=>save.petSlots?.includes(pet.uid)),save.inventory);},
