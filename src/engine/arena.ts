@@ -1,4 +1,5 @@
 import type { SaveData } from '@/types';
+import { grantItem } from './items';
 
 export const ARENA_ENTRY_FEE=20;
 export const ARENA_WAVE_LIMIT_MS=5*60_000;
@@ -23,8 +24,8 @@ export function arenaReward(wave:number,first:boolean):ArenaReward{
 export function applyArenaReward(save:SaveData,wave:number):{save:SaveData;reward:ArenaReward}{
   const arena=save.arena??{bestWave:0,selectedStartWave:1,bestTimes:{},claimedFirstWaves:[],attempts:0};
   const first=!arena.claimedFirstWaves.includes(wave);const reward=arenaReward(wave,first);
-  const next={...save,gold:save.gold+reward.gold,arena:{...arena,bestWave:Math.max(arena.bestWave,wave),claimedFirstWaves:first?[...arena.claimedFirstWaves,wave]:arena.claimedFirstWaves}};
-  if(reward.itemId)next.items={...next.items,[reward.itemId]:(next.items[reward.itemId]??0)+1};
+  let next:SaveData={...save,gold:save.gold+reward.gold,arena:{...arena,bestWave:Math.max(arena.bestWave,wave),claimedFirstWaves:first?[...arena.claimedFirstWaves,wave]:arena.claimedFirstWaves}};
+  if(reward.itemId)next=grantItem(next,reward.itemId,1);
   if(reward.equipmentId)next.equipmentInventory=[...new Set([...(next.equipmentInventory??[]),reward.equipmentId])];
   return{save:next,reward};
 }

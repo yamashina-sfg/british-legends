@@ -1,5 +1,6 @@
 import type { SaveData } from '@/types';
 import { MANUSCRIPT_FRAGMENTS } from '@/data/manuscripts';
+import { grantItem } from './items';
 
 export const FISHING_LUCK_UNIT = 1000;
 export const FISHING_LUCK_MAX = 100;
@@ -31,7 +32,7 @@ export function resolveFishing(save: SaveData, roll = Math.random()): FishingRes
   const reward = fixed ?? albumReward ?? COMMON_REWARDS[Math.min(COMMON_REWARDS.length - 1, Math.floor(Math.max(0, roll) * COMMON_REWARDS.length))];
   const next: SaveData = { ...save, fishing: { ...fishing, count, claimedMilestones: fixed ? [...new Set([...fishing.claimedMilestones, count])] : fishing.claimedMilestones } };
   if (reward.kind === 'material') next.inventory = { ...next.inventory, [reward.id]: (next.inventory[reward.id] ?? 0) + reward.qty };
-  if (reward.kind === 'item') next.items = { ...next.items, [reward.id]: (next.items[reward.id] ?? 0) + reward.qty };
+  if (reward.kind === 'item') return { save: grantItem(next,reward.id,reward.qty), reward, milestone: Boolean(fixed) };
   if (reward.kind === 'equipment') next.equipmentInventory = [...new Set([...(next.equipmentInventory ?? []), reward.id])];
   if (reward.kind === 'story') next.storyFragments = [...new Set([...(next.storyFragments ?? []), reward.id])];
   return { save: next, reward, milestone: Boolean(fixed) };

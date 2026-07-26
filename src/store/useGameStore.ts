@@ -33,9 +33,10 @@ import { useBattleStore } from './useBattleStore';
 import { fragmentsForWorld } from '@/data/manuscripts';
 import { luckDropMultiplier } from '@/engine/damage';
 import { playGameSfx } from '@/audio/sfx';
-import { grantSandboxDiamonds as grantSandboxDiamondsEngine, normalizeCommerce, purchaseProduct, unlockedMagicSlotCount, useTimedBoost } from '@/engine/commerce';
+import { grantSandboxDiamonds as grantSandboxDiamondsEngine, normalizeCommerce, pauseTimedBoosts, purchaseProduct, resumeTimedBoosts, unlockedMagicSlotCount, useTimedBoost } from '@/engine/commerce';
 import { recoverPartyAfterDefeat } from '@/engine/defeat';
 import { advancePlayTime } from '@/engine/autosave';
+import { ITEM_STACK_MAX, itemCountAfterGrant } from '@/engine/items';
 
 export type Scene =
   | 'title'
@@ -274,6 +275,7 @@ function isWorldCodexEntry(worldId: string, codexId: string): boolean {
 function applyRewards(save: SaveData, rewards: RewardEntry[]): SaveData {
   const inventory = { ...save.inventory };
   const items = { ...save.items };
+  const acquiredItemIds = new Set(save.acquiredItemIds??[]);
   const equipmentInventory = [...(save.equipmentInventory ?? [])];
   const learnedSkillBooks = [...(save.learnedSkillBooks ?? [])];
   const storyFragments = [...(save.storyFragments ?? [])];
@@ -287,7 +289,10 @@ function applyRewards(save: SaveData, rewards: RewardEntry[]): SaveData {
       codexIds.push(`codex_material_${reward.id}`);
     }
     if (reward.kind === 'gold') gold += reward.qty;
-    if (reward.kind === 'item') items[reward.id] = (items[reward.id] ?? 0) + reward.qty;
+    if (reward.kind === 'item') {
+      items[reward.id] = itemCountAfterGrant(items[reward.id]??0,reward.qty);
+      acquiredItemIds.add(reward.id);
+    }
     if (reward.kind === 'equipment' && !equipmentInventory.includes(reward.id)) equipmentInventory.push(reward.id);
     if (reward.kind === 'skill') {
       if (!learnedSkillBooks.includes(reward.id)) learnedSkillBooks.push(reward.id);
@@ -310,6 +315,7 @@ function applyRewards(save: SaveData, rewards: RewardEntry[]): SaveData {
     party,
     inventory,
     items,
+    acquiredItemIds:[...acquiredItemIds],
     equipmentInventory,
     learnedSkillBooks,
     storyFragments,
@@ -444,9 +450,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (fallbackWorld) get().enterTown(fallbackWorld);
   },
   renamePlayer:(name)=>{const save=get().save;const clean=name.trim().slice(0,12);if(!save?.playerAvatar||!clean)return false;const next={...save,playerAvatar:{...save.playerAvatar,name:clean}};saveSlot(next);set({save:next});return true;},
-  openOverlay: (o, charIndex) =>
-    set({ overlay: o, selectedCharIndex: charIndex ?? get().selectedCharIndex }),
-  closeOverlay: () => set({ overlay: null }),
+  openOverlay: (o, charIndex) => {const save=get().save;const next=save?pauseTimedBoosts(save):save;if(next)saveSlot(next);set({ save:next,overlay: o, selectedCharIndex: charIndex ?? get().selectedCharIndex });},
+  closeOverlay: () => {const save=get().save;const next=save?resumeTimedBoosts(save):save;if(next)saveSlot(next);set({save:next,overlay: null});},
 
   newGame: (slotId) => {
     const save = createNewSave(slotId);
@@ -1071,9 +1076,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   buyItem: (itemId) => {
     const save = get().save;
     const item = STORE_ITEMS[itemId];
-    if (!save || !item || save.gold < item.price) return;
-    const items = { ...save.items, [itemId]: (save.items[itemId] ?? 0) + 1 };
-    const nextSave = { ...save, items, gold: save.gold - item.price };
+    if (!save || !item || save.gold < item.price || (save.items[itemId]??0)>=ITEM_STACK_MAX) return;
+    const items = { ...save.items, [itemId]: itemCountAfterGrant(save.items[itemId]??0,1) };
+    const nextSave = { ...save, items, acquiredItemIds:[...new Set([...(save.acquiredItemIds??[]),itemId])], gold: save.gold - item.price };
     set({ save: nextSave, mapToast: `${item.name} を購入した。` });
     saveSlot(nextSave);
     playGameSfx('item_buy');
@@ -1115,7 +1120,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   setQuickSlot: (slotIndex, itemId) => {
     const save = get().save;
-    if (!save || !normalizeCommerce(save.commerce).entitlements.includes('quick_slots_5') || (itemId && !STORE_ITEMS[itemId]?.skillId)) return;
+    if (!save || !normalizeCommerce(save.commerce).entitlements.includes('quick_slots_5') || (itemId && (!STORE_ITEMS[itemId]?.skillId||!(save.acquiredItemIds??[]).includes(itemId)))) return;
     const quickSlots = assignQuickSlot(save.quickSlots ?? [], slotIndex, itemId);
     const nextSave = { ...save, quickSlots };
     set({ save: nextSave });
