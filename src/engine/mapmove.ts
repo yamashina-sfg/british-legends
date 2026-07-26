@@ -67,8 +67,6 @@ export function stepEnemies(map: DungeonMap): MapEntity | null {
     const px = map.player.x;
     const py = map.player.y;
     const distance = Math.abs(px - enemy.x) + Math.abs(py - enemy.y);
-    const originDistance=Math.abs(enemy.x-enemy.spawnX)+Math.abs(enemy.y-enemy.spawnY);
-    const mustReturn=originDistance>=(enemy.spawnRange??5);
     let dirs: [number, number][] = [
       [1, 0],
       [-1, 0],
@@ -76,8 +74,9 @@ export function stepEnemies(map: DungeonMap): MapEntity | null {
       [0, -1],
     ];
 
-    if(mustReturn){enemy.aiState='return';enemy.invincible=true;dirs.sort((a,b)=>Math.abs(enemy.spawnX!-(enemy.x+a[0]))+Math.abs(enemy.spawnY!-(enemy.y+a[1]))-(Math.abs(enemy.spawnX!-(enemy.x+b[0]))+Math.abs(enemy.spawnY!-(enemy.y+b[1]))));}
-    else if (distance <= (enemy.searchRange??5)) {
+    // 2024-08-19の仕様修正を優先し、スポーン境界での帰還・半透明・無敵化は行わない。
+    enemy.invincible=false;
+    if (distance <= (enemy.searchRange??5)) {
       enemy.aiState='chase';enemy.invincible=false;
       dirs.sort((a, b) => {
         const da = Math.abs(px - (enemy.x + a[0])) + Math.abs(py - (enemy.y + a[1]));
@@ -96,7 +95,7 @@ export function stepEnemies(map: DungeonMap): MapEntity | null {
     for (const [dx, dy] of dirs) {
       const nx = enemy.x + dx;
       const ny = enemy.y + dy;
-      if(Math.abs(nx-enemy.spawnX!)+Math.abs(ny-enemy.spawnY!)>(enemy.spawnRange??5))continue;
+      if(enemy.aiState==='idle'&&Math.abs(nx-enemy.spawnX!)+Math.abs(ny-enemy.spawnY!)>(enemy.spawnRange??5))continue;
       if (nx === px && ny === py) {
         collided = enemy;
         break;
@@ -104,7 +103,6 @@ export function stepEnemies(map: DungeonMap): MapEntity | null {
       if (!blocked(nx, ny)) {
         enemy.x = nx;
         enemy.y = ny;
-        if(enemy.aiState==='return'&&enemy.x===enemy.spawnX&&enemy.y===enemy.spawnY){enemy.aiState='idle';enemy.invincible=false;enemy.idleWait=1;}
         break;
       }
     }

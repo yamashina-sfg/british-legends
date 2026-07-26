@@ -168,9 +168,9 @@ describe('dungeon accessibility', () => {
     expect(boss).toMatchObject({ x: 4, y: 3 });
   });
 
-  it('returns enemies that reach their spawn boundary with invincibility',()=>{
+  it('does not restore the removed invincible return behavior at the spawn boundary',()=>{
     const map:DungeonMap={worldId:'beowulf',floorIndex:0,floorName:'test',width:8,height:3,tiles:[Array(8).fill('wall'),['wall','floor','floor','floor','floor','floor','floor','wall'],Array(8).fill('wall')],player:{x:6,y:1},entities:[{id:'enemy',kind:'enemy',x:4,y:1,spawnX:1,spawnY:1,spawnRange:3,searchRange:5,attackRange:1,aiState:'chase',enemyIds:['grendel']}],foundKeyIds:[],discoveredSecretIds:[],visited:Array.from({length:3},()=>Array(8).fill(false)),isBossFloor:false};
-    stepEnemies(map);const enemy=map.entities[0];expect(enemy).toMatchObject({x:3,y:1,aiState:'return',invincible:true});
-    const collision=resolveMove({...map,player:{x:2,y:1}},1,0);expect(collision.type).toBe('blocked');
+    stepEnemies(map);const enemy=map.entities[0];expect(enemy).toMatchObject({x:5,y:1,aiState:'chase',invincible:false});
+    const collision=resolveMove({...map,player:{x:4,y:1}},1,0);expect(collision.type).toBe('encounter');
   });
 });

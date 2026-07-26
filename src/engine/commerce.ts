@@ -1,5 +1,6 @@
 import type { CommerceState, SaveData } from '@/types';
 import { getCashProduct } from '@/data/cashShop';
+import { getPet } from '@/data/pets';
 import { canReceiveItem, grantItem } from './items';
 
 export const defaultCommerce=():CommerceState=>({diamonds:0,purchaseCounts:{},purchaseHistory:[],entitlements:[],activeBoosts:{expUntil:0,dropUntil:0},sandboxGrantClaimed:false});
@@ -23,7 +24,7 @@ export function purchaseProduct(save:SaveData,productId:string,partyIndex=0):{ok
   if(g.kind==='item')next=grantItem(next,g.itemId,g.amount);
   if(g.kind==='equipment'&&!next.equipmentInventory.includes(g.equipmentId))next={...next,equipmentInventory:[...next.equipmentInventory,g.equipmentId]};
   if(g.kind==='head')next={...next,ownedHeadStyles:[...new Set([...(next.ownedHeadStyles??[]),g.style])]};
-  if(g.kind==='pet'&&!(next.pets??[]).some(x=>x.petId===g.petId))next={...next,pets:[...(next.pets??[]),{uid:`paid-${g.petId}`,petId:g.petId,level:1,exp:0,enhance:0,currentHp:55}]};
+  if(g.kind==='pet'&&!(next.pets??[]).some(x=>x.petId===g.petId)){const pet=getPet(g.petId);next={...next,pets:[...(next.pets??[]),{uid:`paid-${g.petId}`,petId:g.petId,level:1,exp:0,enhance:0,currentHp:pet.baseStats.hp,originRank:pet.rank,rarityStars:0}]};}
   if(g.kind==='entitlement'){next={...next,commerce:{...normalizeCommerce(next.commerce),entitlements:[...new Set([...normalizeCommerce(next.commerce).entitlements,g.id])]}};if(g.id==='auto_fishing')next={...next,fishing:{...(next.fishing??{count:0,claimedMilestones:[]}),autoUnlocked:true}};}
   return {ok:true,message:`${product.name}を購入しました`,save:next};
 }

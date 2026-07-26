@@ -1,5 +1,6 @@
 import type { OwnedCharacter, SaveData } from '@/types';
 import { getCharacter, getWorld, WORLD_ORDER } from '@/data';
+import { getPet } from '@/data/pets';
 import { statsAtLevel } from './leveling';
 import { normalizeActiveParty } from './party';
 import { DEFAULT_QUICK_SLOTS, normalizeQuickSlots } from './quickSlots';
@@ -86,7 +87,7 @@ export function loadSlot(slotId: number): SaveData | null {
       exploration: parsed.exploration ?? {},
       defeatCounts: parsed.defeatCounts ?? {},
       fishing: parsed.fishing ?? { count: 0, autoUnlocked: false, claimedMilestones: [] },
-      pets: parsed.pets ?? [],
+      pets: (parsed.pets ?? []).map((pet)=>{const paid=pet.uid.startsWith('paid-'),rank=getPet(pet.petId).rank;return{...pet,originRank:pet.originRank??(paid?rank:1),rarityStars:pet.rarityStars??(paid?0:rank-1)}}),
       petSlots: Array.from({ length: 3 }, (_, index) => parsed.petSlots?.[index] ?? null),
       arena: parsed.arena ?? { bestWave: 0, selectedStartWave: 1, bestTimes: {}, claimedFirstWaves: [], attempts: 0 },
       constellations: parsed.constellations ?? Object.fromEntries((parsed.progress?.clearedWorldIds ?? []).map((id)=>[id,2])) as Record<string,2>,

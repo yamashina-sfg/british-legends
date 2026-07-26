@@ -451,4 +451,8 @@ export interface OwnedPet {
   exp: number;
   enhance: number;
   currentHp: number;
+  /** 入手した時点の成長段階。星枠数は 3 - originRank。 */
+  originRank?: 1 | 2 | 3;
+  /** 入手後に進化した回数。入手時0、進化ごとに1増加。 */
+  rarityStars?: number;
 }
