@@ -3054,8 +3054,8 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
 .dungeon-hud__progress b { background: linear-gradient(90deg,#bd8a35,#f0cc69); box-shadow: 0 0 8px rgba(236,193,91,.4); }
 .dungeon-retreat { min-height: 42px; border: 1px solid #8a7045; color: #d9c690; background: #19211f; font: 10px var(--font); cursor: pointer; }
 .dungeon-retreat:hover { color: #fff0b2; border-color: #d4ae5d; }
-.dungeon-stage { grid-template-columns: minmax(620px,1fr) 280px; gap: 14px; min-height: 0; }
-.dungeon-map-frame { position: relative; min-height: 620px; padding: 58px 28px 66px; border: 1px solid #85714a; background: radial-gradient(circle at 50% 42%,#1d2926 0,#101716 72%); box-shadow: 0 0 0 4px #0b100f, inset 0 0 45px rgba(0,0,0,.72), 0 10px 28px rgba(0,0,0,.32); }
+.dungeon-stage { grid-template-columns: minmax(620px,1fr) 280px; gap: 14px; min-height: 0; isolation:isolate; overflow:clip; }
+.dungeon-map-frame { position: relative; z-index:0; min-width:0; min-height: 620px; padding: 58px 28px 66px; overflow:hidden; contain:paint; border: 1px solid #85714a; background: radial-gradient(circle at 50% 42%,#1d2926 0,#101716 72%); box-shadow: 0 0 0 4px #0b100f, inset 0 0 45px rgba(0,0,0,.72), 0 10px 28px rgba(0,0,0,.32); }
 .dungeon-map-frame::before,.dungeon-map-frame::after { content:''; position:absolute; width:26px; height:26px; border-color:#c3a65e; opacity:.72; pointer-events:none; }
 .dungeon-map-frame::before { left:14px; top:14px; border-left:2px solid; border-top:2px solid; }
 .dungeon-map-frame::after { right:14px; bottom:14px; border-right:2px solid; border-bottom:2px solid; }
@@ -3070,7 +3070,7 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
 .dungeon-map-frame > .dpad button { cursor:pointer; }
 .dungeon-map-frame > .dpad button:active { transform:translateY(1px); color:#171b18; background:#d5b762; }
 .dungeon-map-frame .dpad-center { color:#a88c4e; opacity:.55; }
-.dungeon-stage__sidebar { padding:0; gap:0; overflow:hidden; border:1px solid #85714a; background:#17201e; box-shadow:0 0 0 4px #0b100f,0 10px 28px rgba(0,0,0,.3); }
+.dungeon-stage__sidebar { position:relative; z-index:2; min-width:0; padding:0; gap:0; overflow:hidden; contain:paint; border:1px solid #85714a; background:#17201e; box-shadow:0 0 0 4px #0b100f,0 10px 28px rgba(0,0,0,.3); }
 .dungeon-stage__sidebar > * { margin-inline:14px; }
 .dungeon-stage__sidebar .dungeon-sidebar__label { margin:0; padding:10px 14px 7px; border-bottom:1px solid #5f523a; color:#c7a85d; background:linear-gradient(90deg,#26332f,transparent); letter-spacing:2px; }
 .dungeon-stage__sidebar .party-status { padding:12px 0; }
