@@ -33,6 +33,7 @@ export function StoreOverlay() {
   const [selectedQuickSlot, setSelectedQuickSlot] = useState(0);
   const [cashCategory,setCashCategory]=useState<CashShopCategory>('currency');
   const [shopMessage,setShopMessage]=useState('');
+  const [enhancementEffect,setEnhancementEffect]=useState<{kind:'level'|'rank';name:string;key:number}|null>(null);
   const { save, buyEquipment, buyItem, forgeEquipment, craftEquipment, setQuickSlot, closeOverlay,purchaseCashProduct,grantSandboxDiamonds,activateBoost } = useGameStore();
   if (!save) return null;
 
@@ -46,9 +47,11 @@ export function StoreOverlay() {
   ])].map((id) => EQUIPMENT[id]).filter(Boolean);
   const ownedIds = new Set(ownedEquipment.map((item) => item.id));
   const equippedIds = new Set(save.party.flatMap(equippedItemIds));
+  const showEnhancement=(kind:'level'|'rank',name:string)=>{const key=Date.now();setEnhancementEffect({kind,name,key});window.setTimeout(()=>setEnhancementEffect((current)=>current?.key===key?null:current),1100);};
 
   return (
     <Window title="BIBLIOTHECA STORE" className="store-overlay">
+      {enhancementEffect&&<div className={`enhancement-effect is-${enhancementEffect.kind}`} key={enhancementEffect.key} aria-live="assertive"><div className="enhancement-effect__rays"/><i>{enhancementEffect.kind==='level'?'✦':'⚒'}</i><strong>{enhancementEffect.kind==='level'?'LEVEL UP!':'RANK UP!!'}</strong><span>{enhancementEffect.name}</span></div>}
       <div className="store-header">
         <div className="store-keeper"><i>♜</i><div><span>MASTER OF RELICS</span><strong>失われた物語の武具を、あなたへ。</strong></div></div>
         <div className="store-wallet"><span>YOUR WALLET</span><strong><i>G</i> {save.gold}　♦ {commerce.diamonds}</strong></div>
@@ -93,7 +96,7 @@ export function StoreOverlay() {
             <article className={`store-item forge-item ${canCraftEquipment(save, recipe) ? '' : 'is-unaffordable'}`} key={recipe.id}>
               <div className="store-item__art"><img className="store-item__icon" src={STORE_ICON_BY_ID[result.id]} alt="" aria-hidden="true" /><span>CRAFT</span></div>
               <div><strong>{result.name}</strong><p>{base.name} +5 から上位武器を制作。素材装備は消費されない。</p><em>基礎: {base.name} +{level} / {material.name} {save.inventory[recipe.materialId] ?? 0}/{recipe.materialQty}</em></div>
-              <div className="store-item__buy"><b><i>G</i> {recipe.gold}</b><Button disabled={!canCraftEquipment(save, recipe)} onClick={() => craftEquipment(recipe.id)}>制作する</Button></div>
+              <div className="store-item__buy"><b><i>G</i> {recipe.gold}</b><Button disabled={!canCraftEquipment(save, recipe)} onClick={() => {if(craftEquipment(recipe.id))showEnhancement('rank',result.name)}}>制作する</Button></div>
             </article>
           );
         }) : tab === 'forge' ? ownedEquipment.map((item) => {
@@ -106,7 +109,7 @@ export function StoreOverlay() {
               <div><strong>{item.name} <small>+{level}</small></strong><p>{level >= MAX_EQUIPMENT_LEVEL ? '最大強化に到達。物語の力が完全に定着している。' : '装備固有ステータスを10%強化する。'}</p><em>{bonusLabel(item.bonus)}</em></div>
               <div className="store-item__buy">
                 {cost ? <b>{cost.gold}G / {getMaterial(cost.materialId).name} ×{cost.materialQty}</b> : <b>MAX</b>}
-                <Button disabled={!canForge} onClick={() => forgeEquipment(item.id)}>強化する</Button>
+                <Button disabled={!canForge} onClick={() => {if(forgeEquipment(item.id))showEnhancement('level',item.name)}}>強化する</Button>
               </div>
             </article>
           );
