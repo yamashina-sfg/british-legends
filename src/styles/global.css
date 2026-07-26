@@ -3042,7 +3042,7 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
 @media (max-width: 700px) { .quick-slot-settings header { flex-direction: column; gap: 3px; }.quick-slot-settings > div { gap: 3px; }.quick-slot-settings > div button { padding: 3px; }.battle-quick-slots button { min-height: 40px; padding-inline: 2px; } }
 
 /* Dungeon cockpit redesign: the map is the hero, controls stay within thumb reach. */
-.dungeon-rpg-scene { max-width: 1420px; min-height: 0; padding: 12px 18px 10px; gap: 12px !important; background: radial-gradient(circle at 42% 40%, rgba(57,72,61,.25), transparent 48%); }
+.dungeon-rpg-scene { max-width: 1420px; min-height: 0; overflow:hidden; padding: 12px 18px 10px; gap: 12px !important; background: radial-gradient(circle at 42% 40%, rgba(57,72,61,.25), transparent 48%); }
 .dungeon-hud { grid-template-columns: 68px minmax(210px,1fr) minmax(280px,1.45fr) 150px 58px; align-items: center; gap: 15px; min-height: 82px; padding: 10px 14px; border: 1px solid #927b4d; box-shadow: 0 0 0 3px #111716, inset 0 0 0 2px rgba(216,190,119,.18), 0 7px 20px rgba(0,0,0,.28); background: linear-gradient(180deg, rgba(38,49,46,.98), rgba(24,33,31,.98)); }
 .dungeon-hud__floor { display: grid; place-items: center; align-self: stretch; border-right: 1px solid #66583c; color: #e6c66f; }
 .dungeon-hud__floor b { font: 28px/1 Georgia,serif; }
@@ -3054,8 +3054,8 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
 .dungeon-hud__progress b { background: linear-gradient(90deg,#bd8a35,#f0cc69); box-shadow: 0 0 8px rgba(236,193,91,.4); }
 .dungeon-retreat { min-height: 42px; border: 1px solid #8a7045; color: #d9c690; background: #19211f; font: 10px var(--font); cursor: pointer; }
 .dungeon-retreat:hover { color: #fff0b2; border-color: #d4ae5d; }
-.dungeon-stage { grid-template-columns: minmax(620px,1fr) 280px; gap: 14px; min-height: 0; isolation:isolate; overflow:clip; }
-.dungeon-map-frame { position: relative; z-index:0; min-width:0; min-height: 620px; padding: 58px 28px 66px; overflow:hidden; contain:paint; border: 1px solid #85714a; background: radial-gradient(circle at 50% 42%,#1d2926 0,#101716 72%); box-shadow: 0 0 0 4px #0b100f, inset 0 0 45px rgba(0,0,0,.72), 0 10px 28px rgba(0,0,0,.32); }
+.dungeon-stage { flex:1 1 0; height:0; grid-template-columns: minmax(620px,1fr) 280px; gap: 14px; min-height: 0; isolation:isolate; overflow:clip; }
+.dungeon-map-frame { position: relative; z-index:0; min-width:0; min-height:0; height:100%; padding: 58px 28px 66px; overflow:hidden; contain:paint; border: 1px solid #85714a; background: radial-gradient(circle at 50% 42%,#1d2926 0,#101716 72%); box-shadow: 0 0 0 4px #0b100f, inset 0 0 45px rgba(0,0,0,.72), 0 10px 28px rgba(0,0,0,.32); }
 .dungeon-map-frame::before,.dungeon-map-frame::after { content:''; position:absolute; width:26px; height:26px; border-color:#c3a65e; opacity:.72; pointer-events:none; }
 .dungeon-map-frame::before { left:14px; top:14px; border-left:2px solid; border-top:2px solid; }
 .dungeon-map-frame::after { right:14px; bottom:14px; border-right:2px solid; border-bottom:2px solid; }
@@ -3070,7 +3070,7 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
 .dungeon-map-frame > .dpad button { cursor:pointer; }
 .dungeon-map-frame > .dpad button:active { transform:translateY(1px); color:#171b18; background:#d5b762; }
 .dungeon-map-frame .dpad-center { color:#a88c4e; opacity:.55; }
-.dungeon-stage__sidebar { position:relative; z-index:2; min-width:0; min-height:0; padding:0; gap:0; overflow-x:hidden; overflow-y:auto; contain:paint; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y; scrollbar-width:thin; scrollbar-color:#8f6f58 #111816; border:1px solid #85714a; background:#17201e; box-shadow:0 0 0 4px #0b100f,0 10px 28px rgba(0,0,0,.3); }
+.dungeon-stage__sidebar { position:relative; z-index:2; min-width:0; min-height:0; height:100%; max-height:100%; padding:0; gap:0; overflow-x:hidden; overflow-y:scroll; contain:paint; -webkit-overflow-scrolling:touch; overscroll-behavior:contain; touch-action:pan-y; scrollbar-width:thin; scrollbar-color:#8f6f58 #111816; border:1px solid #85714a; background:#17201e; box-shadow:0 0 0 4px #0b100f,0 10px 28px rgba(0,0,0,.3); }
 .dungeon-stage__sidebar::-webkit-scrollbar { width:6px; }
 .dungeon-stage__sidebar::-webkit-scrollbar-track { background:#111816; }
 .dungeon-stage__sidebar::-webkit-scrollbar-thumb { min-height:36px; border:1px solid #b5956c; border-radius:3px; background:#79565e; }
