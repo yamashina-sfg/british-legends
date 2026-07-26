@@ -1962,6 +1962,12 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
 .map-entity--sprite .pixel-sprite__generated-art { inset: -8% -14% 0; width: 128%; height: 112%; }
 .map-entity--sprite.ent-boss .sprite { transform: translateY(-17px) scale(1); }
 .map-entity--sprite.ent-boss::after { content: ''; position: absolute; left: 6px; right: 6px; bottom: 1px; height: 3px; background: #f2ca61; box-shadow: 0 0 7px #f2ca61; }
+.ent-player { display: grid; place-items: end center; overflow: visible; }
+.ent-player::before { display: none; }
+.ent-player img { width: 44px; height: 48px; max-width: none; object-fit: contain; object-position: center bottom; transform: translateY(-10px); transform-origin: bottom center; image-rendering: pixelated; filter: drop-shadow(2px 3px 0 rgba(9,7,12,.78)); }
+.ent-player--head-2 img { filter: sepia(.08) hue-rotate(-8deg) drop-shadow(2px 3px 0 rgba(9,7,12,.78)); }
+.ent-player--head-3 img { filter: brightness(1.08) saturate(.88) drop-shadow(2px 3px 0 rgba(9,7,12,.78)); }
+.ent-player--head-4 img { filter: contrast(1.08) hue-rotate(8deg) drop-shadow(2px 3px 0 rgba(9,7,12,.78)); }
 .dungeon-evolve-hint { display: grid; gap: 4px; padding: 7px 8px; color: #e8ddbd; background: rgba(20, 25, 23, .75); border: 1px solid #655b4c; font-size: 10px; line-height: 1.45; }.dungeon-evolve-hint strong { color: #f0d473; font-size: 11px; }.dungeon-evolve-hint em { width: max-content; padding: 2px 5px; color: #17231b; background: #91d6a4; border: 1px solid #dff4ce; font-style: normal; }.dungeon-evolve-hint span { color: #d8cba8; }.dungeon-evolve-hint small { color: #f0a99f; }.dungeon-evolve-hint small.is-ready { color: #91d6a4; }.dungeon-reward-panel { width: min(620px, 100%); margin: 0 auto; padding: 9px 12px; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; align-items: center; color: #e9dfc5; font-size: 12px; }.dungeon-reward-panel strong { color: var(--accent); }.dungeon-reward-panel b { grid-column: 1 / -1; color: #91d6a4; font-weight: normal; }
 @media (max-width: 700px) { .dungeon-hud { grid-template-columns: 1fr 1fr; }.dungeon-hud__objective { grid-column: 1 / -1; }.dungeon-stage { grid-template-columns: 1fr; }.dungeon-stage__sidebar { display: none; }.dungeon-stage .dungeon-map { transform-origin: top left; } }
 

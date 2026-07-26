@@ -1,6 +1,9 @@
-import type { DungeonMap as MapData, MapEntity } from '@/types';
+import type { DungeonMap as MapData, MapEntity, PlayerAvatar } from '@/types';
 import { getEnemy } from '@/data';
 import { Sprite } from '@/components/ui/Sprite';
+import guardianMapSprite from '@/assets/player/player-guardian-map-v1.png';
+import scholarMapSprite from '@/assets/player/player-scholar-map-v1.png';
+import wandererMapSprite from '@/assets/player/player-wanderer-map-v1.png';
 
 const TILE = 30; // px: 探索画面の主役として視認できる大きさ
 
@@ -32,9 +35,17 @@ function entityGlyph(e: MapEntity): { glyph: string; cls: string } {
 
 interface Props {
   map: MapData;
+  playerAvatar?: PlayerAvatar;
 }
 
-export function DungeonMap({ map }: Props) {
+const PLAYER_MAP_SPRITES: Record<PlayerAvatar['bodyType'], string> = {
+  guardian: guardianMapSprite,
+  scholar: scholarMapSprite,
+  wanderer: wandererMapSprite,
+};
+
+export function DungeonMap({ map, playerAvatar }: Props) {
+  const bodyType = playerAvatar?.bodyType ?? 'guardian';
   return (
     <div
       className={`dungeon-map dungeon-map--${map.worldId} dungeon-map--floor-${map.floorIndex}`}
@@ -78,9 +89,11 @@ export function DungeonMap({ map }: Props) {
 
       {/* プレイヤー */}
       <div
-        className="map-entity ent-player"
+        className={`map-entity ent-player ent-player--${bodyType} ent-player--head-${playerAvatar?.headStyle ?? 1}`}
         style={{ transform: `translate(${map.player.x * TILE}px, ${map.player.y * TILE}px)`, width: TILE, height: TILE }}
-      />
+      >
+        <img src={PLAYER_MAP_SPRITES[bodyType]} alt={playerAvatar?.name ?? '主人公'} />
+      </div>
     </div>
   );
 }

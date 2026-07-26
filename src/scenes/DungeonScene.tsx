@@ -108,7 +108,7 @@ export function DungeonScene() {
         <div className="dungeon-stage">
           <div className="dungeon-map-frame" aria-label="ダンジョンマップ">
             <div className="dungeon-map-frame__title"><span>CHAPTER MAP</span><b>{world.title}</b></div>
-            <DungeonMap map={map} />
+            <DungeonMap map={map} playerAvatar={save.playerAvatar} />
             <div className="map-legend">
               <span><i className="legend-player" /> 主人公</span>
               <span><i className="legend-chest" /> 宝箱</span>
