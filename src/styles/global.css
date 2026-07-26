@@ -648,6 +648,18 @@
   .manuscript-blessings { gap: 3px; }
   .manuscript-blessings i { padding: 4px 2px; font-size: 9px; }
 }
+@media (orientation: landscape) and (max-height: 700px) {
+  .title-scene { min-height: 100dvh; height: 100dvh; padding: 18px 0 42px; align-content: center; }
+  .title-scene__content { gap: 4px; }
+  .title-scene h1 { font-size: clamp(34px, 8vw, 58px); }
+  .title-scene h1 span { margin-top: 4px; font-size: 14px; }
+  .title-scene p,
+  .title-scene .title-scene__tagline { font-size: 9px; line-height: 1.35; }
+  .title-scene__menu { width: min(720px, 82%); grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+  .title-scene__menu .btn { min-height: 38px; }
+  .title-scene__loadline { bottom: 12px; height: 6px; }
+  .title-scene__footer { left: 8px; right: auto; top: 8px; bottom: auto; display: flex; max-width: 250px; justify-content: flex-start; gap: 2px 6px; padding: 0; font-size: 6px; text-align: left; }
+}
 .codex-pixel {
   width: 52px;
   height: 52px;
@@ -1487,6 +1499,10 @@
   font-weight: normal;
 }
 @media (max-width: 700px) {
+  .title-scene { min-height: 100dvh; height: 100dvh; padding: 38px 0 126px; align-content: center; }
+  .title-scene__menu { margin-top: 24px; }
+  .title-scene__loadline { bottom: 72px; }
+  .title-scene__footer { bottom: 18px; display: flex; flex-wrap: wrap; justify-content: center; gap: 3px 9px; padding: 0 12px; font-size: 7px; }
   .title-scene h1 { font-size: clamp(30px, 10vw, 48px); }
   .title-scene p { font-size: 12px; }
 }
@@ -1706,7 +1722,7 @@ body {
 
 /* オーバーレイ */
 .overlay-backdrop {
-  position: absolute;
+  position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.75);
   display: flex;
@@ -2980,6 +2996,9 @@ button.battle-unit { cursor: default; }.battle-unit .gauge { width: 82px; }.batt
 .account-name-edit input { min-width: 0; padding: 8px; color: #e8d187; border: 1px solid #665b46; background: #111816; font-family: var(--font); }
 .account-message { color: #ddc266 !important; }
 .game-menu__legal a { color: #e0c46b; }
+.boost-status { display:grid;grid-template-columns:1fr 1fr;gap:5px;grid-column:1/-1; }
+.boost-status span { display:flex;justify-content:space-between;padding:7px;border:1px solid #62543c;color:#aaa18d;background:#151d1a;font-size:8px; }
+.boost-status b { color:#e8c75f; }
 .arena-exit-button { position: absolute; z-index: 21; right: 8px; top: 8px; padding: 6px 10px; color: #d3c5aa; border: 1px solid #77575a; background: rgba(20,16,17,.9); font: 9px var(--font); }
 .arena-result { align-content: center; width: min(620px,100%); margin: auto; }
 .arena-result > label { display: grid; gap: 5px; width: min(360px,90vw); color: #b7af99; font-size: 9px; }

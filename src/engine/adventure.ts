@@ -1,4 +1,5 @@
 import type { SaveData } from '@/types';
+import { canReceiveItem, grantItem } from './items';
 
 export const portalId=(worldId:string,floorIndex:number)=>`${worldId}:${floorIndex}`;
 
@@ -28,10 +29,10 @@ export function dialogueFor(worldId:string,soulLevel:number):string[] {
 
 export function claimOneTimeEvent(save:SaveData,eventId:string):{save:SaveData;first:boolean} {
   const current=save.adventure??{flags:[],openPortals:[],completedEventIds:[],tradeCounts:{}};if(current.completedEventIds.includes(eventId))return{save,first:false};
-  return{first:true,save:{...save,items:{...save.items,recovery_potion:(save.items.recovery_potion??0)+1},adventure:{...current,completedEventIds:[...current.completedEventIds,eventId]}}};
+  const next=grantItem(save,'recovery_potion',1);return{first:true,save:{...next,adventure:{...current,completedEventIds:[...current.completedEventIds,eventId]}}};
 }
 
 export function tradeAdventureItem(save:SaveData,tradeId:string,giveId:string,giveQty:number,getId:string,getQty:number):SaveData|null {
-  if((save.inventory[giveId]??0)<giveQty)return null;const current=save.adventure??{flags:[],openPortals:[],completedEventIds:[],tradeCounts:{}};
-  return{...save,inventory:{...save.inventory,[giveId]:(save.inventory[giveId]??0)-giveQty},items:{...save.items,[getId]:(save.items[getId]??0)+getQty},adventure:{...current,tradeCounts:{...current.tradeCounts,[tradeId]:(current.tradeCounts[tradeId]??0)+1}}};
+  if((save.inventory[giveId]??0)<giveQty||!canReceiveItem(save,getId,getQty))return null;const current=save.adventure??{flags:[],openPortals:[],completedEventIds:[],tradeCounts:{}};
+  const next=grantItem(save,getId,getQty);return{...next,inventory:{...next.inventory,[giveId]:(next.inventory[giveId]??0)-giveQty},adventure:{...current,tradeCounts:{...current.tradeCounts,[tradeId]:(current.tradeCounts[tradeId]??0)+1}}};
 }

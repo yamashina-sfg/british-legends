@@ -370,6 +370,8 @@ export interface SaveData {
   inventory: Record<string, number>;
   /** 回復薬など、素材とは別に消費する道具 */
   items: Record<string, number>;
+  /** 一度でも入手した消費アイテム。所持0でもクイックスロット候補に残す。 */
+  acquiredItemIds?: string[];
   /** 戦闘画面へ表示する消費アイテムID。最終仕様どおり常に5枠へ正規化する。 */
   quickSlots: (string | null)[];
   equipmentInventory: string[];
@@ -438,7 +440,7 @@ export interface CommerceState {
   purchaseCounts: Record<string, number>;
   purchaseHistory: PurchaseHistoryEntry[];
   entitlements: string[];
-  activeBoosts: { expUntil: number; dropUntil: number };
+  activeBoosts: { expUntil: number; dropUntil: number; expPausedAt?:number; dropPausedAt?:number };
   sandboxGrantClaimed: boolean;
 }
 
