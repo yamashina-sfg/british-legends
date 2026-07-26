@@ -40,7 +40,7 @@ export function createNotification(payload: NotificationPayload): GameNotificati
     icon: payload.icon ?? defaultIcon(payload.type),
     rarity: payload.rarity ?? 'common',
     channel,
-    durationMs: payload.durationMs ?? (channel === 'achievement' ? 4600 : 3000),
+    durationMs: payload.durationMs ?? (channel === 'achievement' ? 2600 : 2200),
     dedupeKey,
   };
 }

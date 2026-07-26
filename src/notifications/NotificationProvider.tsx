@@ -1,4 +1,14 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent,
+  type ReactNode,
+} from 'react';
 import { playAchievementSfx } from '@/audio/notificationSfx';
 import { emitNotification, subscribeNotifications } from './notificationBus';
 import { NotificationQueue } from './notificationQueue';
@@ -26,38 +36,41 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     if (toastQueue.current.enqueue(notification)) setToastTick((tick) => tick + 1);
   }), []);
 
+  const dismissToast = useCallback(() => {
+    setActiveToast(null);
+    setToastTick((tick) => tick + 1);
+  }, []);
+
   useEffect(() => {
-    if (activeToast) return;
-    const next = toastQueue.current.next();
-    if (!next) return;
-    setActiveToast(next);
-  }, [activeToast, toastTick]);
+    if (activeToast || activeAchievement) return;
+
+    const nextAchievement = achievementQueue.current.next();
+    if (nextAchievement) {
+      setActiveAchievement(nextAchievement);
+      playAchievementSfx();
+      return;
+    }
+
+    const nextToast = toastQueue.current.next();
+    if (nextToast) setActiveToast(nextToast);
+  }, [activeAchievement, activeToast, achievementTick, toastTick]);
+
+  const dismissAchievement = useCallback(() => {
+    setActiveAchievement(null);
+    setAchievementTick((tick) => tick + 1);
+  }, []);
 
   useEffect(() => {
     if (!activeToast) return undefined;
-    const timeout = window.setTimeout(() => {
-      setActiveToast(null);
-      setToastTick((tick) => tick + 1);
-    }, activeToast.durationMs);
+    const timeout = window.setTimeout(dismissToast, Math.min(activeToast.durationMs, 2200));
     return () => window.clearTimeout(timeout);
-  }, [activeToast]);
-
-  useEffect(() => {
-    if (activeAchievement) return;
-    const next = achievementQueue.current.next();
-    if (!next) return;
-    setActiveAchievement(next);
-    playAchievementSfx();
-  }, [activeAchievement, achievementTick]);
+  }, [activeToast, dismissToast]);
 
   useEffect(() => {
     if (!activeAchievement) return undefined;
-    const timeout = window.setTimeout(() => {
-      setActiveAchievement(null);
-      setAchievementTick((tick) => tick + 1);
-    }, activeAchievement.durationMs);
+    const timeout = window.setTimeout(dismissAchievement, Math.min(activeAchievement.durationMs, 2600));
     return () => window.clearTimeout(timeout);
-  }, [activeAchievement]);
+  }, [activeAchievement, dismissAchievement]);
 
   const notify = useCallback((payload: NotificationPayload) => emitNotification(payload), []);
   const value = useMemo(() => ({ notify }), [notify]);
@@ -65,7 +78,12 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   return (
     <NotificationContext.Provider value={value}>
       {children}
-      <NotificationManager toast={activeToast} achievement={activeAchievement} />
+      <NotificationManager
+        toast={activeToast}
+        achievement={activeAchievement}
+        onDismissToast={dismissToast}
+        onDismissAchievement={dismissAchievement}
+      />
     </NotificationContext.Provider>
   );
 }
@@ -76,13 +94,29 @@ export function useNotification() {
   return context;
 }
 
-function NotificationManager({ toast, achievement }: { toast: GameNotification | null; achievement: GameNotification | null }) {
+function NotificationManager({
+  toast,
+  achievement,
+  onDismissToast,
+  onDismissAchievement,
+}: {
+  toast: GameNotification | null;
+  achievement: GameNotification | null;
+  onDismissToast: () => void;
+  onDismissAchievement: () => void;
+}) {
   return (
     <div className="notification-layer" aria-live="polite" aria-atomic="false">
       <div className="notification-telop-zone">
-        {toast && <TelopNotification key={toast.id} notification={toast} />}
+        {toast && <TelopNotification key={toast.id} notification={toast} onDismiss={onDismissToast} />}
       </div>
-      {achievement && <AchievementNotification key={achievement.id} notification={achievement} />}
+      {achievement && (
+        <AchievementNotification
+          key={achievement.id}
+          notification={achievement}
+          onDismiss={onDismissAchievement}
+        />
+      )}
     </div>
   );
 }
@@ -98,11 +132,24 @@ function telopLabel(notification: GameNotification) {
   return 'NOTICE';
 }
 
-function TelopNotification({ notification }: { notification: GameNotification }) {
+function dismissOnKeyboard(event: KeyboardEvent<HTMLElement>, onDismiss: () => void) {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  event.preventDefault();
+  onDismiss();
+}
+
+function TelopNotification({ notification, onDismiss }: { notification: GameNotification; onDismiss: () => void }) {
   const messageLines = notification.message.split('\n').filter(Boolean);
 
   return (
-    <article className={`notification-telop notification-rarity-${notification.rarity} notification-type-${notification.type}`}>
+    <article
+      className={`notification-telop notification-rarity-${notification.rarity} notification-type-${notification.type}`}
+      role="button"
+      tabIndex={0}
+      aria-label={`${notification.title}。タップして閉じる`}
+      onClick={onDismiss}
+      onKeyDown={(event) => dismissOnKeyboard(event, onDismiss)}
+    >
       <i className="notification-telop__flash" />
       <i className="notification-telop__spark notification-telop__spark--one" />
       <i className="notification-telop__spark notification-telop__spark--two" />
@@ -117,13 +164,21 @@ function TelopNotification({ notification }: { notification: GameNotification })
         )}
       </div>
       <b className="notification-telop__trail" />
+      <em className="notification-dismiss-hint">タップで閉じる</em>
     </article>
   );
 }
 
-function AchievementNotification({ notification }: { notification: GameNotification }) {
+function AchievementNotification({ notification, onDismiss }: { notification: GameNotification; onDismiss: () => void }) {
   return (
-    <article className={`notification-achievement notification-rarity-${notification.rarity}`}>
+    <article
+      className={`notification-achievement notification-rarity-${notification.rarity}`}
+      role="button"
+      tabIndex={0}
+      aria-label={`${notification.title}。タップして閉じる`}
+      onClick={onDismiss}
+      onKeyDown={(event) => dismissOnKeyboard(event, onDismiss)}
+    >
       <i className="notification-achievement__spark notification-achievement__spark--one" />
       <i className="notification-achievement__spark notification-achievement__spark--two" />
       <span>{notification.icon}</span>
@@ -132,6 +187,7 @@ function AchievementNotification({ notification }: { notification: GameNotificat
         {notification.message && <strong>{notification.message}</strong>}
       </div>
       <b />
+      <em className="notification-dismiss-hint">タップで閉じる</em>
     </article>
   );
 }
